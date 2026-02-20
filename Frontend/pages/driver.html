@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <title>Driver Profiles | Med-Drive</title>
+    <style>
+        .driver-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+        .driver-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #eee; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .driver-card img { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin-bottom: 10px; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-top: 10px; }
+        .available { background: #d4edda; color: #155724; }
+        .on-trip { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h2>Med-Drive</h2>
+        <ul>
+            <li><a href="dashboard.html" style="color:white">Dashboard</a></li>
+            <li><a href="ambulance.html" style="color:white">Ambulances</a></li>
+            <li><a href="driver.html" style="color:white">Drivers</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <h1>Our Professional Drivers</h1>
+            <p>Certified experts dedicated to emergency care.</p>
+        </header>
+
+        <div class="driver-grid" id="driver-list">
+            <p>Fetching driver data...</p>
+        </div>
+    </main>
+
+    <script>
+        async function loadDrivers() {
+            const listContainer = document.getElementById('driver-list');
+            try {
+                const response = await fetch('http://localhost:5000/api/drivers');
+                const drivers = await response.json();
+
+                listContainer.innerHTML = drivers.map(d => `
+                    <div class="driver-card">
+                        <img src="https://ui-avatars.com/api/?name=${d.driver_name}&background=random" alt="Driver">
+                        <h3>${d.driver_name}</h3>
+                        <p><strong>Phone:</strong> ${d.phone_number}</p>
+                        <p><small>License: ${d.license_number}</small></p>
+                        <span class="status-badge ${d.status === 'Available' ? 'available' : 'on-trip'}">
+                            ${d.status}
+                        </span>
+                    </div>
+                `).join('');
+            } catch (err) {
+                listContainer.innerHTML = "<p style='color:red;'>Failed to load drivers.</p>";
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDrivers);
+    </script>
+</body>
+</html>

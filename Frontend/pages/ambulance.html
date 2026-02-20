@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <title>Our Fleet | Ambulance Service</title>
+</head>
+<body>
+    <nav class="sidebar">
+        <h2>Med-Drive</h2>
+        <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="ambulance.html">Ambulances</a></li>
+            <li><a href="login.html">Logout</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <h1>Ambulance Fleet</h1>
+        <p>Select a vehicle type to see specialized equipment.</p>
+        
+        <div class="card-container" id="fleet-list">
+            <p>Loading ambulances from database...</p>
+        </div>
+    </main>
+
+    <script src="../assets/js/api.js"></script>
+    
+    <script>
+        // STEP 1: Connect to your actual Backend API
+        async function loadFleet() {
+            const fleetList = document.getElementById('fleet-list');
+            
+            try {
+                // Fetch data from your running Node.js server
+                const response = await fetch('http://localhost:5000/api/ambulances');
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const realFleet = await response.json();
+
+                // If no data comes back, show a message
+                if (realFleet.length === 0) {
+                    fleetList.innerHTML = '<p>No ambulances found in the database.</p>';
+                    return;
+                }
+
+                // STEP 2: Map the real database columns to your HTML cards
+                fleetList.innerHTML = realFleet.map(unit => `
+                    <div class="card">
+                        <h3>${unit.ambulance_type}</h3>
+                        <p><strong>Plate:</strong> ${unit.vehicle_number}</p>
+                        <p><strong>Location:</strong> ${unit.current_location}</p>
+                        <p><small>Status: ${unit.status}</small></p>
+                        <button onclick="bookAmbulance(${unit.ambulance_id})">Select for Booking</button>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error:', error);
+                fleetList.innerHTML = `<p style="color: red;">Error connecting to server. Make sure your Backend is running!</p>`;
+            }
+        }
+
+        // STEP 3: Function to handle the booking click
+        function bookAmbulance(id) {
+            // For now, we store the choice and go to dashboard
+            localStorage.setItem('selectedAmbulanceId', id);
+            alert("Ambulance " + id + " selected! Redirecting to complete booking...");
+            window.location.href = 'dashboard.html';
+        }
+
+        // Run the function when the page loads
+        loadFleet();
+    </script>
+</body>
+</html>

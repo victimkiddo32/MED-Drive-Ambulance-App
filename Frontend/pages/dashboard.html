@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <title>Dashboard | Med-Drive</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        .main-content {
+            padding: 20px;
+        }
+
+        #map {
+            height: 350px;
+            width: 100%;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            z-index: 1;
+        }
+
+        .booking-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 1px solid #eee;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .btn-book {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        /* Modal Styles for Review */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ddd;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .status-pending {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .status-completed {
+            color: green;
+            font-weight: bold;
+        }
+
+        .rate-btn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .profile-pill {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 5px 15px;
+            border-radius: 30px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .profile-avatar {
+            width: 35px;
+            height: 35px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <h2>Med-Drive</h2>
+        <ul>
+            <li><a href="dashboard.html" style="color:white">Dashboard</a></li>
+            <li><a href="ambulance.html" style="color:white">Ambulances</a></li>
+            <li><a href="login.html" style="color:white">Logout</a></li>
+        </ul>
+        <div style="position: absolute; top: 20px; right: 20px; display: flex; align-items: center; gap: 10px;">
+            <span id="user-name-text" style="font-weight: bold; color: #333;">Guest</span>
+            <div id="profile-circle"
+                style="width: 40px; height: 40px; background: #e74c3c; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                G
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <h1>Welcome, <span id="user-display-name">Guest</span>!</h1>
+            <p>Request an ambulance below.</p>
+        </header>
+
+        <div id="map"></div>
+
+        <div class="booking-section">
+            <h3>Complete Your Booking</h3>
+            <div class="form-group">
+                <label>Selected Ambulance ID:</label>
+                <input type="text" id="selected-id" readonly placeholder="Go to Ambulances page to select">
+            </div>
+            <div class="form-group">
+                <label>Pickup Location:</label>
+                <input type="text" id="pickup" placeholder="e.g. Mirpur 10">
+            </div>
+            <div class="form-group">
+                <label>Destination Hospital:</label>
+                <input type="text" id="hospital" placeholder="e.g. Dhaka Medical College">
+            </div>
+            <button class="btn-book" onclick="confirmBooking()">Confirm Booking</button>
+        </div>
+
+        <header>
+            <h1 id="total-count">My Booking History</h1>
+        </header>
+        <div class="booking-history">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Booking ID</th>
+                        <th>Pickup</th>
+                        <th>Destination</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="booking-table-body"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <h3>Rate Your Trip</h3>
+            <input type="hidden" id="review-booking-id">
+            <div class="form-group">
+                <label>Rating (1-5):</label>
+                <select id="rating-value">
+                    <option value="5">5 - Excellent</option>
+                    <option value="4">4 - Good</option>
+                    <option value="3">3 - Average</option>
+                    <option value="2">2 - Poor</option>
+                    <option value="1">1 - Terrible</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Comment:</label>
+                <input type="text" id="rating-comment" placeholder="Tell us more...">
+            </div>
+            <button class="rate-btn" onclick="submitReview()">Submit Review</button>
+            <button onclick="document.getElementById('reviewModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. Initialize Map
+        const map = L.map('map').setView([23.8103, 90.4125], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([23.8103, 90.4125]).addTo(map).bindPopup('Your Location').openPopup();
+
+        window.onload = function () {
+            // Get data from login
+            const userName = localStorage.getItem('userName');
+            const userId = localStorage.getItem('userId');
+
+            // Display the name
+            if (userName) {
+                // Update the text name
+                document.getElementById('user-name-text').innerText = userName;
+
+                // Get the first letter and update the circle
+                const initial = userName.charAt(0).toUpperCase();
+                document.getElementById('profile-circle').innerText = initial;
+            } else {
+                // If no user is logged in, send them back to login
+                alert("Please login first!");
+                window.location.href = "login.html";
+            }
+
+            // Auto-fill ambulance ID if it exists
+            const selectedId = localStorage.getItem('selectedAmbulanceId');
+            if (selectedId) {
+                document.getElementById('selected-id').value = selectedId;
+            }
+
+            loadBookingHistory();
+        };
+
+        // 2. Load History with Conditional "Rate Trip" button
+        async function loadBookingHistory() {
+            const tableBody = document.getElementById('booking-table-body');
+            try {
+                const response = await fetch('http://localhost:5000/api/bookings');
+                const bookings = await response.json();
+
+                // Update Total Count
+                document.getElementById('total-count').innerText = `My Booking History (Total: ${bookings.length})`;
+
+                tableBody.innerHTML = bookings.map(b => `
+                    <tr>
+                        <td>${b.booking_id}</td>
+                        <td>${b.pickup_location}</td>
+                        <td>${b.destination_hospital}</td>
+                        <td class="${b.status === 'Completed' ? 'status-completed' : 'status-pending'}">${b.status}</td>
+                        <td>
+                            ${b.status === 'Completed'
+                        ? `<button class="rate-btn" onclick="openReviewModal(${b.booking_id})">Rate Trip</button>`
+                        : `<button onclick="cancelBooking(${b.booking_id})" style="color:red; cursor:pointer; background:none; border:none; text-decoration:underline;">Cancel</button>`
+                    }
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tableBody.innerHTML = "<tr><td colspan='5'>Failed to load history</td></tr>";
+            }
+        }
+
+        // 3. Review Functions
+        function openReviewModal(bookingId) {
+            document.getElementById('review-booking-id').value = bookingId;
+            document.getElementById('reviewModal').style.display = 'block';
+        }
+
+        async function submitReview() {
+            const bookingId = document.getElementById('review-booking-id').value;
+            const rating = document.getElementById('rating-value').value;
+            const comment = document.getElementById('rating-comment').value;
+
+            try {
+                const response = await fetch('http://localhost:5000/api/reviews/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ booking_id: bookingId, rating, comment })
+                });
+
+                if (response.ok) {
+                    alert("Thank you for your feedback!");
+                    document.getElementById('reviewModal').style.display = 'none';
+                }
+            } catch (err) {
+                alert("Error submitting review");
+            }
+        }
+
+        // 4. Existing Confirm/Cancel Functions
+        async function confirmBooking() {
+            // Update the Ambulance status to 'Busy' so no one else can book it
+            await fetch(`http://localhost:5000/api/ambulances/update-status/${ambulanceId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'Busy' })
+            });
+
+            alert("Ambulance is on the way!");
+
+            const ambulanceId = document.getElementById('selected-id').value;
+            const pickup = document.getElementById('pickup').value;
+            const hospital = document.getElementById('hospital').value;
+            const userId = localStorage.getItem('userId') || 1;
+
+            if (!ambulanceId || !pickup || !hospital) { alert("Fill all fields!"); return; }
+
+            const bookingData = { user_id: userId, ambulance_id: ambulanceId, pickup_location: pickup, destination_hospital: hospital, fare: 1500 };
+
+            try {
+                const response = await fetch('http://localhost:5000/api/bookings/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bookingData)
+                });
+                if (response.ok) {
+                    alert("Booking Successful!");
+                    localStorage.removeItem('selectedAmbulanceId');
+                    location.reload();
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function cancelBooking(id) {
+            if (confirm("Are you sure you want to cancel?")) {
+                await fetch(`http://localhost:5000/api/bookings/cancel/${id}`, { method: 'DELETE' });
+                location.reload();
+            }
+        }
+    </script>
+</body>
+
+</html>
