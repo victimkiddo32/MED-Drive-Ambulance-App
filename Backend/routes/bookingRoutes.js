@@ -19,22 +19,38 @@ router.get('/', async (req, res) => {
     }
 });
 
-// 2. POST a new booking
-router.post('/create', async (req, res) => {
-    try {
-        const { user_id, ambulance_id, pickup_location, destination_hospital, fare } = req.body;
-        
-        const query = `INSERT INTO Bookings 
-                       (user_id, ambulance_id, pickup_location, destination_hospital, booking_time, status, fare) 
-                       VALUES (?, ?, ?, ?, NOW(), 'Pending', ?)`;
 
-        const [result] = await pool.query(query, [user_id, ambulance_id, pickup_location, destination_hospital, fare]);
+
+// Route to create a new booking
+router.post('/', async (req, res) => {
+    const { user_id, ambulance_id, pickup_location, destination_hospital, fare } = req.body;
+
+    try {
+        const query = `
+            INSERT INTO Bookings (user_id, ambulance_id, pickup_location, destination_hospital, fare, status)
+            VALUES (?, ?, ?, ?, ?, 'Pending')
+        `;
         
-        res.status(201).json({ message: "Booking successful!", bookingId: result.insertId });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        const [result] = await pool.execute(query, [
+            user_id, 
+            ambulance_id || 1, 
+            pickup_location, 
+            destination_hospital, 
+            fare || 500.00
+        ]);
+        
+        res.status(201).json({ 
+            success: true, 
+            message: "Booking confirmed!", 
+            booking_id: result.insertId 
+        });
+    } catch (error) {
+        console.error("Booking Error:", error);
+        res.status(500).json({ success: false, message: "Database error" });
     }
 });
+
+module.exports = router;
 
 // Delete a booking (Cancel Booking)
 router.delete('/cancel/:id', async (req, res) => {
