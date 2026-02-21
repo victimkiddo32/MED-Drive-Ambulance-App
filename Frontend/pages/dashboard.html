@@ -271,7 +271,7 @@
         async function loadBookingHistory() {
             const tableBody = document.getElementById('booking-table-body');
             try {
-                const response = await fetch('http://localhost:5000/api/bookings');
+                const response = await fetch('https://med-drive-ambulance-app.onrender.com/api/bookings');
                 const bookings = await response.json();
 
                 // Update Total Count
@@ -308,7 +308,7 @@
             const comment = document.getElementById('rating-comment').value;
 
             try {
-                const response = await fetch('http://localhost:5000/api/reviews/add', {
+                const response = await fetch('https://med-drive-ambulance-app.onrender.com/api/reviews/add', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ booking_id: bookingId, rating, comment })
@@ -326,7 +326,7 @@
         // 4. Existing Confirm/Cancel Functions
         async function confirmBooking() {
             // Update the Ambulance status to 'Busy' so no one else can book it
-            await fetch(`http://localhost:5000/api/ambulances/update-status/${ambulanceId}`, {
+            await fetch(`https://med-drive-ambulance-app.onrender.com/api/ambulances/update-status/${ambulanceId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'Busy' })
@@ -344,7 +344,7 @@
             const bookingData = { user_id: userId, ambulance_id: ambulanceId, pickup_location: pickup, destination_hospital: hospital, fare: 1500 };
 
             try {
-                const response = await fetch('http://localhost:5000/api/bookings/create', {
+                const response = await fetch('https://med-drive-ambulance-app.onrender.com/api/bookings/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(bookingData)
@@ -359,7 +359,7 @@
 
         async function cancelBooking(id) {
             if (confirm("Are you sure you want to cancel?")) {
-                await fetch(`http://localhost:5000/api/bookings/cancel/${id}`, { method: 'DELETE' });
+                await fetch(`https://med-drive-ambulance-app.onrender.com/api/bookings/cancel/${id}`, { method: 'DELETE' });
                 location.reload();
             }
         }

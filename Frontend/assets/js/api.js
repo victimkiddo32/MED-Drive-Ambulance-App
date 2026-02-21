@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const listContainer = document.getElementById('ambulance-list');
 
-    fetch('http://localhost:5000/api/ambulances')
+    fetch('https://med-drive-ambulance-app.onrender.com/api/ambulances')
         .then(response => response.json())
         .then(data => {
             // Clear placeholders
