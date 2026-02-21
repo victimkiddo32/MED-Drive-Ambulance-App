@@ -6,19 +6,15 @@ const pool = require('../config/db');
 // GET all bookings with Driver and Ambulance details
 router.get('/', async (req, res) => {
     try {
-        const query = `
-            SELECT b.booking_id, b.pickup_location, b.status, d.driver_name, a.vehicle_number
-            FROM Bookings b
-            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
-            JOIN Drivers d ON a.driver_id = d.driver_id
-        `;
-        const [rows] = await pool.query(query);
+        // For now, we fetch all. Later you can use: 
+        // SELECT * FROM Bookings WHERE user_id = ?
+        const [rows] = await pool.execute('SELECT * FROM Bookings ORDER BY created_at DESC');
         res.json(rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    } catch (error) {
+        console.error("Fetch History Error:", error);
+        res.status(500).json({ error: "Could not load history" });
     }
 });
-
 
 
 // Route to create a new booking
