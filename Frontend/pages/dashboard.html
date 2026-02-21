@@ -145,6 +145,25 @@
             margin-left: 10px;
             font-weight: bold;
         }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        #status-card {
+            animation: pulse 2s infinite ease-in-out;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
     </style>
 </head>
 
@@ -187,6 +206,25 @@
                 <label>Destination Hospital:</label>
                 <input type="text" id="hospital" placeholder="e.g. Dhaka Medical College">
             </div>
+            <div class="form-group">
+                <label>Destination Hospital:</label>
+                <input type="text" id="hospital" placeholder="e.g. Dhaka Medical College">
+            </div>
+
+            <div class="form-group">
+                <label>Payment Method:</label>
+                <select id="payment-method">
+                    <option value="Cash">Cash on Delivery</option>
+                    <option value="Card">Credit/Debit Card (Online)</option>
+                    <option value="bKash">bKash / Mobile Wallet</option>
+                </select>
+            </div>
+
+            <div class="fare-estimate"
+                style="padding: 15px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <span>Estimated Fare:</span>
+                <strong style="font-size: 20px; color: #856404;">৳ <span id="estimated-price">1500</span></strong>
+            </div>
             <button class="btn-book" onclick="confirmBooking()">Confirm Booking</button>
         </div>
 
@@ -206,6 +244,17 @@
                 </thead>
                 <tbody id="booking-table-body"></tbody>
             </table>
+        </div>
+
+        <div id="status-card"
+            style="display: none; background: #2ecc71; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; animation: pulse 2s infinite;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="font-size: 24px;">🚑</span>
+                <div>
+                    <strong>Ambulance is on the way!</strong><br>
+                    <small id="driver-status">Driver: Rakib is 2 mins away</small>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -229,6 +278,19 @@
             </div>
             <button class="rate-btn" onclick="submitReview()">Submit Review</button>
             <button onclick="document.getElementById('reviewModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <div id="success-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center;">
+        <div style="background: white; padding: 40px; border-radius: 20px; color: #333; width: 300px;">
+            <div style="font-size: 60px; color: #2ecc71;">✓</div>
+            <h2 style="margin: 10px 0;">Confirmed!</h2>
+            <p>Ambulance <strong id="conf-amb-id">#1</strong> is on the way.</p>
+            <p style="font-size: 14px; color: #666;">Total Fare: ৳<span id="conf-fare">0</span></p>
+            <button onclick="location.reload()"
+                style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer; width: 100%;">Track
+                My Ride</button>
         </div>
     </div>
 
@@ -263,6 +325,24 @@
             if (selectedId) {
                 document.getElementById('selected-id').value = selectedId;
             }
+
+            // Simulate a fare calculation (Uber style)
+            const pickupInput = document.getElementById('pickup');
+            const hospitalInput = document.getElementById('hospital');
+            const priceDisplay = document.getElementById('estimated-price');
+
+            function updateFare() {
+                // This is a simple logic: if both fields have text, generate a random-ish fare
+                // In a real app, you'd use the map distance!
+                if (pickupInput.value && hospitalInput.value) {
+                    const baseFare = 200;
+                    const distanceSim = Math.floor(Math.random() * 800) + 300;
+                    priceDisplay.innerText = baseFare + distanceSim;
+                }
+            }
+
+            pickupInput.addEventListener('input', updateFare);
+            hospitalInput.addEventListener('input', updateFare);
 
             loadBookingHistory();
         };
@@ -346,7 +426,8 @@
                 ambulance_id: ambulanceId,
                 pickup_location: pickup,
                 destination_hospital: hospital,
-                fare: 1500
+                fare: document.getElementById('estimated-price').innerText, // Dynamic Fare
+                payment_method: document.getElementById('payment-method').value // Selected Method
             };
 
             try {
@@ -359,16 +440,28 @@
                 });
 
                 if (response.ok) {
-                    // 4. Update the Ambulance status to 'Busy' via your ambulance routes
+                    // 1. Update the Ambulance status to 'Busy'
                     await fetch(`https://med-drive-ambulance-app.onrender.com/api/ambulances/update-status/${ambulanceId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status: 'Busy' })
                     });
 
-                    alert("Ambulance is on the way! Booking Successful.");
-                    localStorage.removeItem('selectedAmbulanceId'); // Clear selection after success
-                    location.reload(); // Refresh to show in history
+                    // 2. Show the "Ambulance on its way" card (The pulse notification)
+                    document.getElementById('status-card').style.display = 'block';
+                    document.getElementById('driver-status').innerText = "Driver is heading to " + pickup;
+
+                    // 3. Fill and Show the Success Overlay (The big green checkmark)
+                    document.getElementById('conf-amb-id').innerText = "#" + ambulanceId;
+                    document.getElementById('conf-fare').innerText = document.getElementById('estimated-price').innerText;
+                    document.getElementById('success-overlay').style.display = 'flex';
+
+                    // 4. Cleanup background data
+                    localStorage.removeItem('selectedAmbulanceId');
+
+                    // NOTE: We REMOVED location.reload() from here so the user can see the success message!
+                    // The "Track My Ride" button in the overlay handles the refresh now.
+
                 } else {
                     const errorData = await response.json();
                     alert("Booking failed: " + (errorData.message || "Unknown error"));
