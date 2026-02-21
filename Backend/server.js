@@ -22,6 +22,10 @@ app.use('/api/reviews', require('./routes/reviewRoutes'));
 
 // 6. Start Server
 const PORT = process.env.PORT || 5000;
+
+console.log("DB_USER check:", process.env.DB_USER);
+console.log("DB_PASS length:", process.env.DB_PASSWORD ? process.env.DB_PASSWORD.length : "EMPTY");
+
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
