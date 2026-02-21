@@ -325,36 +325,58 @@
 
         // 4. Existing Confirm/Cancel Functions
         async function confirmBooking() {
-            // Update the Ambulance status to 'Busy' so no one else can book it
-            await fetch(`https://med-drive-ambulance-app.onrender.com/api/ambulances/update-status/${ambulanceId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'Busy' })
-            });
-
-            alert("Ambulance is on the way!");
-
+            // 1. Get values from the input fields
             const ambulanceId = document.getElementById('selected-id').value;
             const pickup = document.getElementById('pickup').value;
             const hospital = document.getElementById('hospital').value;
-            const userId = localStorage.getItem('userId') || 1;
+            const userId = localStorage.getItem('userId');
 
-            if (!ambulanceId || !pickup || !hospital) { alert("Fill all fields!"); return; }
+            // 2. Validation
+            if (!ambulanceId) {
+                alert("Please go to the Ambulances page and select one first!");
+                return;
+            }
+            if (!pickup || !hospital) {
+                alert("Please enter both pickup and destination locations!");
+                return;
+            }
 
-            const bookingData = { user_id: userId, ambulance_id: ambulanceId, pickup_location: pickup, destination_hospital: hospital, fare: 1500 };
+            const bookingData = {
+                user_id: userId,
+                ambulance_id: ambulanceId,
+                pickup_location: pickup,
+                destination_hospital: hospital,
+                fare: 1500
+            };
 
             try {
-                const response = await fetch('https://med-drive-ambulance-app.onrender.com/api/bookings/create', {
+                // 3. Send the Booking Request
+                // Note: URL is just /api/bookings because of your server.js setup
+                const response = await fetch('https://med-drive-ambulance-app.onrender.com/api/bookings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(bookingData)
                 });
+
                 if (response.ok) {
-                    alert("Booking Successful!");
-                    localStorage.removeItem('selectedAmbulanceId');
-                    location.reload();
+                    // 4. Update the Ambulance status to 'Busy' via your ambulance routes
+                    await fetch(`https://med-drive-ambulance-app.onrender.com/api/ambulances/update-status/${ambulanceId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'Busy' })
+                    });
+
+                    alert("Ambulance is on the way! Booking Successful.");
+                    localStorage.removeItem('selectedAmbulanceId'); // Clear selection after success
+                    location.reload(); // Refresh to show in history
+                } else {
+                    const errorData = await response.json();
+                    alert("Booking failed: " + (errorData.message || "Unknown error"));
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) {
+                console.error("Booking Error:", err);
+                alert("Could not connect to the server.");
+            }
         }
 
         async function cancelBooking(id) {
