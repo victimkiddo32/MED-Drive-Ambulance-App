@@ -2,29 +2,37 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db'); // We'll query directly for now to test
 
-router.get('/', async (req, res) => {
+router.get('/closest', async (req, res) => {
+    const { userLat, userLng } = req.query;
+
     try {
-        const [rows] = await pool.query('SELECT * FROM Ambulances');
+        // SQL math to calculate distance and return the top 5
+        const query = `
+            SELECT *, 
+            (6371 * acos(cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat)))) AS distance 
+            FROM Ambulances 
+            WHERE status = 'Available'
+            ORDER BY distance ASC 
+            LIMIT 5
+        `;
+        const [rows] = await pool.execute(query, [userLat, userLng, userLat]);
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+
+// Add a new ambulance (Provider Action)
 router.post('/add', async (req, res) => {
+    const { provider_id, model_name, ambulance_type, driver_name, driver_phone, lat, lng } = req.body;
     try {
-        const { vehicle_number, ambulance_type, status, current_location, driver_id, hospital_id } = req.body;
-
         const query = `INSERT INTO Ambulances 
-                       (vehicle_number, ambulance_type, status, current_location, driver_id, hospital_id) 
-                       VALUES (?, ?, ?, ?, ?, ?)`;
-
-        const [result] = await pool.query(query, [vehicle_number, ambulance_type, status, current_location, driver_id, hospital_id]);
+            (provider_id, model_name, ambulance_type, driver_name, driver_phone, lat, lng, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Available')`;
         
-        res.status(201).json({ 
-            message: "Ambulance added successfully!", 
-            id: result.insertId 
-        });
+        await pool.execute(query, [provider_id, model_name, ambulance_type, driver_name, driver_phone, lat, lng]);
+        res.status(201).json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

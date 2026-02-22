@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provider Portal | Med-Drive</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .container { padding: 30px; max-width: 800px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px; }
+        .btn-add { background: #3498db; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .ambulance-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hospital/Provider Dashboard</h1>
+        
+        <div class="card">
+            <h3>Add New Ambulance to Fleet</h3>
+            <div class="form-group">
+                <label>Ambulance Model (e.g. Toyota Hiace)</label>
+                <input type="text" id="model-name">
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select id="amb-type">
+                    <option value="AC">AC Ambulance</option>
+                    <option value="Non-AC">Non-AC Ambulance</option>
+                    <option value="ICU">ICU / Life Support</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Driver Name</label>
+                <input type="text" id="driver-name">
+            </div>
+            <div class="form-group">
+                <label>Driver Phone</label>
+                <input type="text" id="driver-phone">
+            </div>
+            <button class="btn-add" onclick="registerAmbulance()">List Ambulance</button>
+        </div>
+
+        <div class="card">
+            <h3>Your Listed Ambulances</h3>
+            <div id="fleet-list">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        async function registerAmbulance() {
+            const data = {
+                provider_id: localStorage.getItem('userId'),
+                model_name: document.getElementById('model-name').value,
+                ambulance_type: document.getElementById('amb-type').value,
+                driver_name: document.getElementById('driver-name').value,
+                driver_phone: document.getElementById('driver-phone').value,
+                // For the "Closest 5" feature, we simulate a location in Dhaka
+                lat: 23.8103 + (Math.random() - 0.5) * 0.1,
+                lng: 90.4125 + (Math.random() - 0.5) * 0.1
+            };
+
+            const response = await fetch('https://med-drive-ambulance-app.onrender.com/api/ambulances/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if(response.ok) { alert("Ambulance Listed Successfully!"); location.reload(); }
+        }
+    </script>
+</body>
+</html>
