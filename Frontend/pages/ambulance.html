@@ -1,80 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleet | Med-Drive</title>
     <link rel="stylesheet" href="../assets/css/style.css">
-    <title>Our Fleet | Ambulance Service</title>
+    <style>
+        :root {
+            --dark-bg: #121212;
+            --card-bg: #1e1e1e;
+            --accent-red: #e74c3c;
+            --white: #ffffff;
+            --text-gray: #b3b3b3;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--white);
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            margin: 0;
+        }
+
+        /* Use the same Sidebar style as Dashboard */
+        .sidebar {
+            width: 260px;
+            background: #000;
+            height: 100vh;
+            padding: 20px;
+            border-right: 1px solid #333;
+            position: fixed;
+        }
+
+        .main-content {
+            margin-left: 300px;
+            padding: 40px;
+            width: 100%;
+        }
+
+        /* The Grid */
+        .ambulance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        /* Ambulance Cards */
+        .amb-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            border: 1px solid #333;
+            overflow: hidden;
+            transition: 0.3s ease;
+        }
+
+        .amb-card:hover {
+            border-color: var(--accent-red);
+            transform: translateY(-5px);
+        }
+
+        .amb-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            /* This makes the ambulance pictures look professional */
+        }
+
+        .amb-info {
+            padding: 20px;
+        }
+
+        .amb-info h3 {
+            margin: 0;
+            color: var(--accent-red);
+        }
+
+        .amb-info p {
+            color: var(--text-gray);
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .btn-select {
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
 </head>
+
 <body>
+
     <nav class="sidebar">
-        <h2>Med-Drive</h2>
-        <ul>
-            <li><a href="dashboard.html">Dashboard</a></li>
-            <li><a href="ambulance.html">Ambulances</a></li>
-            <li><a href="login.html">Logout</a></li>
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="../assets/images/logo.png" style="width: 100px; border-radius: 50%;">
+            <h2 style="color: var(--accent-red);">MED-DRIVE</h2>
+        </div>
+        <ul style="list-style: none; padding: 0;">
+            <li style="margin-bottom: 20px;"><a href="dashboard.html" style="color: white; text-decoration: none;">🏠
+                    Dashboard</a></li>
+            <li style="margin-bottom: 20px;"><a href="ambulance.html"
+                    style="color: var(--accent-red); text-decoration: none;">🚑 Ambulances</a></li>
         </ul>
     </nav>
 
-    <main class="main-content">
-        <h1>Ambulance Fleet</h1>
-        <p>Select a vehicle type to see specialized equipment.</p>
-        
-        <div class="card-container" id="fleet-list">
-            <p>Loading ambulances from database...</p>
+    <div class="main-content">
+        <h1>Available Ambulance Fleet</h1>
+        <p style="color: var(--text-gray);">Select the specialized care you need.</p>
+
+        <div id="fleet-container" class="ambulance-grid">
         </div>
-    </main>
+    </div>
 
-    <script src="../assets/js/api.js"></script>
-    
     <script>
-        // STEP 1: Connect to your actual Backend API
+        const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
+
         async function loadFleet() {
-            const fleetList = document.getElementById('fleet-list');
-            
+            const container = document.getElementById('fleet-container');
             try {
-                // Fetch data from your running Node.js server
-                const response = await fetch('https://med-drive-ambulance-app.onrender.com/api/ambulances');
-                
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
+                const response = await fetch(`${API_BASE}/ambulances`);
+                const fleet = await response.json();
 
-                const realFleet = await response.json();
-
-                // If no data comes back, show a message
-                if (realFleet.length === 0) {
-                    fleetList.innerHTML = '<p>No ambulances found in the database.</p>';
-                    return;
-                }
-
-                // STEP 2: Map the real database columns to your HTML cards
-                fleetList.innerHTML = realFleet.map(unit => `
-                    <div class="card">
-                        <h3>${unit.ambulance_type}</h3>
-                        <p><strong>Plate:</strong> ${unit.vehicle_number}</p>
-                        <p><strong>Location:</strong> ${unit.current_location}</p>
-                        <p><small>Status: ${unit.status}</small></p>
-                        <button onclick="bookAmbulance(${unit.ambulance_id})">Select for Booking</button>
+                container.innerHTML = fleet.map(amb => `
+                <div class="amb-card">
+                    <img src="${amb.image_url || '../assets/images/logo.png'}" alt="${amb.model_name}">
+                    <div class="amb-info">
+                        <h3>${amb.model_name}</h3>
+                        <p><strong>Type:</strong> ${amb.ambulance_type}</p>
+                        <p><strong>Driver:</strong> ${amb.driver_name}</p>
+                        <button class="btn-select" onclick="selectForBooking(${amb.ambulance_id})">BOOK NOW</button>
                     </div>
-                `).join('');
-
-            } catch (error) {
-                console.error('Error:', error);
-                fleetList.innerHTML = `<p style="color: red;">Error connecting to server. Make sure your Backend is running!</p>`;
+                </div>
+            `).join('');
+            } catch (err) {
+                container.innerHTML = "<p style='color:white;'>Error loading fleet. Please check your connection.</p>";
             }
         }
 
-        // STEP 3: Function to handle the booking click
-        function bookAmbulance(id) {
-            // For now, we store the choice and go to dashboard
-            localStorage.setItem('selectedAmbulanceId', id);
-            alert("Ambulance " + id + " selected! Redirecting to complete booking...");
-            window.location.href = 'dashboard.html';
+        // 🚀 THE AUTOMATIC FIXER: Run this once to fix your images
+        async function autoFixImages() {
+            console.log("Starting Auto-Fix...");
+            const imageFiles = ['amb1.png', 'amb2.jpg', 'amb3.jpg', 'amb4.jpg', 'amb5.jpg'];
+
+            try {
+                const response = await fetch(`${API_BASE}/ambulances`);
+                const fleet = await response.json();
+
+                // We only fix the first 5 ambulances
+                for (let i = 0; i < Math.min(fleet.length, 5); i++) {
+                    const ambId = fleet[i].ambulance_id;
+                    const assignedImage = `../assets/images/${imageFiles[i]}`;
+
+                    console.log(`Linking ${fleet[i].model_name} to ${imageFiles[i]}...`);
+
+                    // Note: This requires your backend to have a PUT /api/ambulances/update/:id route
+                    await fetch(`${API_BASE}/ambulances/update/${ambId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image_url: assignedImage })
+                    });
+                }
+                alert("Images have been assigned! The page will now reload.");
+                location.reload();
+            } catch (err) {
+                console.error("Auto-fix failed. You might need to add a PUT route to your backend.", err);
+            }
         }
 
-        // Run the function when the page loads
-        loadFleet();
+        function selectForBooking(id) {
+            localStorage.setItem('selectedAmbulanceId', id);
+            window.location.href = "dashboard.html";
+        }
+
+        window.onload = loadFleet;
     </script>
 </body>
+
 </html>

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Med-Drive | Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         :root {
             --dark-bg: #121212;
@@ -364,6 +365,44 @@
                 });
             } catch (err) {
                 console.error("Map Error:", err);
+            }
+        }
+
+        async function loadBookingHistory() {
+            const userId = localStorage.getItem('userId');
+            const tableBody = document.getElementById('booking-table-body');
+
+            if (!userId) return;
+
+            try {
+                const response = await fetch(`https://med-drive-ambulance-app.onrender.com/api/bookings/user/${userId}`);
+                const bookings = await response.json();
+
+                if (bookings.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-gray);">No recent bookings found.</td></tr>`;
+                    return;
+                }
+
+                tableBody.innerHTML = bookings.map(b => `
+            <tr>
+                <td>#${b.booking_id}</td>
+                <td>${b.hospital_name || b.destination}</td>
+                <td>
+                    <span class="status-badge ${b.status.toLowerCase()}">
+                        ${b.status}
+                    </span>
+                </td>
+                <td>৳ ${b.fare}</td>
+                <td>
+                    <button style="background:none; border:1px solid #444; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:11px;">
+                        Details
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+            } catch (err) {
+                console.error("History Error:", err);
+                tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--accent-red);">Failed to load history.</td></tr>`;
             }
         }
 
