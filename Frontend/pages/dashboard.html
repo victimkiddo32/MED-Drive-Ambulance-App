@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,7 +41,8 @@
         }
 
         .logo-area img {
-            width: 120px; /* Your uploaded logo */
+            width: 120px;
+            /* Your uploaded logo */
             border-radius: 50%;
         }
 
@@ -103,7 +105,8 @@
             margin: 0 auto 20px;
             border-radius: 15px;
             border: 1px solid #333;
-            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); /* Dark Mode Map Hack */
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+            /* Dark Mode Map Hack */
         }
 
         /* Interactive Cards */
@@ -126,7 +129,8 @@
             letter-spacing: 1px;
         }
 
-        input, select {
+        input,
+        select {
             background: #2a2a2a;
             border: 1px solid #444;
             color: white;
@@ -187,8 +191,15 @@
             font-size: 12px;
         }
 
-        .completed { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
-        .pending { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
+        .completed {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+        }
+
+        .pending {
+            background: rgba(241, 196, 15, 0.2);
+            color: #f1c40f;
+        }
 
         /* Custom Leaflet Popup Styling to match Black/Red */
         .leaflet-popup-content-wrapper {
@@ -196,7 +207,10 @@
             color: white !important;
             border-radius: 10px !important;
         }
-        .leaflet-popup-tip { background: #1e1e1e !important; }
+
+        .leaflet-popup-tip {
+            background: #1e1e1e !important;
+        }
     </style>
 </head>
 
@@ -219,11 +233,14 @@
         <header>
             <div>
                 <h2 style="margin:0;">Dashboard</h2>
-                <p style="color: var(--text-gray); margin: 5px 0 0 0;">Welcome back, <span id="user-display-name">Guest</span></p>
+                <p style="color: var(--text-gray); margin: 5px 0 0 0;">Welcome back, <span
+                        id="user-display-name">Guest</span></p>
             </div>
             <div class="profile-pill">
                 <span id="user-name-text">Guest</span>
-                <div id="profile-circle" style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">G</div>
+                <div id="profile-circle"
+                    style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                    G</div>
             </div>
         </header>
 
@@ -250,9 +267,11 @@
                 <label>Hospital</label>
                 <input type="text" id="hospital" placeholder="Destination Hospital">
             </div>
-            <div style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+            <div
+                style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
                 <span style="color: var(--text-gray);">Estimated Fare:</span>
-                <span style="font-size: 24px; font-weight: bold; color: var(--accent-red);">৳ <span id="estimated-price">0</span></span>
+                <span style="font-size: 24px; font-weight: bold; color: var(--accent-red);">৳ <span
+                        id="estimated-price">0</span></span>
             </div>
             <button class="btn-confirm" onclick="confirmBooking()">CONFIRM BOOKING</button>
         </div>
@@ -270,44 +289,99 @@
                     </tr>
                 </thead>
                 <tbody id="booking-table-body">
-                    </tbody>
+                </tbody>
             </table>
         </div>
     </main>
 
-    <div id="success-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; flex-direction: column;">
-        <div style="background: #1e1e1e; padding: 40px; border-radius: 20px; text-align: center; border: 1px solid #333; width: 320px;">
+    <div id="success-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; flex-direction: column;">
+        <div
+            style="background: #1e1e1e; padding: 40px; border-radius: 20px; text-align: center; border: 1px solid #333; width: 320px;">
             <div style="font-size: 50px; color: #2ecc71; margin-bottom: 20px;">✔</div>
             <h2 style="margin-bottom: 10px;">Booking Placed!</h2>
             <p style="color: #aaa;">Your ambulance is being dispatched.</p>
-            <button onclick="location.reload()" style="background: var(--accent-red); color: white; border: none; padding: 12px 30px; border-radius: 8px; margin-top: 20px; cursor: pointer; width: 100%;">DONE</button>
+            <button onclick="location.reload()"
+                style="background: var(--accent-red); color: white; border: none; padding: 12px 30px; border-radius: 8px; margin-top: 20px; cursor: pointer; width: 100%;">DONE</button>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Use the existing logic you had, but update UI interactions
+        // 1. Initialize Map with Dark Mode
         const map = L.map('map', { zoomControl: false }).setView([23.8103, 90.4125], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // Update the marker binding to match the new Dark Look
-        function addAmbulanceMarker(amb) {
-            const marker = L.marker([amb.lat, amb.lng]).addTo(map);
-            marker.bindPopup(`
-                <div style="text-align:center;">
-                    <strong style="color:#e74c3c;">🚑 ${amb.model_name}</strong><br>
-                    <span style="font-size:12px; color:#ccc;">${amb.driver_name}</span><br>
-                    <button onclick="selectAmbulance(${amb.ambulance_id}, '${amb.model_name}')" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; margin-top:5px; cursor:pointer;">Select</button>
+        // 2. Select Ambulance Function
+        // This fixes the "Select on Map" text issue
+        function selectAmbulance(id, name) {
+            const inputField = document.getElementById('selected-id');
+            if (inputField) {
+                inputField.value = `${name} (ID: ${id})`; // Updates the UI
+                localStorage.setItem('selectedAmbulanceId', id); // Saves for booking
+                updateFare(); // Recalculate fare once selected
+            }
+        }
+
+        // 3. Fare Calculation Logic
+        function updateFare() {
+            const pickup = document.getElementById('pickup').value;
+            const hospital = document.getElementById('hospital').value;
+            const priceDisplay = document.getElementById('estimated-price');
+
+            if (pickup && hospital) {
+                // Simulating a calculation based on string length/random for now
+                const base = 500;
+                const randomBonus = Math.floor(Math.random() * 500);
+                priceDisplay.innerText = base + randomBonus; // Updates the ৳ 0 to a real number
+            }
+        }
+
+        // 4. Load Ambulances onto Map
+        async function loadMapAmbulances() {
+            try {
+                const response = await fetch('https://med-drive-ambulance-app.onrender.com/api/ambulances/closest?lat=23.8103&lng=90.4125');
+                const ambulances = await response.json();
+
+                ambulances.forEach(amb => {
+                    const marker = L.marker([amb.lat, amb.lng]).addTo(map);
+
+                    // Styled Popup matching the Black & Red theme
+                    marker.bindPopup(`
+                <div style="background:#1e1e1e; color:white; padding:10px; border-radius:10px; border:1px solid #e74c3c;">
+                    <h4 style="margin:0; color:#e74c3c;">🚑 ${amb.model_name}</h4>
+                    <p style="margin:5px 0; font-size:12px;">Type: ${amb.ambulance_type}</p>
+                    <p style="margin:2px 0; font-size:11px;">Driver: ${amb.driver_name}</p>
+                    <button onclick="selectAmbulance(${amb.ambulance_id}, '${amb.model_name}')" 
+                            style="width:100%; background:#e74c3c; color:white; border:none; padding:8px; border-radius:5px; margin-top:10px; cursor:pointer; font-weight:bold;">
+                        SELECT THIS CAR
+                    </button>
                 </div>
             `);
+                });
+            } catch (err) {
+                console.error("Map Error:", err);
+            }
         }
 
-        function selectAmbulance(id, name) {
-            document.getElementById('selected-id').value = `${name} (#${id})`;
-            localStorage.setItem('selectedAmbulanceId', id);
-        }
+        // 5. Initialize Page
+        window.onload = function () {
+            // Set User Name
+            const userName = localStorage.getItem('userName');
+            if (userName) {
+                document.getElementById('user-display-name').innerText = userName;
+                document.getElementById('user-name-text').innerText = userName;
+                document.getElementById('profile-circle').innerText = userName.charAt(0).toUpperCase();
+            }
 
-        // Add your existing fetch logic for loadBookingHistory and confirmBooking here...
+            // Add Event Listeners for Fare Update
+            document.getElementById('pickup').addEventListener('input', updateFare);
+            document.getElementById('hospital').addEventListener('input', updateFare);
+
+            loadMapAmbulances();
+            loadBookingHistory(); // Assuming your history function is defined below
+        };
     </script>
 </body>
+
 </html>
