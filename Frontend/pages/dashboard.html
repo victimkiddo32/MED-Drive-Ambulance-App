@@ -338,6 +338,7 @@
         }
 
         // 4. Load Ambulances onto Map
+        // 4. Load Ambulances onto Map
         async function loadMapAmbulances() {
             try {
                 const response = await fetch('https://med-drive-ambulance-app.onrender.com/api/ambulances/closest?lat=23.8103&lng=90.4125');
@@ -346,18 +347,20 @@
                 ambulances.forEach(amb => {
                     const marker = L.marker([amb.lat, amb.lng]).addTo(map);
 
-                    // Styled Popup matching the Black & Red theme
+                    // This pulls the unique image assigned to this specific ambulance
+                    const ambImage = amb.image_url ? amb.image_url : '../assets/images/logo.png';
+
                     marker.bindPopup(`
-                <div style="background:#1e1e1e; color:white; padding:10px; border-radius:10px; border:1px solid #e74c3c;">
+                <div style="background:#1e1e1e; color:white; padding:10px; border-radius:10px; border:1px solid #e74c3c; width:200px;">
+                    <img src="${ambImage}" style="width:100%; height:100px; object-fit:cover; border-radius:5px; margin-bottom:10px;">
                     <h4 style="margin:0; color:#e74c3c;">🚑 ${amb.model_name}</h4>
-                    <p style="margin:5px 0; font-size:12px;">Type: ${amb.ambulance_type}</p>
-                    <p style="margin:2px 0; font-size:11px;">Driver: ${amb.driver_name}</p>
+                    <p style="margin:5px 0; font-size:12px; color:#b3b3b3;">Type: ${amb.ambulance_type}</p>
                     <button onclick="selectAmbulance(${amb.ambulance_id}, '${amb.model_name}')" 
                             style="width:100%; background:#e74c3c; color:white; border:none; padding:8px; border-radius:5px; margin-top:10px; cursor:pointer; font-weight:bold;">
                         SELECT THIS CAR
                     </button>
                 </div>
-            `);
+            `); // Added the missing ); here
                 });
             } catch (err) {
                 console.error("Map Error:", err);
