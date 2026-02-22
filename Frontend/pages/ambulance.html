@@ -129,16 +129,18 @@
                 const fleet = await response.json();
 
                 container.innerHTML = fleet.map(amb => `
-                <div class="amb-card">
-                    <img src="${amb.image_url || '../assets/images/logo.png'}" alt="${amb.model_name}">
-                    <div class="amb-info">
-                        <h3>${amb.model_name}</h3>
-                        <p><strong>Type:</strong> ${amb.ambulance_type}</p>
-                        <p><strong>Driver:</strong> ${amb.driver_name}</p>
-                        <button class="btn-select" onclick="selectForBooking(${amb.ambulance_id})">BOOK NOW</button>
-                    </div>
-                </div>
-            `).join('');
+    <div class="amb-card">
+        <img src="${amb.image_url}" 
+             alt="${amb.model_name}" 
+             onerror="this.src='../assets/images/logo.png'">
+        <div class="amb-info">
+            <h3>${amb.model_name}</h3>
+            <p><strong>Type:</strong> ${amb.ambulance_type}</p>
+            <p><strong>Driver:</strong> ${amb.driver_name}</p>
+            <button class="btn-select" onclick="selectForBooking(${amb.ambulance_id})">BOOK NOW</button>
+        </div>
+    </div>
+`).join('');
             } catch (err) {
                 container.innerHTML = "<p style='color:white;'>Error loading fleet. Please check your connection.</p>";
             }
