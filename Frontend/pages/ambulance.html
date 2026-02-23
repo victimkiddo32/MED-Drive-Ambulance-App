@@ -133,37 +133,33 @@
                     return;
                 }
 
-                container.innerHTML = fleet.map(amb => {
-                    // This logic ensures the path works with your new /public/assets/images folder
-                    let imgPath = amb.image_url;
+                ccontainer.innerHTML = fleet.map(amb => {
+                    // 1. Clean the image path coming from TiDB
+                    let imgPath = amb.image_url || '/assets/images/logo.png';
 
-                    if (!imgPath) {
-                        imgPath = '/assets/images/logo.png';
-                    } else {
-                        // Clean the path: remove '../', 'Frontend/', etc., and ensure it starts with /assets
-                        imgPath = imgPath.replace(/^(\.\.\/|Frontend\/|public\/|pages\/)+/, '');
-                        if (!imgPath.startsWith('/')) {
-                            imgPath = '/' + imgPath;
-                        }
+                    // Clean up paths like "../Frontend/" or "pages/" just in case
+                    imgPath = imgPath.replace(/^(\.\.\/|Frontend\/|public\/|pages\/)+/, '');
+
+                    // Ensure it starts with / for the public folder
+                    if (!imgPath.startsWith('/')) {
+                        imgPath = '/' + imgPath;
                     }
 
-                    const model = amb.model_name || "Premium Ambulance";
-                    const driver = amb.driver_name || "On Standby";
-                    const type = amb.ambulance_type || "Standard";
-
                     return `
-                <div class="amb-card">
-                    <img 
-                        src="/assets/images/amb1.jpg"
-                    >
-                    <div class="amb-info">
-                        <h3>${model}</h3>
-                        <p><strong>Type:</strong> ${type}</p>
-                        <p><strong>Driver:</strong> ${driver}</p>
-                        <button class="btn-select" onclick="selectForBooking(${amb.ambulance_id})">BOOK NOW</button>
-                    </div>
-                </div>
-            `;
+        <div class="amb-card">
+            <img 
+                src="${imgPath}" 
+                alt="${amb.model_name}" 
+                onerror="this.onerror=null; this.src='/assets/images/logo.png';"
+            >
+            <div class="amb-info">
+                <h3>${amb.model_name || "Premium Ambulance"}</h3>
+                <p><strong>Type:</strong> ${amb.ambulance_type || "Standard"}</p>
+                <p><strong>Driver:</strong> ${amb.driver_name || "On Standby"}</p>
+                <button class="btn-select" onclick="selectForBooking(${amb.ambulance_id})">BOOK NOW</button>
+            </div>
+        </div>
+    `;
                 }).join('');
 
             } catch (error) {

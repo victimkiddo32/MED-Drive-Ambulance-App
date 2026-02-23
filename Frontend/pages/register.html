@@ -2,32 +2,175 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../assets/css/style.css">
     <title>Register | Med-Drive</title>
+    <style>
+        /* Dark Medical Theme Variables */
+        :root {
+            --bg-dark: #0d1117;       /* Body Background */
+            --card-bg: #161b22;       /* Card Background */
+            --accent-red: #ff5b58;    /* Primary Medical Red */
+            --med-blue: #58a6ff;       /*Accent blue for buttons*/
+            --border-color: #30363d;  /* Subtle Borders */
+            --text-main: #ffffff;
+            --text-dim: #8b949e;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: var(--bg-dark);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-main);
+        }
+
+        /* Container to hold both the logo and the card */
+        .register-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 380px;
+            padding: 20px;
+        }
+
+        /* The Floating Logo Positioning */
+        .logo-container {
+            position: absolute;
+            top: -20px; /* Adjust this to move the logo higher/lower */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+
+        .logo-container img {
+            width: 85px;
+            height: 85px;
+            background: var(--card-bg);
+            border: 6px solid var(--bg-dark); /* Creates the "cutout" effect */
+            border-radius: 50%;
+            padding: 10px;
+            object-fit: contain;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .booking-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 60px 35px 35px 35px; /* Extra top padding to clear the logo */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background-color: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: white;
+            font-size: 15px;
+            box-sizing: border-box; /* Prevents input from overflowing */
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--accent-red);
+            box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+            outline: none;
+        }
+
+        .btn-book {
+            width: 100%;
+            background-color: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-book:hover {
+            background-color: #f84444;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--text-dim);
+        }
+
+        .login-footer a {
+            color: var(--med-blue);
+            text-decoration: none;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
-<body style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f4f4;">
-    <div class="booking-section" style="width: 350px; background: white; border: 1px solid #ddd;">
-        <h2 style="text-align: center;">Join Med-Drive</h2>
-        <div class="form-group">
-            <label>Full Name</label>
-            <input type="text" id="reg-name" placeholder="Enter your name">
+<body>
+
+    <div class="register-wrapper">
+        <div class="logo-container">
+            <img src="../assets/images/logo.png" alt="Med-Drive Logo">
         </div>
-        <div class="form-group">
-            <label>Email Address</label>
-            <input type="email" id="reg-email" placeholder="Enter email">
+
+        <div class="booking-section">
+            <h2>Join Med-Drive</h2>
+            
+            <div class="form-group">
+                <label for="reg-name">Full Name</label>
+                <input type="text" id="reg-name" placeholder="Enter your name">
+            </div>
+
+            <div class="form-group">
+                <label for="reg-email">Email Address</label>
+                <input type="email" id="reg-email" placeholder="Enter email">
+            </div>
+
+            <div class="form-group">
+                <label for="reg-password">Password</label>
+                <input type="password" id="reg-pass" placeholder="Create password">
+            </div>
+
+            <div class="form-group">
+                <label for="reg-phone">Phone Number</label>
+                <input type="text" id="reg-phone" placeholder="e.g. 01700000000">
+            </div>
+
+            <button class="btn-book" onclick="handleRegister()">Create Account</button>
+            
+            <p class="login-footer">
+                Already have an account? <a href="login.html">Login</a>
+            </p>
         </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="reg-pass" placeholder="Create password">
-        </div>
-        <div class="form-group">
-            <label>Phone Number</label>
-            <input type="text" id="reg-phone" placeholder="e.g. 01700000000">
-        </div>
-        <button class="btn-book" style="width: 100%;" onclick="handleRegister()">Create Account</button>
-        <p style="text-align: center; margin-top: 15px;">
-            <a href="login.html">Already have an account? Login</a>
-        </p>
     </div>
 
     <script>
@@ -43,6 +186,12 @@
             }
 
             try {
+                // Showing a simple loading state on the button
+                const btn = document.querySelector('.btn-book');
+                const originalText = btn.innerText;
+                btn.innerText = "Processing...";
+                btn.disabled = true;
+
                 const res = await fetch('https://med-drive-ambulance-app.onrender.com/api/users/register', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -55,9 +204,12 @@
                 } else {
                     const err = await res.json();
                     alert("Error: " + err.error);
+                    btn.innerText = originalText;
+                    btn.disabled = false;
                 }
             } catch (err) {
                 alert("Server connection failed!");
+                document.querySelector('.btn-book').disabled = false;
             }
         }
     </script>
