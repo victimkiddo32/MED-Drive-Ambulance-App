@@ -134,10 +134,25 @@
                 }
 
                 container.innerHTML = fleet.map(amb => {
-                    // Clean up the path: replace old relative pathing with absolute pathing
-                    let imgPath = amb.image_url || '/assets/images/logo.png';
-                    if (imgPath.startsWith('../')) {
-                        imgPath = imgPath.replace('../', '/');
+                    // STEP 1: Get the image path from the database
+                    let imgPath = amb.image_url;
+
+                    // STEP 2: Logic to ensure it points to the new /public/assets location
+                    // If the path is empty or missing, use the logo as a fallback
+                    if (!imgPath) {
+                        imgPath = '/assets/images/logo.png';
+                    } else {
+                        /* Since you moved folders to /public/assets/images/, 
+                          we want the final path to look like: /assets/images/amb1.jpg
+                          This regex removes '../', 'Frontend/', or 'public/' if they exist 
+                          in the database string to prevent double-pathing.
+                        */
+                        imgPath = imgPath.replace(/^(\.\.\/|Frontend\/|public\/)+/, '');
+
+                        // Ensure it starts with a single forward slash
+                        if (!imgPath.startsWith('/')) {
+                            imgPath = '/' + imgPath;
+                        }
                     }
 
                     const model = amb.model_name || "Premium Ambulance";
@@ -163,12 +178,13 @@
 
             } catch (error) {
                 console.error("Fetch Error:", error);
+                container.innerHTML = "<p style='color:red;'>Error loading fleet. Please try again later.</p>";
             }
         }
         // 🚀 THE AUTOMATIC FIXER: Run this once to fix your images
         async function autoFixImages() {
             console.log("Starting Auto-Fix...");
-            const imageFiles = ['amb1.png', 'amb2.jpg', 'amb3.jpg', 'amb4.jpg', 'amb5.jpg'];
+            const imageFiles = ['amb1.jpg', 'amb2.jpg', 'amb3.jpg', 'amb4.jpg', 'amb5.jpg'];
 
             try {
                 const response = await fetch(`${API_BASE}/ambulances`);
