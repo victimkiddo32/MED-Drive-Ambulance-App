@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Med-Drive</title>
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
         :root {
             --bg-dark: #0d1117;
@@ -177,7 +178,7 @@
             <button onclick="handleLogin()">Login to Dashboard</button>
 
             <div class="footer-links">
-                New to the platform? <a href="register.html">Create an account</a>
+                New to the platform? <a href="pages/register.html">Create an account</a>
             </div>
         </div>
     </div>
@@ -203,7 +204,7 @@
                     const data = await res.json();
                     localStorage.setItem('userId', data.user.user_id);
                     localStorage.setItem('userName', data.user.name);
-                    window.location.href = 'dashboard.html';
+                    window.location.href = 'pages/dashboard.html
                 } else {
                     const err = await res.json();
                     alert("Authentication Failed: " + (err.error || "Please check your credentials."));
