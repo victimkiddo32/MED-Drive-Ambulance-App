@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,8 +29,8 @@
         .login-visual {
             flex: 1.2;
             /* PATH FIX: Go up out of Frontend/ then into public/assets */
-            background: linear-gradient(rgba(13, 17, 23, 0.6), rgba(13, 17, 23, 0.6)), 
-            url('../public/assets/images/app1.jpg');
+            background: linear-gradient(rgba(13, 17, 23, 0.6), rgba(13, 17, 23, 0.6)),
+                url('/public/assets/images/app1.jpg');
             background-size: cover;
             background-position: center;
             display: flex;
@@ -66,14 +67,30 @@
             border: 1px solid var(--border-color);
             padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
         }
 
-        h2 { font-size: 24px; margin-bottom: 10px; }
-        .subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 30px; }
+        h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
 
-        .form-group { margin-bottom: 20px; }
-        label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
 
         input {
             width: 100%;
@@ -104,14 +121,24 @@
             color: var(--text-dim);
         }
 
-        .footer-links a { color: var(--med-blue); text-decoration: none; }
+        .footer-links a {
+            color: var(--med-blue);
+            text-decoration: none;
+        }
 
         @media (max-width: 900px) {
-            .login-visual { display: none; }
-            .login-container { flex: 1; padding: 20px; }
+            .login-visual {
+                display: none;
+            }
+
+            .login-container {
+                flex: 1;
+                padding: 20px;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="login-visual">
@@ -135,7 +162,7 @@
                 <label>Password</label>
                 <input type="password" id="pass" placeholder="••••••••">
             </div>
-            
+
             <button onclick="handleLogin()">Login to Dashboard</button>
 
             <div class="footer-links">
@@ -149,7 +176,7 @@
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
 
-            if(!email || !pass) {
+            if (!email || !pass) {
                 alert("Please enter both email and password.");
                 return;
             }
@@ -157,7 +184,7 @@
             try {
                 const res = await fetch('https://med-drive-ambulance-app.onrender.com/api/users/login', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password: pass })
                 });
 
@@ -176,4 +203,5 @@
         }
     </script>
 </body>
+
 </html>
