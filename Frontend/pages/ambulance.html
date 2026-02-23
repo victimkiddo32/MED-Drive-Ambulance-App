@@ -136,30 +136,46 @@
                     return;
                 }
 
-               container.innerHTML = fleet.map(amb => {
-    // 1. Resolve the Image: Use the DB path, or default to logo
-    const imgPath = amb.image_url || '../assets/images/logo.png';
-    
-    // 2. Resolve Nulls: Check lowercase and alternative keys
-    const model = amb.model_name || amb.model || "Premium Ambulance";
-    const driver = amb.driver_name || amb.driver || "On Standby";
-    const type = amb.ambulance_type || "Standard";
+                container.innerHTML = fleet.map(amb => {
+                    // 1. Resolve the Image: Ensure it starts with / for absolute pathing
+                    let imgPath = amb.image_url || '/assets/images/logo.png';
 
-    return `
-        <div class="amb-card">
-            <img src="${imgPath}" alt="Ambulance" onerror="this.src='../assets/images/logo.png'">
-            <div class="amb-info">
-                <h3>${model}</h3>
-                <p><strong>Type:</strong> ${type}</p>
-                <p><strong>Driver:</strong> ${driver}</p>
-                <button class="btn-select" onclick="selectForBooking(${amb.ambulance_id})">BOOK NOW</button>
-            </div>
-        </div>
-    `;
-}).join('');
-            } catch (err) {
-                console.error("Fetch Error:", err);
-                container.innerHTML = "<p style='color:var(--accent-red);'>Error connecting to fleet service.</p>";
+                    // Fix: If path starts with ../, convert it to /
+                    if (imgPath.startsWith('../')) {
+                        imgPath = imgPath.replace('../', '/');
+                    }
+                    // Fix: Ensure it starts with / if it doesn't already
+                    else if (!imgPath.startsWith('/') && !imgPath.startsWith('http')) {
+                        imgPath = '/' + imgPath;
+                    }
+
+                    // 2. Resolve Nulls: Check lowercase and alternative keys
+                    const model = amb.model_name || amb.model || "Premium Ambulance";
+                    const driver = amb.driver_name || amb.driver || "On Standby";
+                    const type = amb.ambulance_type || "Standard";
+
+                    return `
+                <div class="amb-card">
+                    // Replace the <img> line in your map function with this:
+<img 
+    src="${imgPath}" 
+    alt="${model}" 
+    class="amb-image"
+    onerror="console.error('SERVER COULD NOT FIND:', this.src); this.onerror=null; this.src='/assets/images/logo.png';"
+>
+                    <div class="amb-info">
+                        <h3>${model}</h3>
+                        <p><strong>Type:</strong> ${type}</p>
+                        <p><strong>Driver:</strong> ${driver}</p>
+                        <button class="btn-select" onclick="selectForBooking(${amb.ambulance_id})">BOOK NOW</button>
+                    </div>
+                </div>
+            `;
+                }).join(''); // Added .join('') to prevent commas between cards
+
+            } catch (error) {
+                console.error("Error loading fleet:", error);
+                container.innerHTML = "<p style='color:red;'>Error connecting to the fleet database.</p>";
             }
         }
 
