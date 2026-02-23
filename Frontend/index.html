@@ -29,7 +29,7 @@
         .login-visual {
             flex: 1.2; /* Slightly wider than the login side */
             background: linear-gradient(rgba(13, 17, 23, 0.6), rgba(13, 17, 23, 0.6)), 
-            url('/public/assets/images/bg1.jpg');
+            url('/assets/images/app1.jpg');
             background-size: cover;
             background-position: center;
             display: flex;
@@ -204,7 +204,7 @@
                     const data = await res.json();
                     localStorage.setItem('userId', data.user.user_id);
                     localStorage.setItem('userName', data.user.name);
-                    window.location.href = 'pages/dashboard.html
+                    window.location.href = 'pages/dashboard.html';
                 } else {
                     const err = await res.json();
                     alert("Authentication Failed: " + (err.error || "Please check your credentials."));
