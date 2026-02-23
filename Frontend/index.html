@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Med-Drive</title>
+    <title>Med-Drive | Home</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
         :root {
@@ -25,11 +25,11 @@
             overflow: hidden;
         }
 
-        /* Left Side: Visual/Branding Section */
         .login-visual {
-            flex: 1.2; /* Slightly wider than the login side */
+            flex: 1.2;
+            /* PATH FIX: Go up out of Frontend/ then into public/assets */
             background: linear-gradient(rgba(13, 17, 23, 0.6), rgba(13, 17, 23, 0.6)), 
-            url('/assets/images/app1.jpg');
+            url('../public/assets/images/app1.jpg');
             background-size: cover;
             background-position: center;
             display: flex;
@@ -40,7 +40,6 @@
 
         .visual-content h1 {
             font-size: 3.5rem;
-            color: var(--white);
             margin: 0;
             font-weight: 700;
         }
@@ -52,7 +51,6 @@
             line-height: 1.6;
         }
 
-        /* Right Side: Login Section */
         .login-container {
             flex: 0.8;
             display: flex;
@@ -71,28 +69,11 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.3);
         }
 
-        h2 { 
-            font-size: 24px;
-            margin-bottom: 10px; 
-            text-align: left;
-        }
+        h2 { font-size: 24px; margin-bottom: 10px; }
+        .subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 30px; }
 
-        .subtitle { 
-            color: var(--text-dim); 
-            font-size: 14px; 
-            margin-bottom: 30px; 
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            font-size: 13px;
-            color: var(--text-dim);
-            margin-bottom: 8px;
-        }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
 
         input {
             width: 100%;
@@ -101,15 +82,7 @@
             border: 1px solid var(--border-color);
             border-radius: 6px;
             color: white;
-            font-size: 15px;
             box-sizing: border-box;
-            transition: 0.2s;
-        }
-
-        input:focus {
-            border-color: var(--med-blue);
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
         }
 
         button {
@@ -121,13 +94,7 @@
             border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
-            font-size: 16px;
             margin-top: 10px;
-            transition: background 0.2s;
-        }
-
-        button:hover {
-            background: #4493f8;
         }
 
         .footer-links {
@@ -137,13 +104,8 @@
             color: var(--text-dim);
         }
 
-        .footer-links a { 
-            color: var(--med-blue); 
-            text-decoration: none; 
-            font-weight: 500;
-        }
+        .footer-links a { color: var(--med-blue); text-decoration: none; }
 
-        /* Responsive Breakpoint */
         @media (max-width: 900px) {
             .login-visual { display: none; }
             .login-container { flex: 1; padding: 20px; }
@@ -155,8 +117,7 @@
     <div class="login-visual">
         <div class="visual-content">
             <h1>Med-Drive</h1>
-            <p>Advanced Ambulance Dispatch & Emergency Management System.</p>
-            
+            <p>Quick-Response Ambulance Booking at your fingertips.</p>
         </div>
     </div>
 
@@ -204,13 +165,13 @@
                     const data = await res.json();
                     localStorage.setItem('userId', data.user.user_id);
                     localStorage.setItem('userName', data.user.name);
+                    // PATH FIX: Dashboard is inside pages/
                     window.location.href = 'pages/dashboard.html';
                 } else {
-                    const err = await res.json();
-                    alert("Authentication Failed: " + (err.error || "Please check your credentials."));
+                    alert("Authentication Failed.");
                 }
             } catch (err) {
-                alert("Network error. Please ensure the server is running.");
+                alert("Network error.");
             }
         }
     </script>
