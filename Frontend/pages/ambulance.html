@@ -134,22 +134,14 @@
                 }
 
                 container.innerHTML = fleet.map(amb => {
-                    // STEP 1: Get the image path from the database
+                    // This logic ensures the path works with your new /public/assets/images folder
                     let imgPath = amb.image_url;
 
-                    // STEP 2: Logic to ensure it points to the new /public/assets location
-                    // If the path is empty or missing, use the logo as a fallback
                     if (!imgPath) {
                         imgPath = '/assets/images/logo.png';
                     } else {
-                        /* Since you moved folders to /public/assets/images/, 
-                          we want the final path to look like: /assets/images/amb1.jpg
-                          This regex removes '../', 'Frontend/', or 'public/' if they exist 
-                          in the database string to prevent double-pathing.
-                        */
-                        imgPath = imgPath.replace(/^(\.\.\/|Frontend\/|public\/)+/, '');
-
-                        // Ensure it starts with a single forward slash
+                        // Clean the path: remove '../', 'Frontend/', etc., and ensure it starts with /assets
+                        imgPath = imgPath.replace(/^(\.\.\/|Frontend\/|public\/|pages\/)+/, '');
                         if (!imgPath.startsWith('/')) {
                             imgPath = '/' + imgPath;
                         }
@@ -163,7 +155,7 @@
                 <div class="amb-card">
                     <img 
                         src="${imgPath}" 
-                        alt="Ambulance" 
+                        alt="${model}" 
                         onerror="this.onerror=null; this.src='/assets/images/logo.png';"
                     >
                     <div class="amb-info">
@@ -178,7 +170,7 @@
 
             } catch (error) {
                 console.error("Fetch Error:", error);
-                container.innerHTML = "<p style='color:red;'>Error loading fleet. Please try again later.</p>";
+                container.innerHTML = "<p style='color:red;'>Error loading fleet.</p>";
             }
         }
         // 🚀 THE AUTOMATIC FIXER: Run this once to fix your images
