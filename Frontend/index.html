@@ -1,14 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <title>Ambulance Service | Home</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Med-Drive</title>
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --card-bg: #161b22;
+            --med-blue: #58a6ff;
+            --border-color: #30363d;
+            --text-dim: #8b949e;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-dark);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* Left Side: Visual/Branding Section */
+        .login-visual {
+            flex: 1.2; /* Slightly wider than the login side */
+            background: linear-gradient(rgba(13, 17, 23, 0.6), rgba(13, 17, 23, 0.6)), 
+            url('/public/assets/images/bg1.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 80px;
+        }
+
+        .visual-content h1 {
+            font-size: 3.5rem;
+            color: var(--white);
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .visual-content p {
+            font-size: 1.2rem;
+            color: #c9d1d9;
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        /* Right Side: Login Section */
+        .login-container {
+            flex: 0.8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-dark);
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 360px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+
+        h2 { 
+            font-size: 24px;
+            margin-bottom: 10px; 
+            text-align: left;
+        }
+
+        .subtitle { 
+            color: var(--text-dim); 
+            font-size: 14px; 
+            margin-bottom: 30px; 
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: white;
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--med-blue);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--med-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #4493f8;
+        }
+
+        .footer-links {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 14px;
+            color: var(--text-dim);
+        }
+
+        .footer-links a { 
+            color: var(--med-blue); 
+            text-decoration: none; 
+            font-weight: 500;
+        }
+
+        /* Responsive Breakpoint */
+        @media (max-width: 900px) {
+            .login-visual { display: none; }
+            .login-container { flex: 1; padding: 20px; }
+        }
+    </style>
 </head>
 <body>
-    <div style="text-align: center; width: 100%; margin-top: 100px;">
-        <h1>Quick-Response Ambulance Booking</h1>
-        <p>Reliable medical transport at your fingertips.</p>
-        <a href="pages/login.html"><button>Get Started</button></a>
+
+    <div class="login-visual">
+        <div class="visual-content">
+            <h1>Med-Drive</h1>
+            <p>Advanced Ambulance Dispatch & Emergency Management System.</p>
+            
+        </div>
     </div>
+
+    <div class="login-container">
+        <div class="login-box">
+            <h2>Welcome Back</h2>
+            <p class="subtitle">Please enter your details to login</p>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="email" placeholder="name@med-drive.com">
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="pass" placeholder="••••••••">
+            </div>
+            
+            <button onclick="handleLogin()">Login to Dashboard</button>
+
+            <div class="footer-links">
+                New to the platform? <a href="register.html">Create an account</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function handleLogin() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+
+            if(!email || !pass) {
+                alert("Please enter both email and password.");
+                return;
+            }
+
+            try {
+                const res = await fetch('https://med-drive-ambulance-app.onrender.com/api/users/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password: pass })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('userId', data.user.user_id);
+                    localStorage.setItem('userName', data.user.name);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    const err = await res.json();
+                    alert("Authentication Failed: " + (err.error || "Please check your credentials."));
+                }
+            } catch (err) {
+                alert("Network error. Please ensure the server is running.");
+            }
+        }
+    </script>
 </body>
 </html>
