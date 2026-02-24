@@ -9,33 +9,36 @@
     <style>
         :root {
             --dark-bg: #0d1117;
+            --sidebar-bg: #010409;
             --card-bg: #161b22;
             --accent-red: #f85149;
+            --accent-green: #3fb950;
             --white: #ffffff;
             --text-gray: #8b949e;
             --border-color: #30363d;
+            --star-gold: #f1c40f;
         }
 
         body {
             background-color: var(--dark-bg);
             color: var(--white);
             font-family: 'Segoe UI', Roboto, sans-serif;
-            /* Matched to dashboard */
             display: flex;
             margin: 0;
             min-height: 100vh;
         }
 
-        /* Sidebar Styles - Matched to Dashboard */
+        /* Sidebar Styles */
         .sidebar {
             width: 260px;
-            background: #010409;
+            background: var(--sidebar-bg);
             height: 100vh;
             padding: 20px;
             border-right: 1px solid var(--border-color);
             position: fixed;
             display: flex;
             flex-direction: column;
+            z-index: 1000;
         }
 
         .logo-area {
@@ -44,21 +47,16 @@
         }
 
         .logo-area img {
-            width: 100px;
-            /* Matched to dashboard */
+            width: 80px;
             border-radius: 50%;
             border: 2px solid var(--accent-red);
+            margin-bottom: 10px;
         }
 
         .tagline {
             color: var(--text-gray);
-            /* Uses your existing gray variable */
             font-size: 0.75rem;
-            font-weight: 400;
-            letter-spacing: 0.5px;
-            margin: 0;
             opacity: 0.8;
-            /* Makes it slightly subtle */
         }
 
         .sidebar ul {
@@ -82,7 +80,6 @@
 
         .sidebar a {
             color: var(--text-gray);
-            /* Matched to dashboard gray */
             text-decoration: none;
             font-weight: 500;
             width: 100%;
@@ -92,63 +89,114 @@
             color: var(--accent-red);
         }
 
+        /* Main Content */
         .main-content {
             margin-left: 300px;
             padding: 40px;
             width: calc(100% - 300px);
-            flex: 1;
         }
 
         h1 {
-            font-size: 24px;
-            /* Dashboard header scale */
-            margin: 0;
+            font-size: 28px;
+            margin-bottom: 10px;
         }
 
-        /* The Grid */
         .ambulance-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 25px;
             margin-top: 30px;
         }
 
-        /* Ambulance Cards */
+        /* Card Styles */
         .amb-card {
             background: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 16px;
             border: 1px solid var(--border-color);
             overflow: hidden;
-            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, border-color 0.3s ease;
         }
 
         .amb-card:hover {
+            transform: translateY(-8px);
             border-color: var(--accent-red);
-            transform: translateY(-5px);
         }
 
         .amb-card img {
             width: 100%;
-            height: 180px;
+            height: 190px;
             object-fit: cover;
-            border-bottom: 1px solid var(--border-color);
         }
 
         .amb-info {
             padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
         }
 
-        .amb-info h3 {
-            margin: 0 0 10px 0;
+        .provider-text {
+            color: var(--accent-red);
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .amb-type {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin: 0 0 15px 0;
             color: var(--white);
-            font-size: 1.1rem;
-            /* Slightly cleaner scale */
         }
 
-        .amb-info p {
+        .driver-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .driver-name {
+            display: block;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: 4px;
+        }
+
+        .stars {
+            color: var(--star-gold);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .contact-link {
+            color: var(--accent-green);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .location-text {
+            font-size: 0.85rem;
             color: var(--text-gray);
-            font-size: 14px;
-            margin: 5px 0;
+            margin-bottom: 10px;
+        }
+
+        .status-indicator {
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
         }
 
         .btn-select {
@@ -156,16 +204,19 @@
             color: white;
             border: none;
             width: 100%;
-            padding: 12px;
-            border-radius: 6px;
+            padding: 14px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            margin-top: 15px;
-            transition: opacity 0.2s;
+            text-transform: uppercase;
+            margin-top: auto;
         }
 
-        .btn-select:hover {
-            opacity: 0.9;
+        .btn-select:disabled {
+            background: #21262d;
+            color: var(--text-gray);
+            cursor: not-allowed;
+            border: 1px solid var(--border-color);
         }
 
         @media (max-width: 768px) {
@@ -195,23 +246,26 @@
             <li><span>🏠</span> <a href="dashboard.html">Dashboard</a></li>
             <li><span>🚑</span> <a href="ambulance.html" style="color: var(--accent-red);">Ambulances</a></li>
             <li><span>🕒</span> <a href="#">History</a></li>
-            <li style="margin-top: auto; border-top: 1px solid #333; padding-top: 20px;">
+            <li style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 20px;">
                 <span>🚪</span> <a href="../index.html" onclick="localStorage.clear()">Logout</a>
             </li>
         </ul>
     </nav>
 
     <div class="main-content">
-        <h1>Available Ambulance Fleet</h1>
-        <p style="color: var(--text-gray); margin-top: 5px;">Select the specialized care you need for immediate
-            dispatch.</p>
+        <h1>Ambulance Fleet</h1>
+        <p style="color: var(--text-gray); margin-top: 5px;">Available specialized medical transport in Noakhali.</p>
 
-        <div id="fleet-container" class="ambulance-grid">
-        </div>
+        <div id="fleet-container" class="ambulance-grid"></div>
     </div>
 
     <script>
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
+
+        function getStars(rating) {
+            const rounded = Math.round(rating || 5);
+            return '⭐'.repeat(rounded);
+        }
 
         async function loadFleet() {
             const container = document.getElementById('fleet-container');
@@ -220,36 +274,64 @@
             try {
                 const response = await fetch(`${API_BASE}/ambulances`);
                 const fleet = await response.json();
+                const isHospital = amb.provider && (amb.provider.includes('Hospital') || amb.provider.includes('Medical'));
+                const providerIcon = isHospital ? '🏥' : '🏢';
 
                 if (!fleet || fleet.length === 0) {
-                    container.innerHTML = "<p style='color:white; grid-column: 1/-1; text-align: center;'>No ambulances available at the moment.</p>";
+                    container.innerHTML = "<p style='color:var(--text-gray); grid-column: 1/-1; text-align: center; margin-top: 50px;'>No ambulances currently found.</p>";
                     return;
                 }
 
                 container.innerHTML = fleet.map(amb => {
-                    let imgFileName = amb.image_url ? amb.image_url.split('/').pop() : 'logo.png';
-                    let imgPath = `../assets/images/${imgFileName}`;
+    let imgFileName = amb.image_url ? amb.image_url.split('/').pop() : 'logo.png';
+    let imgPath = `../assets/images/${imgFileName}`;
+    const isAvailable = amb.status === 'Available';
 
-                    return `
-                        <div class="amb-card">
-                            <img 
-                                src="${imgPath}" 
-                                alt="${amb.model_name}" 
-                                onerror="this.onerror=null; this.src='../assets/images/logo.png';"
-                            >
-                            <div class="amb-info">
-    <h3>${amb.ambulance_type}</h3>
-    <p><strong>Driver:</strong> ${amb.driver_name || "Assigning..."}</p>
-    <p><strong>Status:</strong> <span style="color: ${amb.status === 'Available' ? '#3fb950' : '#f85149'}">${amb.status}</span></p>
-    <button class="btn-select" onclick="selectForBooking('${amb.ambulance_id}', '${amb.ambulance_type}')">BOOK NOW</button>
-</div>
-                        </div>
-                    `;
-                }).join('');
+    // Smart logic for Provider Label and Icon
+    const isCompany = amb.provider_type === 'Company';
+    const providerIcon = isCompany ? '🏢' : '🏥';
+    const providerLabel = isCompany ? 'Company' : 'Hospital';
+
+    return `
+        <div class="amb-card">
+            <img src="${imgPath}" alt="${amb.ambulance_type}" onerror="this.onerror=null; this.src='../assets/images/logo.png';">
+            <div class="amb-info">
+                <span class="provider-text" style="color: ${isCompany ? '#58a6ff' : 'var(--accent-red)'}">
+                    ${providerIcon} ${providerLabel}: ${amb.provider || 'Independent'}
+                </span>
+                
+                <h3 class="amb-type">${amb.ambulance_type}</h3>
+                
+                <div class="driver-box">
+                    <span class="driver-name">👨‍✈️ ${amb.driver_name || "Assigning..."}</span>
+                    <div class="stars">${getStars(amb.driver_rating)} 
+                        <span style="font-size: 0.75rem; color: var(--text-gray);">(${amb.driver_rating || '5.0'})</span>
+                    </div>
+                    <a href="tel:${amb.contact}" class="contact-link">
+                        📞 ${amb.contact || 'Not Listed'}
+                    </a>
+                </div>
+
+                <p class="location-text">📍 ${amb.current_location || 'Updating...'}</p>
+
+                <div class="status-indicator" style="color: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}">
+                    <span style="height: 8px; width: 8px; border-radius: 50%; background: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}; display: inline-block;"></span>
+                    ${amb.status}
+                </div>
+
+                <button class="btn-select" 
+                    onclick="selectForBooking('${amb.id}', '${amb.ambulance_type}')"
+                    ${!isAvailable ? 'disabled' : ''}>
+                    ${isAvailable ? 'Book Now' : 'Occupied'}
+                </button>
+            </div>
+        </div>
+    `;
+}).join('');
 
             } catch (error) {
                 console.error("Fetch Error:", error);
-                container.innerHTML = "<p style='color:var(--accent-red); grid-column: 1/-1; text-align: center;'>Error connecting to server.</p>";
+                container.innerHTML = "<p style='color:var(--accent-red); grid-column: 1/-1; text-align: center;'>Connection error.</p>";
             }
         }
 
