@@ -19,7 +19,8 @@
         body {
             background-color: var(--dark-bg);
             color: var(--white);
-            font-family: 'Segoe UI', Roboto, sans-serif; /* Matched to dashboard */
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            /* Matched to dashboard */
             display: flex;
             margin: 0;
             min-height: 100vh;
@@ -38,24 +39,27 @@
         }
 
         .logo-area {
-    text-align: center;
-    margin-bottom: 40px;
-}
+            text-align: center;
+            margin-bottom: 40px;
+        }
 
         .logo-area img {
-            width: 100px; /* Matched to dashboard */
+            width: 100px;
+            /* Matched to dashboard */
             border-radius: 50%;
             border: 2px solid var(--accent-red);
         }
-        
+
         .tagline {
-    color: var(--text-gray); /* Uses your existing gray variable */
-    font-size: 0.75rem;
-    font-weight: 400;
-    letter-spacing: 0.5px;
-    margin: 0;
-    opacity: 0.8; /* Makes it slightly subtle */
-}  
+            color: var(--text-gray);
+            /* Uses your existing gray variable */
+            font-size: 0.75rem;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            margin: 0;
+            opacity: 0.8;
+            /* Makes it slightly subtle */
+        }
 
         .sidebar ul {
             list-style: none;
@@ -77,7 +81,8 @@
         }
 
         .sidebar a {
-            color: var(--text-gray); /* Matched to dashboard gray */
+            color: var(--text-gray);
+            /* Matched to dashboard gray */
             text-decoration: none;
             font-weight: 500;
             width: 100%;
@@ -95,7 +100,8 @@
         }
 
         h1 {
-            font-size: 24px; /* Dashboard header scale */
+            font-size: 24px;
+            /* Dashboard header scale */
             margin: 0;
         }
 
@@ -135,7 +141,8 @@
         .amb-info h3 {
             margin: 0 0 10px 0;
             color: var(--white);
-            font-size: 1.1rem; /* Slightly cleaner scale */
+            font-size: 1.1rem;
+            /* Slightly cleaner scale */
         }
 
         .amb-info p {
@@ -162,8 +169,15 @@
         }
 
         @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .main-content { margin-left: 0; padding: 20px; width: 100%; }
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -172,7 +186,8 @@
 
     <nav class="sidebar">
         <div class="logo-area">
-            <img src="../assets/images/logo.png" alt="Med-Drive Logo" onerror="this.src='https://via.placeholder.com/100'">
+            <img src="../assets/images/logo.png" alt="Med-Drive Logo"
+                onerror="this.src='https://via.placeholder.com/100'">
             <h3 style="color: var(--accent-red); margin: 10px 0 0 0;">Med-Drive</h3>
             <p class="tagline">Ambulance at your doorstep</p>
         </div>
@@ -188,10 +203,11 @@
 
     <div class="main-content">
         <h1>Available Ambulance Fleet</h1>
-        <p style="color: var(--text-gray); margin-top: 5px;">Select the specialized care you need for immediate dispatch.</p>
+        <p style="color: var(--text-gray); margin-top: 5px;">Select the specialized care you need for immediate
+            dispatch.</p>
 
         <div id="fleet-container" class="ambulance-grid">
-            </div>
+        </div>
     </div>
 
     <script>
@@ -222,12 +238,11 @@
                                 onerror="this.onerror=null; this.src='../assets/images/logo.png';"
                             >
                             <div class="amb-info">
-                                <h3>${amb.model_name || "Emergency Unit"}</h3>
-                                <p><strong>Type:</strong> ${amb.ambulance_type || "Standard"}</p>
-                                <p><strong>Driver:</strong> ${amb.driver_name || "Assigning..."}</p>
-                                <p><strong>Status:</strong> <span style="color: ${amb.status === 'Available' ? '#3fb950' : '#f85149'}">${amb.status}</span></p>
-                                <button class="btn-select" onclick="selectForBooking('${amb.ambulance_id}', '${amb.model_name}')">BOOK NOW</button>
-                            </div>
+    <h3>${amb.ambulance_type}</h3>
+    <p><strong>Driver:</strong> ${amb.driver_name || "Assigning..."}</p>
+    <p><strong>Status:</strong> <span style="color: ${amb.status === 'Available' ? '#3fb950' : '#f85149'}">${amb.status}</span></p>
+    <button class="btn-select" onclick="selectForBooking('${amb.ambulance_id}', '${amb.ambulance_type}')">BOOK NOW</button>
+</div>
                         </div>
                     `;
                 }).join('');
