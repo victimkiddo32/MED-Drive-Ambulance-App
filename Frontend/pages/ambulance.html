@@ -364,17 +364,24 @@
         }
 
         function selectForBooking(id, type) {
-            // Find the full ambulance object from your 'fleet' array
-            const selectedAmb = fleet.find(a => a.id == id);
+    console.log("Booking initiated for ID:", id); // For debugging
 
-            if (selectedAmb) {
-                // Store it in localStorage so dashboard.html can read it
-                localStorage.setItem('selectedAmbulance', JSON.stringify(selectedAmb));
+    // 1. Find the specific ambulance data from the fleet array
+    // 'fleet' is the array you got from the API
+    const selectedAmb = fleet.find(amb => amb.id == id);
 
-                // Redirect to dashboard
-                window.location.href = 'dashboard.html';
-            }
-        }
+    if (selectedAmb) {
+        // 2. Save the whole object to localStorage
+        // This is what the Dashboard reads to fill the input box
+        localStorage.setItem('selectedAmbulance', JSON.stringify(selectedAmb));
+
+        // 3. Redirect the user to the dashboard
+        window.location.href = 'dashboard.html';
+    } else {
+        console.error("Ambulance data not found for ID:", id);
+        alert("Selection failed. Please try again.");
+    }
+}
         window.onload = loadFleet;
     </script>
 </body>
