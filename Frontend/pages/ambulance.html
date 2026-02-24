@@ -279,110 +279,99 @@
     </div>
 
     <script>
-        const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
+        // 1. Define fleet GLOBALLY at the top
+let fleet = []; 
+const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
 
-        function getStars(rating) {
-            const rounded = Math.round(rating || 5);
-            return '⭐'.repeat(rounded);
+
+async function loadFleet() {
+    const container = document.getElementById('fleet-container');
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/ambulances`);
+        fleet = await response.json(); 
+
+        if (!fleet || fleet.length === 0) {
+            container.innerHTML = "<p style='color:white; text-align:center;'>No ambulances found.</p>";
+            return;
         }
 
-        async function loadFleet() {
-            const container = document.getElementById('fleet-container');
-            if (!container) return;
+        container.innerHTML = fleet.map(amb => {
+            const isAvailable = amb.status === 'Available';
+            const imgFileName = amb.image_url ? amb.image_url.split('/').pop() : 'logo.png';
+            const imgPath = `../assets/images/${imgFileName}`;
+            
+            // Logic for Stars
+            const getStars = (rating) => '⭐'.repeat(Math.round(rating || 5));
 
-            try {
-                const response = await fetch(`${API_BASE}/ambulances`);
-                const fleet = await response.json();
-
-                if (!fleet || fleet.length === 0) {
-                    container.innerHTML = "<p style='color:var(--text-gray); grid-column: 1/-1; text-align: center;'>No ambulances found.</p>";
-                    return;
-                }
-
-                container.innerHTML = fleet.map(amb => {
-                    const imgFileName = amb.image_url ? amb.image_url.split('/').pop() : 'logo.png';
-                    const imgPath = `../assets/images/${imgFileName}`;
-                    const isAvailable = amb.status === 'Available';
-
-                    // 1. Data Fallbacks
-                    const phone = amb.contact || amb.phone_number || 'Not Listed';
-                    const providerName = amb.provider || amb.hospital_name || 'Independent';
-                    const vehicleNo = amb.vehicle_number || 'N/A';
-
-                    // 2. Icon and Label Logic
-                    const providerIcon = '🏢';
-                    const providerLabel = 'Provider';
-                    const isCompany = amb.provider_type === 'Company';
-                    const providerColor = isCompany ? '#58a6ff' : 'var(--accent-red)';
-
-                    return `
+            return `
                 <div class="amb-card">
-                    <img src="${imgPath}" alt="${amb.ambulance_type}" class="amb-image" onerror="this.src='../assets/images/logo.png';">
-                    
+                    <img src="${imgPath}" onerror="this.src='../assets/images/logo.png';">
                     <div class="amb-info">
-                        <span class="provider-text" style="color: ${providerColor}; text-transform: none; font-weight: bold; font-size: 0.85rem;">
-                            ${providerIcon} ${providerLabel}: ${providerName}
+                        <span class="provider-text" style="color: #58a6ff; font-weight: bold; font-size: 0.85rem; display: block; margin-bottom: 5px;">
+                             Provider: ${amb.provider || amb.hospital_name || 'General Service'}
                         </span>
-
+                        
                         <h3 class="amb-type">${amb.ambulance_type}</h3>
                         
                         <div class="driver-box">
                             <span class="driver-name">👨‍✈️ ${amb.driver_name}</span>
                             
-                            <div>
-                                <span class="vehicle-no">
-                                  🚘 ${vehicleNo}
-                                </span>
-                            </div>
+                            <span class="vehicle-no" style="display: block; font-style: italic; color: #8b949e; font-size: 0.8rem; margin: 2px 0;">
+                                🚘 ${amb.vehicle_number || 'N/A'}
+                            </span>
 
-                            <div class="stars">${getStars(amb.driver_rating)}</div>
+                            <div class="stars" style="margin: 5px 0;">
+                                ${getStars(amb.driver_rating)}
+                            </div>
                             
-                            <a href="tel:${phone}" class="contact-link" style="text-decoration: none; color: var(--accent-green); display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                                📞 ${phone}
+                            <a href="tel:${amb.contact}" class="contact-link" style="text-decoration: none; color: #3fb950; font-size: 0.9rem; font-weight: bold;">
+                                📞 ${amb.contact || '01XXXXXXXXX'}
                             </a>
                         </div>
 
-                        <div class="status-indicator" style="color: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}; margin-top: 10px; font-size: 0.9rem;">
-                            ● ${amb.status}
+                        <div class="status-indicator" style="margin-top: 10px; font-size: 0.85rem; font-weight: bold; color: ${isAvailable ? '#3fb950' : '#f85149'};">
+                            ${isAvailable ? '● Available' : '● Busy'}
                         </div>
 
                         <button class="btn-select" 
-                            onclick="selectForBooking('${amb.id}', '${amb.ambulance_type}')"
+                            onclick="selectForBooking(${amb.id})" 
                             ${!isAvailable ? 'disabled' : ''}
-                            style="margin-top: 15px; width: 100%;">
+                            style="margin-top: 15px; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; background: ${isAvailable ? '#f85149' : '#30363d'}; color: white; border: none;">
                             ${isAvailable ? 'BOOK NOW' : 'OCCUPIED'}
                         </button>
                     </div>
                 </div>
             `;
-                }).join('');
+        }).join('');
 
-            } catch (error) {
-                console.error("Fetch Error:", error);
-                container.innerHTML = "<p style='color:var(--accent-red); text-align: center;'>Connection error.</p>";
-            }
-        }
-
-        function selectForBooking(id, type) {
-    console.log("Booking initiated for ID:", id); // For debugging
-
-    // 1. Find the specific ambulance data from the fleet array
-    // 'fleet' is the array you got from the API
-    const selectedAmb = fleet.find(amb => amb.id == id);
-
-    if (selectedAmb) {
-        // 2. Save the whole object to localStorage
-        // This is what the Dashboard reads to fill the input box
-        localStorage.setItem('selectedAmbulance', JSON.stringify(selectedAmb));
-
-        // 3. Redirect the user to the dashboard
-        window.location.href = 'dashboard.html';
-    } else {
-        console.error("Ambulance data not found for ID:", id);
-        alert("Selection failed. Please try again.");
+    } catch (error) {
+        console.error("Fetch Error:", error);
     }
 }
-        window.onload = loadFleet;
+
+// 4. The Redirect Function
+function selectForBooking(id) {
+    console.log("Button clicked! Looking for ID:", id);
+    
+    // Find the ambulance in our global fleet array
+    const selectedAmb = fleet.find(a => a.id == id);
+
+    if (selectedAmb) {
+        console.log("Found ambulance:", selectedAmb);
+        localStorage.setItem('selectedAmbulance', JSON.stringify(selectedAmb));
+        
+        // Final Step: Redirect
+        window.location.href = 'dashboard.html';
+    } else {
+        console.error("Could not find ambulance with ID:", id);
+        alert("Error: Ambulance data missing. Please refresh.");
+    }
+}
+
+// Load on start
+document.addEventListener('DOMContentLoaded', loadFleet);
     </script>
 </body>
 
