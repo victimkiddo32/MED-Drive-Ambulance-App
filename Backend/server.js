@@ -1,19 +1,15 @@
 const express = require('express');
-const cors = require('cors'); // Keep this one at the top
+const cors = require('cors');
 require('dotenv').config();
+const db = require('./config/db'); // Ensure your DB connection is imported here
 
 const app = express();
 
 // Middleware
-app.use(cors()); // This is the line that actually enables the "bridge"
+app.use(cors()); 
 app.use(express.json());
 
-// 3. Simple Test Route
-app.get('/', (req, res) => {
-    res.send('Ambulance Service API is running! 🚑');
-});
-
-// 4. Feature Routes
+// 4. Feature Routes (REMOVED the direct app.get here)
 app.use('/api/ambulances', require('./routes/ambulanceRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/drivers', require('./routes/driverRoutes'));
@@ -23,10 +19,6 @@ app.use('/api/reviews', require('./routes/reviewRoutes'));
 // 6. Start Server
 const PORT = process.env.PORT || 5000;
 
-console.log("DB_USER check:", process.env.DB_USER);
-console.log("DB_PASS length:", process.env.DB_PASSWORD ? process.env.DB_PASSWORD.length : "EMPTY");
-
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
-

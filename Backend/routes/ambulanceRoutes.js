@@ -6,10 +6,19 @@ const pool = require('../config/db'); // Ensure this uses mysql2
 router.get('/', async (req, res) => {
     try {
         const [rows] = await pool.execute(`
-    SELECT a.*, d.driver_name 
-    FROM ambulances a 
-    LEFT JOIN drivers d ON a.driver_id = d.driver_id 
-    ORDER BY a.ambulance_id DESC
+    SELECT 
+                a.ambulance_id AS id, 
+                a.ambulance_type,
+                a.status,
+                a.image_url,
+                d.driver_name, 
+                d.phone_number AS contact,
+                d.rating AS driver_rating,
+                h.hospital_name AS provider,
+                h.provider_type
+            FROM Ambulances a
+            LEFT JOIN Drivers d ON a.driver_id = d.driver_id
+            LEFT JOIN Hospitals h ON a.hospital_id = h.hospital_id
 `);
         res.json(rows);
     } catch (err) {
