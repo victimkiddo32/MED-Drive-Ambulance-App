@@ -280,46 +280,43 @@
             return;
         }
 
-        ccontainer.innerHTML = fleet.map(amb => {
+        container.innerHTML = fleet.map(amb => {
     const imgFileName = amb.image_url ? amb.image_url.split('/').pop() : 'logo.png';
     const imgPath = `../assets/images/${imgFileName}`;
     const isAvailable = amb.status === 'Available';
+    
+    // Check if it's a Hospital or Company for the Icon
     const isCompany = amb.provider_type === 'Company';
     const providerIcon = isCompany ? '🏢' : '🏥';
-    const providerLabel = isCompany ? 'Company' : 'Hospital';
+    const providerLabel = isCompany ? 'COMPANY' : 'HOSPITAL';
 
     return `
         <div class="amb-card">
-            <img src="${imgPath}" alt="${amb.ambulance_type}" onerror="this.onerror=null; this.src='../assets/images/logo.png';">
+            <img src="${imgPath}" onerror="this.src='../assets/images/logo.png';">
             <div class="amb-info">
-                <span class="provider-text" style="color: ${isCompany ? '#58a6ff' : 'var(--accent-red)'}">
-                    ${providerIcon} ${providerLabel}: ${amb.provider || 'Independent'}
+                <span class="provider-text">
+                    ${providerIcon} ${providerLabel}: ${amb.provider || 'INDEPENDENT'}
                 </span>
                 
                 <h3 class="amb-type">${amb.ambulance_type}</h3>
                 
                 <div class="driver-box">
                     <span class="driver-name">👨‍✈️ ${amb.driver_name || "Assigning..."}</span>
-                    <div class="stars">${getStars(amb.driver_rating)} 
-                        <span style="font-size: 0.75rem; color: var(--text-gray);">(${amb.driver_rating || '5.0'})</span>
-                    </div>
+                    <div class="stars">${getStars(amb.driver_rating)}</div>
                     
-                    <a href="tel:${amb.contact}" class="contact-link" style="text-decoration: none; color: var(--accent-green); font-weight: bold; display: block; margin-top: 5px;">
-                        📞 Call: ${amb.contact || 'Not Listed'}
+                    <a href="tel:${amb.contact}" class="contact-link" style="text-decoration: none; color: var(--accent-green); display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                        📞 ${amb.contact || 'Not Listed'}
                     </a>
                 </div>
 
-                <p class="location-text">📍 ${amb.current_location || 'Updating...'}</p>
-
                 <div class="status-indicator" style="color: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}">
-                    <span style="height: 8px; width: 8px; border-radius: 50%; background: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}; display: inline-block;"></span>
-                    ${amb.status}
+                    ● ${amb.status}
                 </div>
 
                 <button class="btn-select" 
                     onclick="selectForBooking('${amb.id}', '${amb.ambulance_type}')"
                     ${!isAvailable ? 'disabled' : ''}>
-                    ${isAvailable ? 'Book Now' : 'Occupied'}
+                    ${isAvailable ? 'BOOK NOW' : 'OCCUPIED'}
                 </button>
             </div>
         </div>
