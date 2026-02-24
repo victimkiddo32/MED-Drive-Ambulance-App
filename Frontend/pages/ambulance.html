@@ -38,15 +38,24 @@
         }
 
         .logo-area {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+    text-align: center;
+    margin-bottom: 40px;
+}
 
         .logo-area img {
             width: 100px; /* Matched to dashboard */
             border-radius: 50%;
             border: 2px solid var(--accent-red);
         }
+        
+        .tagline {
+    color: var(--text-gray); /* Uses your existing gray variable */
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    margin: 0;
+    opacity: 0.8; /* Makes it slightly subtle */
+}  
 
         .sidebar ul {
             list-style: none;
@@ -165,6 +174,7 @@
         <div class="logo-area">
             <img src="../assets/images/logo.png" alt="Med-Drive Logo" onerror="this.src='https://via.placeholder.com/100'">
             <h3 style="color: var(--accent-red); margin: 10px 0 0 0;">Med-Drive</h3>
+            <p class="tagline">Ambulance at your doorstep</p>
         </div>
         <ul>
             <li><span>🏠</span> <a href="dashboard.html">Dashboard</a></li>

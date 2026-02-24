@@ -48,6 +48,17 @@
             border: 2px solid var(--accent-red);
         }
 
+        .tagline {
+            color: var(--text-gray);
+            /* Uses your existing gray variable */
+            font-size: 0.75rem;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            margin: 0;
+            opacity: 0.8;
+            /* Makes it slightly subtle */
+        }
+
         .sidebar ul {
             list-style: none;
             padding: 0;
@@ -133,7 +144,8 @@
             margin-bottom: 5px;
         }
 
-        input, select {
+        input,
+        select {
             background: #0d1117;
             border: 1px solid var(--border);
             color: white;
@@ -196,16 +208,25 @@
             font-weight: 600;
         }
 
-        .completed { background: rgba(63, 185, 80, 0.15); color: #3fb950; }
-        .pending { background: rgba(210, 153, 34, 0.15); color: #d29922; }
+        .completed {
+            background: rgba(63, 185, 80, 0.15);
+            color: #3fb950;
+        }
+
+        .pending {
+            background: rgba(210, 153, 34, 0.15);
+            color: #d29922;
+        }
     </style>
 </head>
 
 <body>
     <nav class="sidebar">
         <div class="logo-area">
-            <img src="../assets/images/logo.png" alt="Med-Drive Logo" onerror="this.src='https://via.placeholder.com/100'">
+            <img src="../assets/images/logo.png" alt="Med-Drive Logo"
+                onerror="this.src='https://via.placeholder.com/100'">
             <h3 style="color: var(--accent-red); margin: 10px 0 0 0;">Med-Drive</h3>
+            <p class="tagline">Ambulance at your doorstep</p>
         </div>
         <ul>
             <li><span>🏠</span> <a href="dashboard.html">Dashboard</a></li>
@@ -221,11 +242,14 @@
         <header>
             <div>
                 <h2 style="margin:0;">Dashboard</h2>
-                <p style="color: var(--text-gray); margin: 5px 0 0 0;">Welcome, <span id="user-display-name">Guest</span></p>
+                <p style="color: var(--text-gray); margin: 5px 0 0 0;">Welcome, <span
+                        id="user-display-name">Guest</span></p>
             </div>
             <div class="profile-pill">
                 <span id="user-name-text">Guest</span>
-                <div id="profile-circle" style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">G</div>
+                <div id="profile-circle"
+                    style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                    G</div>
             </div>
         </header>
 
@@ -252,9 +276,11 @@
                 <label>Hospital</label>
                 <input type="text" id="hospital" placeholder="Destination Hospital">
             </div>
-            <div style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+            <div
+                style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
                 <span style="color: var(--text-gray);">Estimated Fare:</span>
-                <span style="font-size: 24px; font-weight: bold; color: var(--accent-red);">৳ <span id="estimated-price">0</span></span>
+                <span style="font-size: 24px; font-weight: bold; color: var(--accent-red);">৳ <span
+                        id="estimated-price">0</span></span>
             </div>
             <button class="btn-confirm" onclick="confirmBooking()">CONFIRM BOOKING</button>
         </div>
@@ -272,24 +298,27 @@
                     </tr>
                 </thead>
                 <tbody id="booking-table-body">
-                    </tbody>
+                </tbody>
             </table>
         </div>
     </main>
 
-    <div id="success-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; flex-direction: column;">
-        <div style="background: #161b22; padding: 40px; border-radius: 20px; text-align: center; border: 1px solid var(--border); width: 320px;">
+    <div id="success-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; flex-direction: column;">
+        <div
+            style="background: #161b22; padding: 40px; border-radius: 20px; text-align: center; border: 1px solid var(--border); width: 320px;">
             <div style="font-size: 50px; color: #3fb950; margin-bottom: 20px;">✔</div>
             <h2 style="margin-bottom: 10px;">Booking Placed!</h2>
             <p style="color: #8b949e;">Your ambulance is being dispatched.</p>
-            <button onclick="location.reload()" style="background: var(--accent-red); color: white; border: none; padding: 12px 30px; border-radius: 8px; margin-top: 20px; cursor: pointer; width: 100%;">DONE</button>
+            <button onclick="location.reload()"
+                style="background: var(--accent-red); color: white; border: none; padding: 12px 30px; border-radius: 8px; margin-top: 20px; cursor: pointer; width: 100%;">DONE</button>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
-        
+
         // 1. Map Initialization
         const map = L.map('map', { zoomControl: false }).setView([23.8103, 90.4125], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -382,7 +411,7 @@
             try {
                 const res = await fetch(`${API_BASE}/bookings/user/${userId}`);
                 const data = await res.json();
-                
+
                 tableBody.innerHTML = data.map(b => `
                     <tr>
                         <td>#${b.booking_id}</td>
@@ -395,7 +424,7 @@
             } catch (err) { tableBody.innerHTML = "<tr><td colspan='5'>Error loading history</td></tr>"; }
         }
 
-        window.onload = function() {
+        window.onload = function () {
             const userName = localStorage.getItem('userName');
             if (userName) {
                 document.getElementById('user-display-name').innerText = userName;
@@ -409,4 +438,5 @@
         };
     </script>
 </body>
+
 </html>
