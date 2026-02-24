@@ -119,6 +119,28 @@
             transition: transform 0.3s ease, border-color 0.3s ease;
         }
 
+        .vehicle-plate {
+            display: inline-block;
+            background-color: #f8f9fa;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-family: 'Courier New', Courier, monospace;
+            /* Monospaced font looks like a plate */
+            font-weight: bold;
+            font-size: 0.75rem;
+            color: #1a1a1a;
+            margin: 4px 0;
+            text-transform: uppercase;
+            box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .driver-box {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
         .amb-card:hover {
             transform: translateY(-8px);
             border-color: var(--accent-red);
@@ -141,7 +163,7 @@
             color: var(--accent-red);
             font-size: 0.75rem;
             font-weight: bold;
-            text-transform: uppercase;
+            text-transform: none;
             letter-spacing: 0.5px;
             margin-bottom: 5px;
         }
@@ -268,70 +290,66 @@
         }
 
         async function loadFleet() {
-    const container = document.getElementById('fleet-container');
-    if (!container) return;
+            const container = document.getElementById('fleet-container');
+            if (!container) return;
 
-    try {
-        const response = await fetch(`${API_BASE}/ambulances`);
-        const fleet = await response.json();
+            try {
+                const response = await fetch(`${API_BASE}/ambulances`);
+                const fleet = await response.json();
 
-        if (!fleet || fleet.length === 0) {
-            container.innerHTML = "<p style='color:var(--text-gray); grid-column: 1/-1; text-align: center;'>No ambulances found.</p>";
-            return;
-        }
+                if (!fleet || fleet.length === 0) {
+                    container.innerHTML = "<p style='color:var(--text-gray); grid-column: 1/-1; text-align: center;'>No ambulances found.</p>";
+                    return;
+                }
 
-        container.innerHTML = fleet.map(amb => {
-    const imgFileName = amb.image_url ? amb.image_url.split('/').pop() : 'logo.png';
-    const imgPath = `../assets/images/${imgFileName}`;
-    const isAvailable = amb.status === 'Available';
-    
-    // 1. Robust Data Fallbacks (Handles SQL Aliases vs Original Names)
-    const phone = amb.contact || amb.phone_number || 'Not Listed';
-    const providerName = amb.provider || amb.hospital_name || 'INDEPENDENT';
-    
-    // 2. Icon and Label Logic
-    const isCompany = amb.provider_type === 'Company';
-    const providerIcon = isCompany ? '🏢' : '🏥';
-    const providerLabel = isCompany ? 'COMPANY' : 'HOSPITAL';
+                container.innerHTML = fleet.map(amb => {
+                    const imgFileName = amb.image_url ? amb.image_url.split('/').pop() : 'logo.png';
+                    const imgPath = `../assets/images/${imgFileName}`;
+                    const isAvailable = amb.status === 'Available';
 
-    return `
+                    // 1. Data Fallbacks
+                    const phone = amb.contact || amb.phone_number || 'Not Listed';
+                    const providerName = amb.provider || amb.hospital_name || 'Independent';
+                    const vehicleNo = amb.vehicle_number || 'N/A'; // Get the Dhaka Metro number
+
+                    // 2. Icon and Label Logic
+                    const providerIcon = '🏢';
+                    const providerLabel = 'Provider';
+                    const isCompany = amb.provider_type === 'Company';
+                    const providerColor = isCompany ? '#58a6ff' : 'var(--accent-red)';
+
+
+                    return `
         <div class="amb-card">
-            <img src="${imgPath}" onerror="this.src='../assets/images/logo.png';">
             <div class="amb-info">
-                <span class="provider-text" style="color: ${isCompany ? '#58a6ff' : 'var(--accent-red)'}">
-                    ${providerIcon} ${providerLabel}: ${providerName}
-                </span>
-                
                 <h3 class="amb-type">${amb.ambulance_type}</h3>
                 
                 <div class="driver-box">
-                    <span class="driver-name">👨‍✈️ ${amb.driver_name || "Assigning..."}</span>
+                    <span class="driver-name">👨‍✈️ ${amb.driver_name}</span>
+                    
+                    <div>
+                        <span class="vehicle-plate">
+                            ${vehicleNo}
+                        </span>
+                    </div>
+
                     <div class="stars">${getStars(amb.driver_rating)}</div>
                     
-                    <a href="tel:${phone}" class="contact-link" style="text-decoration: none; color: var(--accent-green); display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                        📞 ${phone}
+                    <a href="tel:${amb.contact}" class="contact-link">
+                        📞 ${amb.contact}
                     </a>
                 </div>
-
-                <div class="status-indicator" style="color: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}">
-                    ● ${amb.status}
+                
                 </div>
-
-                <button class="btn-select" 
-                    onclick="selectForBooking('${amb.id}', '${amb.ambulance_type}')"
-                    ${!isAvailable ? 'disabled' : ''}>
-                    ${isAvailable ? 'BOOK NOW' : 'OCCUPIED'}
-                </button>
-            </div>
         </div>
     `;
-}).join('');
+                }).join('');
 
-    } catch (error) {
-        console.error("Fetch Error:", error);
-        container.innerHTML = "<p style='color:var(--accent-red); text-align: center;'>Connection error.</p>";
-    }
-}
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                container.innerHTML = "<p style='color:var(--accent-red); text-align: center;'>Connection error.</p>";
+            }
+        }
 
         function selectForBooking(id, name) {
             localStorage.setItem('selectedAmbulanceId', id);
