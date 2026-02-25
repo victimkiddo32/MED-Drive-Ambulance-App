@@ -63,12 +63,13 @@ router.get('/closest', async (req, res) => {
 
 // 3. GET: Availability Stats (Calls the View we created)
 // Perfect for the charts on your Vercel Dashboard
-router.get('/availability-stats', async (req, res) => {
+// In routes/ambulanceRoutes.js
+router.get('/', async (req, res) => { // This '/' makes the full URL /api/ambulances
     try {
-        const [rows] = await pool.execute(`SELECT * FROM AmbulanceAvailability`);
-        res.json(rows);
+        const [rows] = await pool.execute('SELECT * FROM Ambulances');
+        res.json(rows); // This MUST be valid JSON
     } catch (err) {
-        res.status(500).json({ error: "Could not retrieve stats." });
+        res.status(500).json({ error: err.message });
     }
 });
 
