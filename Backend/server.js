@@ -127,7 +127,7 @@ app.post('/api/bookings', (req, res) => {
         const bookingSql = `INSERT INTO Bookings (user_id, ambulance_id, pickup_location, destination_hospital, fare, status) 
                     VALUES (?, ?, ?, ?, ?, 'Pending')`;
 
-        db.query(bookingSql, [user_id, ambulance_id, pickup_location, destination, fare], (err, result) => {
+        db.query(bookingSql, [user_id, ambulance_id, pickup_location, destination_hospital, fare], (err, result) => {
             if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
 
             const updateAmbSql = `UPDATE Ambulances SET status = 'Busy' WHERE ambulance_id = ?`;
