@@ -115,7 +115,9 @@ app.post('/api/users/login', (req, res) => {
 
 // 3. Create Booking (Transaction based)
 app.post('/api/bookings', (req, res) => {
-    const { user_id, ambulance_id, pickup_location, destination, fare } = req.body;
+    const { user_id, ambulance_id, pickup_location, destination_hospital , fare } = req.body;
+
+    console.log("📥 Booking Received for Hospital:", destination_hospital);
 
     db.beginTransaction((err) => {
         if (err) return res.status(500).json({ error: "Transaction Error" });

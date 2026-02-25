@@ -436,7 +436,7 @@
                     tableBody.innerHTML = data.slice(0, 5).map(b => `
                 <tr>
                     <td>#${b.booking_id || b.id}</td>
-                    <td>${b.destination || b.destination_hospital || 'Not Specified'}</td>
+                    <td>${b.destination || b.destination_hospital  || b.pickup_location ||  'Not Specified'}</td>
                     <td><span class="status-badge ${(b.status || 'pending').toLowerCase()}">${b.status || 'Pending'}</span></td>
                     <td>৳ ${b.fare || '0'}</td>
                     <td>${b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Recent'}</td>
