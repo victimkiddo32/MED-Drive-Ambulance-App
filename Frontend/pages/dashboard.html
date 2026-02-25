@@ -425,6 +425,31 @@
             }
         }
 
+        function checkStoredBooking() {
+    const storedData = localStorage.getItem('selectedAmbulance');
+    
+    if (storedData) {
+        const amb = JSON.parse(storedData);
+        const inputField = document.getElementById('selected-id');
+        
+        // This links the "type (id)" format you want to the dashboard input
+        if (inputField) {
+            inputField.value = `${amb.ambulance_type} (${amb.id})`;
+            
+            // Set the ID for the booking query
+            localStorage.setItem('selectedAmbulanceId', amb.id);
+            
+            // OPTIONAL: Move map to this ambulance if coordinates exist
+            if (amb.lat && amb.lng && typeof map !== 'undefined') {
+                map.setView([amb.lat, amb.lng], 15);
+                L.marker([amb.lat, amb.lng]).addTo(map)
+                    .bindPopup(`Selected: ${amb.ambulance_type}`)
+                    .openPopup();
+            }
+        }
+    }
+}
+
         window.onload = function () {
             // User Display Setup
             const userName = localStorage.getItem('userName') || 'Guest User';
@@ -437,6 +462,7 @@
             document.getElementById('hospital').addEventListener('input', updateFare);
 
             // Initial Load
+            checkStoredBooking();
             loadMapAmbulances();
             loadBookingHistory();
         };
