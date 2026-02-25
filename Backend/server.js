@@ -9,15 +9,23 @@ app.use(express.json());
 
 // 1. Database Connection
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'your_password', 
-    database: 'ambulance_service_db'
+    host: process.env.DB_HOST || 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
+    user: process.env.DB_USER || '3ar8GbsUB4TTTf6.root',
+    password: process.env.DB_PASSWORD || 'VIpnInb1NbDJkZMQ',
+    database: process.env.DB_NAME || 'AmbulanceServiceDBMS',
+    port: process.env.DB_PORT || 4000,
+    ssl: {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: false // This is required for TiDB Cloud
+    }
 });
 
 db.connect((err) => {
-    if (err) return console.error('DB Error:', err.message);
-    console.log('Connected to MySQL/TiDB');
+    if (err) {
+        console.error('❌ Database Connection Error:', err.message);
+        return;
+    }
+    console.log('✅ Connected to TiDB Cloud!');
 });
 
 // ---------------------------------------------------------
