@@ -391,25 +391,44 @@
         }
 
         // 6. Load History
-        async function loadBookingHistory() {
-            const tableBody = document.getElementById('booking-table-body');
-            try {
-                const res = await fetch(`${API_BASE}/bookings`);
-                const data = await res.json();
+      async function loadBookingHistory() {
+    const tableBody = document.getElementById('booking-table-body');
+    const userId = localStorage.getItem('userId');
 
-                tableBody.innerHTML = data.slice(0, 5).map(b => `
-                    <tr>
-                        <td>#${b.booking_id}</td>
-                        <td>${b.destination_hospital}</td>
-                        <td><span class="status-badge ${b.status.toLowerCase()}">${b.status}</span></td>
-                        <td>৳ ${b.fare}</td>
-                        <td>${new Date(b.created_at).toLocaleDateString()}</td>
-                    </tr>
-                `).join('');
-            } catch (err) {
-                tableBody.innerHTML = "<tr><td colspan='5'>No recent activity found.</td></tr>";
-            }
+    // Prevent fetching if userId is missing
+    if (!userId || userId === 'undefined') {
+        console.warn("User ID not found in localStorage.");
+        tableBody.innerHTML = "<tr><td colspan='5'>Please login to see history.</td></tr>";
+        return;
+    }
+
+    try {
+        // 1. Just a simple GET request (no method/body needed)
+        const res = await fetch(`${API_BASE}/bookings/user/${userId}`);
+        
+        if (!res.ok) throw new Error("Server responded with an error");
+
+        const data = await res.json();
+
+        // 2. Render the rows
+        if (data.length > 0) {
+            tableBody.innerHTML = data.slice(0, 5).map(b => `
+                <tr>
+                    <td>#${b.booking_id || b.id}</td>
+                    <td>${b.destination || b.destination_hospital || 'Not Specified'}</td>
+                    <td><span class="status-badge ${(b.status || 'pending').toLowerCase()}">${b.status || 'Pending'}</span></td>
+                    <td>৳ ${b.fare || '0'}</td>
+                    <td>${b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Recent'}</td>
+                </tr>
+            `).join('');
+        } else {
+            tableBody.innerHTML = "<tr><td colspan='5'>No recent activity found.</td></tr>";
         }
+    } catch (err) {
+        console.error("❌ History Load Error:", err);
+        tableBody.innerHTML = "<tr><td colspan='5'>Error loading history.</td></tr>";
+    }
+}
 
         function checkStoredBooking() {
             const storedData = localStorage.getItem('selectedAmbulance');
