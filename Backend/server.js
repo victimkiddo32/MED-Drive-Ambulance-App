@@ -27,31 +27,44 @@ const dbConfig = {
     connectTimeout: 20000 // 20 seconds
 };
 
-let db;
 
 // 3. RECONNECTION LOGIC (Fixes the "Connection Closed" error)
-function handleDisconnect() {
-    db = mysql.createConnection(dbConfig);
+let db;
 
+function handleDisconnect() {
+    // Create the connection object
+    db = mysql.createConnection({
+        host: process.env.DB_HOST || 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
+        user: process.env.DB_USER || '3ar8GbsUB4TTTf6.root',
+        password: process.env.DB_PASSWORD || 'VIpnInb1NbDJkZMQ',
+        database: process.env.DB_NAME || 'AmbulanceServiceDBMS',
+        port: 4000,
+        ssl: { rejectUnauthorized: false }
+    });
+
+    // Attempt to connect
     db.connect((err) => {
         if (err) {
-            console.error('❌ DATABASE CONNECTION FAILED:', err.message);
-            setTimeout(handleDisconnect, 2000); // Try again in 2 seconds
+            console.error('❌ Error connecting to DB:', err.message);
+            setTimeout(handleDisconnect, 2000); // Wait 2 seconds and try again
         } else {
             console.log('✅ Connected to TiDB Cloud!');
         }
     });
 
+    // Listen for errors (this catches the "Closed State" issue)
     db.on('error', (err) => {
         console.error('❌ DB Error:', err.message);
         if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
-            console.log('🔄 Reconnecting to Database...');
-            handleDisconnect(); 
+            console.log('🔄 Connection lost. Reconnecting...');
+            handleDisconnect(); // Restart the connection
         } else {
             throw err;
         }
     });
 }
+
+handleDisconnect();
 
 handleDisconnect();
 
@@ -102,7 +115,7 @@ app.post('/api/users/login', (req, res) => {
 });
 
 // 3. Create Booking (Transaction based)
-app.post('/api/bookings/create', (req, res) => {
+app.post('/api/bookings', (req, res) => {
     const { user_id, ambulance_id, pickup_location, destination, fare } = req.body;
 
     db.beginTransaction((err) => {
