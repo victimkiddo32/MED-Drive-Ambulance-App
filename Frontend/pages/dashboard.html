@@ -350,44 +350,55 @@
 
         // 4. Booking Logic
         async function confirmBooking() {
-            const userId = localStorage.getItem('userId') || 1;
-            const ambId = localStorage.getItem('selectedAmbulanceId');
-            const pickup = document.getElementById('pickup').value;
-            const hospital = document.getElementById('hospital').value;
-            const fare = document.getElementById('estimated-price').innerText;
+    const userId = localStorage.getItem('userId') || 1;
+    const ambId = localStorage.getItem('selectedAmbulanceId');
+    const pickup = document.getElementById('pickup').value;
+    const hospital = document.getElementById('hospital').value;
+    
+    // Clean the fare: removes '৳' and spaces so the DB gets a number
+    const fareRaw = document.getElementById('estimated-price').innerText;
+    const fare = fareRaw.replace(/[^\d.]/g, ''); 
 
-            if (!ambId || !pickup || !hospital) {
-                alert("🚨 Missing Info: Select an ambulance and enter locations!");
-                return;
-            }
+    // 1. Debugging: Check your console to see if these are empty
+    console.log("Attempting to book:", { userId, ambId, pickup, hospital, fare });
 
-            try {
-                const response = await fetch(`${API_BASE}/bookings`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        ambulance_id: ambId,
-                        pickup_location: pickup,
-                        destination_hospital: hospital,
-                        fare: fare
-                    })
-                });
+    if (!ambId || !pickup || !hospital) {
+        alert("🚨 Missing Info: Select an ambulance and enter locations!");
+        return;
+    }
 
-                const result = await response.json();
-                if (result.success) {
-                    localStorage.removeItem('selectedAmbulanceId');
-                    document.getElementById('success-overlay').style.display = 'flex';
-                    // Wait 1.5 seconds then refresh the table to ensure TiDB has indexed the new row
-                    setTimeout(() => {
-                        loadBookingHistory();
-                    }, 1500);
-                }
-            } catch (err) {
-                console.error("Booking failed:", err);
-                alert("Connection Error. Is your backend running?");
-            }
+    try {
+        const response = await fetch(`${API_BASE}/bookings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                ambulance_id: ambId,
+                pickup_location: pickup,
+                destination_hospital: hospital, // Captured from the 'hospital' ID
+                fare: fare
+            })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            localStorage.removeItem('selectedAmbulanceId');
+            document.getElementById('success-overlay').style.display = 'flex';
+            
+            // Refresh table
+            setTimeout(() => {
+                loadBookingHistory();
+                // Optional: Close modal if you have one
+                if(typeof closeModal === 'function') closeModal(); 
+            }, 1500);
+        } else {
+            alert("Server Error: " + (result.error || "Unknown error"));
         }
+    } catch (err) {
+        console.error("Booking failed:", err);
+        alert("Connection Error. Is your backend running?");
+    }
+}
 
         // 5. Load Map Markers
         async function loadMapAmbulances() {
