@@ -219,16 +219,24 @@
 
         // 1. Unified Load Function
         async function loadFleet() {
-            const container = document.getElementById('fleet-container');
-            try {
-                const response = await fetch(`${API_BASE}/ambulances`);
-                allAmbulances = await response.json();
-                renderAmbulances(allAmbulances);
-            } catch (error) {
-                console.error("Fetch Error:", error);
-                container.innerHTML = "<p style='color:red;'>Failed to load fleet. Is server running?</p>";
-            }
+    const container = document.getElementById('fleet-container');
+    try {
+        const response = await fetch(`${API_BASE}/ambulances`);
+        const data = await response.json();
+
+        // Check if data is actually an array before trying to use it
+        if (Array.isArray(data)) {
+            allAmbulances = data;
+            renderAmbulances(allAmbulances);
+        } else {
+            console.error("Received non-array data:", data);
+            container.innerHTML = "<p style='color:yellow;'>Server returned an error. Check logs.</p>";
         }
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        container.innerHTML = "<p style='color:red;'>Failed to connect to server.</p>";
+    }
+}
 
         // 2. Render Cards to UI
         function renderAmbulances(data) {
@@ -244,7 +252,8 @@
                 
                 return `
                 <div class="amb-card">
-                    <img src="../assets/images/${amb.image_url || 'logo.png'}" onerror="this.src='../assets/images/logo.png';">
+                    <img src="${amb.image_url || '../assets/images/logo.png'}" 
+     onerror="this.src='../assets/images/logo.png';">
                     <div class="amb-info">
                         <span style="color: #58a6ff; font-weight: bold; font-size: 0.85rem; margin-bottom: 5px;">
                             Provider: ${amb.provider || 'General Service'}
