@@ -7,7 +7,7 @@ const app = express();
 
 // 1. IMPROVED CORS (Allows your Vercel frontend to talk to Render)
 app.use(cors({
-    origin: '*', 
+    origin: '*',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type']
 }));
@@ -64,7 +64,6 @@ function handleDisconnect() {
     });
 }
 
-handleDisconnect();
 
 handleDisconnect();
 
@@ -76,7 +75,7 @@ app.get('/api/ambulances', (req, res) => {
         FROM Ambulances a
         LEFT JOIN Drivers d ON a.driver_id = d.driver_id
         LEFT JOIN Hospitals h ON a.hospital_id = h.hospital_id`;
-    
+
     db.query(sql, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results || []);
@@ -91,7 +90,7 @@ app.post('/api/users/login', (req, res) => {
 
     // We select user_id and name to store in the frontend localStorage
     const sql = `SELECT user_id, name, email FROM Users WHERE email = ? AND password = ?`;
-    
+
     db.query(sql, [email, password], (err, results) => {
         if (err) {
             console.error("❌ Login SQL Error:", err.message);
@@ -100,15 +99,15 @@ app.post('/api/users/login', (req, res) => {
 
         if (results.length > 0) {
             // User found!
-            res.json({ 
-                success: true, 
-                user: results[0] 
+            res.json({
+                success: true,
+                user: results[0]
             });
         } else {
             // No user found with those credentials
-            res.status(401).json({ 
-                success: false, 
-                error: "Invalid email or password" 
+            res.status(401).json({
+                success: false,
+                error: "Invalid email or password"
             });
         }
     });
@@ -121,9 +120,11 @@ app.post('/api/bookings', (req, res) => {
     db.beginTransaction((err) => {
         if (err) return res.status(500).json({ error: "Transaction Error" });
 
+        // Change 'destination_hospital' to 'destination' (or vice versa) 
+        // to match exactly what is in your TiDB table.
         const bookingSql = `INSERT INTO Bookings (user_id, ambulance_id, pickup_location, destination_hospital, fare, status) 
-                            VALUES (?, ?, ?, ?, ?, 'Pending')`;
-        
+                    VALUES (?, ?, ?, ?, ?, 'Pending')`;
+
         db.query(bookingSql, [user_id, ambulance_id, pickup_location, destination, fare], (err, result) => {
             if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
 
@@ -133,6 +134,7 @@ app.post('/api/bookings', (req, res) => {
 
                 db.commit((err) => {
                     if (err) return db.rollback(() => res.status(500).json({ error: "Commit Failed" }));
+                    console.log(`✅ Booking created for User ${user_id}. Ambulance ${ambulance_id} is now Busy.`);
                     res.json({ success: true, booking_id: result.insertId });
                 });
             });
@@ -148,14 +150,15 @@ app.get('/api/bookings/user/:id', (req, res) => {
         return res.status(400).json({ error: "Invalid User ID provided" });
     }
 
-    const sql = `SELECT * FROM Bookings WHERE user_id = ? ORDER BY created_at DESC`;
+    const sql = `SELECT booking_id, destination_hospital, status, fare, created_at 
+                 FROM Bookings WHERE user_id = ? ORDER BY created_at DESC`;
 
     db.query(sql, [userId], (err, results) => {
         if (err) {
             console.error("❌ TiDB Query Error:", err.message);
-            return res.status(500).json({ 
-                error: "Database error", 
-                details: err.message 
+            return res.status(500).json({
+                error: "Database error",
+                details: err.message
             });
         }
         res.json(results || []);
