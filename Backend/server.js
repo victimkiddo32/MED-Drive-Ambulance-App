@@ -152,8 +152,7 @@ app.get('/api/bookings/user/:id', (req, res) => {
         return res.status(400).json({ error: "Invalid User ID provided" });
     }
 
-    const sql = `SELECT booking_id, destination_hospital, status, fare, created_at 
-                 FROM Bookings WHERE user_id = ? ORDER BY created_at DESC`;
+    const sql = `SELECT * FROM Bookings WHERE user_id = ? ORDER BY created_at DESC`;
 
     db.query(sql, [userId], (err, results) => {
         if (err) {
