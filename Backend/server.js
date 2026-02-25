@@ -4,32 +4,56 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+
+// 1. IMPROVED CORS (Allows your Vercel frontend to talk to Render)
+app.use(cors({
+    origin: '*', 
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type']
+}));
 app.use(express.json());
 
-// 1. Database Connection
-const db = mysql.createConnection({
+// 2. DATABASE CONFIGURATION
+const dbConfig = {
     host: process.env.DB_HOST || 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
     user: process.env.DB_USER || '3ar8GbsUB4TTTf6.root',
     password: process.env.DB_PASSWORD || 'VIpnInb1NbDJkZMQ',
     database: process.env.DB_NAME || 'AmbulanceServiceDBMS',
     port: process.env.DB_PORT || 4000,
-    ssl: { rejectUnauthorized: false }
-}); // FIXED: Added missing closing parenthesis here
+    ssl: {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: false // REQUIRED for TiDB Cloud
+    },
+    connectTimeout: 20000 // 20 seconds
+};
 
-db.connect((err) => {
-    if (err) {
-        console.error('❌ DATABASE CONNECTION FAILED:', err.code);
-        console.error('Error Message:', err.message);
-        return;
-    }
-    console.log('✅ Connected to TiDB Cloud!');
-});
+let db;
 
-// Root route for health check
-app.get('/', (req, res) => {
-    res.send('Med-Drive API is Running...');
-});
+// 3. RECONNECTION LOGIC (Fixes the "Connection Closed" error)
+function handleDisconnect() {
+    db = mysql.createConnection(dbConfig);
+
+    db.connect((err) => {
+        if (err) {
+            console.error('❌ DATABASE CONNECTION FAILED:', err.message);
+            setTimeout(handleDisconnect, 2000); // Try again in 2 seconds
+        } else {
+            console.log('✅ Connected to TiDB Cloud!');
+        }
+    });
+
+    db.on('error', (err) => {
+        console.error('❌ DB Error:', err.message);
+        if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
+            console.log('🔄 Reconnecting to Database...');
+            handleDisconnect(); 
+        } else {
+            throw err;
+        }
+    });
+}
+
+handleDisconnect();
 
 // 2. Fetch All Ambulances
 app.get('/api/ambulances', (req, res) => {
@@ -43,6 +67,37 @@ app.get('/api/ambulances', (req, res) => {
     db.query(sql, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results || []);
+    });
+});
+
+// ---------------------------------------------------------
+// 5. ROUTE: User Login
+// ---------------------------------------------------------
+app.post('/api/users/login', (req, res) => {
+    const { email, password } = req.body;
+
+    // We select user_id and name to store in the frontend localStorage
+    const sql = `SELECT user_id, name, email FROM Users WHERE email = ? AND password = ?`;
+    
+    db.query(sql, [email, password], (err, results) => {
+        if (err) {
+            console.error("❌ Login SQL Error:", err.message);
+            return res.status(500).json({ error: "Internal server error" });
+        }
+
+        if (results.length > 0) {
+            // User found!
+            res.json({ 
+                success: true, 
+                user: results[0] 
+            });
+        } else {
+            // No user found with those credentials
+            res.status(401).json({ 
+                success: false, 
+                error: "Invalid email or password" 
+            });
+        }
     });
 });
 

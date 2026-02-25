@@ -190,7 +190,7 @@
 
                 if (res.ok) {
                     const data = await res.json();
-                    localStorage.setItem('userId', data.user.user_id);
+                    localStorage.setItem('userId', data.user.user_id || data.user.id);
                     localStorage.setItem('userName', data.user.name);
                     // PATH FIX: Dashboard is inside pages/
                     window.location.href = 'pages/dashboard.html';
