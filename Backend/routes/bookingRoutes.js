@@ -2,72 +2,95 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 
-// 1. GET all bookings (to see who has booked)
-// GET all bookings with Driver and Ambulance details
+// 1. GET: Fetch Detailed Booking History for Dashboard
+// Uses a JOIN to show Customer and Driver names instead of just IDs
 router.get('/', async (req, res) => {
     try {
-        // For now, we fetch all. Later you can use: 
-        // SELECT * FROM Bookings WHERE user_id = ?
-        const [rows] = await pool.execute('SELECT * FROM Bookings ORDER BY created_at DESC');
+        const [rows] = await pool.execute(`
+            SELECT 
+                b.booking_id, 
+                u.name AS customer_name, 
+                a.ambulance_type, 
+                d.driver_name, 
+                b.pickup_location, 
+                b.destination_hospital, 
+                b.status, 
+                b.fare, 
+                b.created_at
+            FROM Bookings b
+            JOIN Users u ON b.user_id = u.user_id
+            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            JOIN Drivers d ON a.driver_id = d.driver_id
+            ORDER BY b.created_at DESC
+        `);
         res.json(rows);
     } catch (error) {
-        console.error("Fetch History Error:", error);
-        res.status(500).json({ error: "Could not load history" });
+        console.error("Dashboard Fetch Error:", error);
+        res.status(500).json({ error: "Could not load booking history" });
     }
 });
 
-
-// Route to create a new booking
+// 2. POST: Create Booking + Update Ambulance Status (Atomic Transaction)
 router.post('/', async (req, res) => {
     const { user_id, ambulance_id, pickup_location, destination_hospital, fare } = req.body;
+    const connection = await pool.getConnection();
 
     try {
-        const query = `
-            INSERT INTO Bookings (user_id, ambulance_id, pickup_location, destination_hospital, fare, status)
-            VALUES (?, ?, ?, ?, ?, 'Pending')
-        `;
-        
-        const [result] = await pool.execute(query, [
-            user_id, 
-            ambulance_id || 1, 
-            pickup_location, 
-            destination_hospital, 
-            fare || 500.00
-        ]);
-        
+        await connection.beginTransaction();
+
+        // Step A: Insert Booking
+        const [result] = await connection.execute(
+            `INSERT INTO Bookings (user_id, ambulance_id, pickup_location, destination_hospital, fare, status)
+             VALUES (?, ?, ?, ?, ?, 'Pending')`,
+            [user_id, ambulance_id, pickup_location, destination_hospital, fare || 500.00]
+        );
+
+        // Step B: Mark Ambulance as 'Busy' immediately
+        await connection.execute(
+            `UPDATE Ambulances SET status = 'Busy' WHERE ambulance_id = ?`,
+            [ambulance_id]
+        );
+
+        await connection.commit();
         res.status(201).json({ 
             success: true, 
-            message: "Booking confirmed!", 
+            message: "Booking confirmed and ambulance dispatched!", 
             booking_id: result.insertId 
         });
+
     } catch (error) {
-        console.error("Booking Error:", error);
-        res.status(500).json({ success: false, message: "Database error" });
+        await connection.rollback();
+        console.error("Booking Transaction Error:", error);
+        res.status(500).json({ success: false, message: "Booking failed. Please try again." });
+    } finally {
+        connection.release();
     }
 });
 
-module.exports = router;
-
-// Delete a booking (Cancel Booking)
+// 3. DELETE: Cancel Booking (With Status Reversion)
 router.delete('/cancel/:id', async (req, res) => {
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
         const { id } = req.params;
 
-        // Get the ambulance_id before deleting the booking
+        // 1. Find which ambulance was assigned to this booking
         const [booking] = await connection.query('SELECT ambulance_id FROM Bookings WHERE booking_id = ?', [id]);
         
         if (booking.length > 0) {
             const ambId = booking[0].ambulance_id;
-            // Delete booking
-            await connection.query('DELETE FROM Bookings WHERE booking_id = ?', [id]);
-            // Make ambulance available
+            
+            // 2. Change status to 'Cancelled' instead of hard deleting (better for record keeping)
+            await connection.query('UPDATE Bookings SET status = "Cancelled" WHERE booking_id = ?', [id]);
+            
+            // 3. Free up the ambulance
             await connection.query('UPDATE Ambulances SET status = "Available" WHERE ambulance_id = ?', [ambId]);
+            
+            await connection.commit();
+            res.json({ success: true, message: "Booking cancelled successfully." });
+        } else {
+            res.status(404).json({ error: "Booking not found." });
         }
-
-        await connection.commit();
-        res.json({ message: "Cancelled and ambulance is now available." });
     } catch (err) {
         await connection.rollback();
         res.status(500).json({ error: err.message });
@@ -75,6 +98,5 @@ router.delete('/cancel/:id', async (req, res) => {
         connection.release();
     }
 });
-
 
 module.exports = router;
