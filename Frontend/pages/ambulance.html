@@ -28,7 +28,6 @@
             min-height: 100vh;
         }
 
-        /* Sidebar Styles */
         .sidebar {
             width: 260px;
             background: var(--sidebar-bg);
@@ -89,16 +88,10 @@
             color: var(--accent-red);
         }
 
-        /* Main Content */
         .main-content {
             margin-left: 300px;
             padding: 40px;
             width: calc(100% - 300px);
-        }
-
-        h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
         }
 
         .ambulance-grid {
@@ -108,7 +101,6 @@
             margin-top: 30px;
         }
 
-        /* Card Styles */
         .amb-card {
             background: var(--card-bg);
             border-radius: 16px;
@@ -117,14 +109,6 @@
             display: flex;
             flex-direction: column;
             transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-
-
-
-        .driver-box {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
         }
 
         .amb-card:hover {
@@ -145,31 +129,11 @@
             flex-direction: column;
         }
 
-        .provider-text {
-            color: var(--accent-red);
-            font-size: 0.75rem;
-            font-weight: bold;
-            text-transform: none;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-
         .amb-type {
             font-size: 1.25rem;
             font-weight: bold;
             margin: 0 0 15px 0;
             color: var(--white);
-        }
-
-        .vehicle-no {
-            display: block;
-            font-size: 0.82rem;
-            color: var(--text-gray);
-            font-style: italic;
-            /* Simple and natural */
-            margin: 2px 0;
-            text-transform: uppercase;
-            opacity: 0.9;
         }
 
         .driver-box {
@@ -178,44 +142,6 @@
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 15px;
-        }
-
-        .driver-name {
-            display: block;
-            font-weight: 600;
-            color: var(--white);
-            margin-bottom: 4px;
-        }
-
-        .stars {
-            color: var(--star-gold);
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-        }
-
-        .contact-link {
-            color: var(--accent-green);
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .location-text {
-            font-size: 0.85rem;
-            color: var(--text-gray);
-            margin-bottom: 10px;
-        }
-
-        .status-indicator {
-            font-size: 0.85rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 20px;
         }
 
         .btn-select {
@@ -228,26 +154,26 @@
             cursor: pointer;
             font-weight: bold;
             text-transform: uppercase;
-            margin-top: auto;
         }
 
         .btn-select:disabled {
             background: #21262d;
             color: var(--text-gray);
             cursor: not-allowed;
+        }
+
+        .filter-section input, .filter-section select {
+            padding: 12px;
+            border-radius: 8px;
             border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: white;
+            outline: none;
         }
 
         @media (max-width: 768px) {
-            .sidebar {
-                display: none;
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 20px;
-                width: 100%;
-            }
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; width: 100%; }
         }
     </style>
 </head>
@@ -256,8 +182,7 @@
 
     <nav class="sidebar">
         <div class="logo-area">
-            <img src="../assets/images/logo.png" alt="Med-Drive Logo"
-                onerror="this.src='https://via.placeholder.com/100'">
+            <img src="../assets/images/logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/100'">
             <h3 style="color: var(--accent-red); margin: 10px 0 0 0;">Med-Drive</h3>
             <p class="tagline">Ambulance at your doorstep</p>
         </div>
@@ -275,160 +200,105 @@
         <h1>Ambulance Fleet</h1>
         <p style="color: var(--text-gray); margin-top: 5px;">Available specialized medical transport in Noakhali.</p>
 
+        <div class="filter-section" style="width: 100%; margin: 20px 0; display: flex; gap: 15px;">
+            <input type="text" id="searchInput" placeholder="Search by Hospital or Type..." style="flex: 2;">
+            <select id="typeFilter" style="flex: 1;">
+                <option value="all">All Types</option>
+                <option value="AC">AC Ambulance</option>
+                <option value="Non-AC">Non-AC Ambulance</option>
+                <option value="ICU">ICU/Freezer</option>
+            </select>
+        </div>
+
         <div id="fleet-container" class="ambulance-grid"></div>
     </div>
 
     <script>
-        // 1. Define fleet GLOBALLY at the top
-        let fleet = [];
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
+        let allAmbulances = []; // Master data from server
 
-        // Global variable to store original data
-let allAmbulances = [];
-
-async function loadAmbulanceList() {
-    try {
-        const res = await fetch(`${API_BASE}/ambulances`);
-        allAmbulances = await res.json();
-        renderAmbulances(allAmbulances);
-    } catch (err) {
-        console.error("Error loading ambulances:", err);
-    }
-}
-
-function renderAmbulances(data) {
-    const container = document.getElementById('ambulance-container');
-    container.innerHTML = data.map(amb => `
-        <div class="ambulance-card">
-            <img src="../assets/images/${amb.image_url || 'default.png'}" onerror="this.src='../assets/images/logo.png'">
-            <h3>${amb.ambulance_type}</h3>
-            <p>Provider: ${amb.provider}</p>
-            <p>Status: <span class="status-${amb.status.toLowerCase()}">${amb.status}</span></p>
-            <button onclick="selectForBooking(${amb.id})">Book Now</button>
-        </div>
-    `).join('');
-}
-
-// Search and Filter Logic
-document.getElementById('searchInput').addEventListener('input', applyFilters);
-document.getElementById('typeFilter').addEventListener('change', applyFilters);
-
-function applyFilters() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const typeTerm = document.getElementById('typeFilter').value;
-
-    const filtered = allAmbulances.filter(amb => {
-        const matchesSearch = amb.provider.toLowerCase().includes(searchTerm) || 
-                              amb.ambulance_type.toLowerCase().includes(searchTerm);
-        const matchesType = typeTerm === 'all' || amb.ambulance_type.includes(typeTerm);
-        
-        return matchesSearch && matchesType;
-    });
-
-    renderAmbulances(filtered);
-}
-
-
+        // 1. Unified Load Function
         async function loadFleet() {
             const container = document.getElementById('fleet-container');
-            if (!container) return;
-
             try {
                 const response = await fetch(`${API_BASE}/ambulances`);
-                fleet = await response.json();
+                allAmbulances = await response.json();
+                renderAmbulances(allAmbulances);
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                container.innerHTML = "<p style='color:red;'>Failed to load fleet. Is server running?</p>";
+            }
+        }
 
-                if (!fleet || fleet.length === 0) {
-                    container.innerHTML = "<p style='color:white; text-align:center;'>No ambulances found.</p>";
-                    return;
-                }
+        // 2. Render Cards to UI
+        function renderAmbulances(data) {
+            const container = document.getElementById('fleet-container');
+            if (!data || data.length === 0) {
+                container.innerHTML = "<p style='color:white; text-align:center; grid-column: 1/-1;'>No ambulances found.</p>";
+                return;
+            }
 
-                container.innerHTML = fleet.map(amb => {
-                    const isAvailable = amb.status === 'Available';
-                    const imgFileName = amb.image_url ? amb.image_url.split('/').pop() : 'logo.png';
-                    const imgPath = `../assets/images/${imgFileName}`;
-
-                    // Logic for Stars
-                    const getStars = (rating) => '⭐'.repeat(Math.round(rating || 5));
-
-                    return `
-            <div class="filter-section" style="width: 90%; margin: 20px auto; display: flex; gap: 15px;">
-    <input type="text" id="searchInput" placeholder="Search by Hospital or Type..." 
-           style="flex: 2; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: white;">
-    
-    <select id="typeFilter" style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: white;">
-        <option value="all">All Types</option>
-        <option value="AC">AC Ambulance</option>
-        <option value="Non-AC">Non-AC Ambulance</option>
-        <option value="ICU">ICU/Freezer</option>
-    </select>
-</div>
+            container.innerHTML = data.map(amb => {
+                const isAvailable = amb.status === 'Available';
+                const getStars = (rating) => '⭐'.repeat(Math.round(rating || 5));
+                
+                return `
                 <div class="amb-card">
-                    <img src="${imgPath}" onerror="this.src='../assets/images/logo.png';">
+                    <img src="../assets/images/${amb.image_url || 'logo.png'}" onerror="this.src='../assets/images/logo.png';">
                     <div class="amb-info">
-                        <span class="provider-text" style="color: #58a6ff; font-weight: bold; font-size: 0.85rem; display: block; margin-bottom: 5px;">
-                             Provider: ${amb.provider || amb.hospital_name || 'General Service'}
+                        <span style="color: #58a6ff; font-weight: bold; font-size: 0.85rem; margin-bottom: 5px;">
+                            Provider: ${amb.provider || 'General Service'}
                         </span>
-                        
                         <h3 class="amb-type">${amb.ambulance_type}</h3>
-                        
                         <div class="driver-box">
-                            <span class="driver-name">👨‍✈️ ${amb.driver_name}</span>
-                            
-                            <span class="vehicle-no" style="display: block; font-style: italic; color: #8b949e; font-size: 0.8rem; margin: 2px 0;">
-                                🚘 ${amb.vehicle_number || 'N/A'}
-                            </span>
-
-                            <div class="stars" style="margin: 5px 0;">
-                                ${getStars(amb.driver_rating)}
-                            </div>
-                            
-                            <a href="tel:${amb.contact}" class="contact-link" style="text-decoration: none; color: #3fb950; font-size: 0.9rem; font-weight: bold;">
-                                📞 ${amb.contact || '01XXXXXXXXX'}
-                            </a>
+                            <span style="display:block; font-weight:600;">👨‍✈️ ${amb.driver_name || 'Assigned on Booking'}</span>
+                            <span style="color: #8b949e; font-size: 0.8rem;">🚘 ${amb.vehicle_number || 'N/A'}</span>
+                            <div style="color: #f1c40f; font-size: 0.9rem; margin-top:5px;">${getStars(amb.driver_rating)}</div>
                         </div>
-
-                        <div class="status-indicator" style="margin-top: 10px; font-size: 0.85rem; font-weight: bold; color: ${isAvailable ? '#3fb950' : '#f85149'};">
+                        <div style="margin-bottom: 15px; font-weight: bold; color: ${isAvailable ? '#3fb950' : '#f85149'};">
                             ${isAvailable ? '● Available' : '● Busy'}
                         </div>
-
                         <button class="btn-select" 
-                            onclick="selectForBooking(${amb.id})" 
-                            ${!isAvailable ? 'disabled' : ''}
-                            style="margin-top: 15px; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; background: ${isAvailable ? '#f85149' : '#30363d'}; color: white; border: none;">
+                                onclick="selectForBooking(${amb.id})" 
+                                ${!isAvailable ? 'disabled' : ''}
+                                style="background: ${isAvailable ? '#f85149' : '#30363d'}">
                             ${isAvailable ? 'BOOK NOW' : 'OCCUPIED'}
                         </button>
                     </div>
-                </div>
-            `;
-                }).join('');
-
-            } catch (error) {
-                console.error("Fetch Error:", error);
-            }
+                </div>`;
+            }).join('');
         }
 
-        // 4. The Redirect Function
+        // 3. Filter Logic
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeTerm = document.getElementById('typeFilter').value;
+
+            const filtered = allAmbulances.filter(amb => {
+                const nameMatch = (amb.provider || '').toLowerCase().includes(searchTerm) || 
+                                  (amb.ambulance_type || '').toLowerCase().includes(searchTerm);
+                const typeMatch = typeTerm === 'all' || amb.ambulance_type.includes(typeTerm);
+                return nameMatch && typeMatch;
+            });
+
+            renderAmbulances(filtered);
+        }
+
+        // 4. Global Booking Function
         function selectForBooking(id) {
-            console.log("Button clicked! Looking for ID:", id);
-
-            // Find the ambulance in our global fleet array
-            const selectedAmb = fleet.find(a => a.id == id);
-
+            const selectedAmb = allAmbulances.find(a => a.id == id);
             if (selectedAmb) {
-                console.log("Found ambulance:", selectedAmb);
                 localStorage.setItem('selectedAmbulance', JSON.stringify(selectedAmb));
-
-                // Final Step: Redirect
                 window.location.href = 'dashboard.html';
-            } else {
-                console.error("Could not find ambulance with ID:", id);
-                alert("Error: Ambulance data missing. Please refresh.");
             }
         }
 
-        // Load on start
-        document.addEventListener('DOMContentLoaded', loadFleet);
+        // 5. Setup Listeners on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFleet();
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            document.getElementById('typeFilter').addEventListener('change', applyFilters);
+        });
     </script>
 </body>
-
 </html>
