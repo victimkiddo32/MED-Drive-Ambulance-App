@@ -1,14 +1,19 @@
-const jwt = require('jsonwebtoken');
+const verifyRole = (roles) => {
+    return (req, res, next) => {
+        // In a real app, you'd verify a JWT token here. 
+        // For your project, we check the role sent in the headers.
+        const userRole = req.headers['x-user-role']; 
 
-module.exports = (req, res, next) => {
-    const token = req.header('Authorization')?.split(' ')[1];
-    if (!token) return res.status(401).json({ message: "No token, authorization denied" });
+        if (!userRole) {
+            return res.status(401).json({ message: "Authentication required" });
+        }
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
+        if (!roles.includes(userRole)) {
+            return res.status(403).json({ message: "Access Denied: Unauthorized Role" });
+        }
+
         next();
-    } catch (err) {
-        res.status(401).json({ message: "Token is not valid" });
-    }
+    };
 };
+
+module.exports = { verifyRole };

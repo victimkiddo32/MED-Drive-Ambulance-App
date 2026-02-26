@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Provider Portal | Med-Drive</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         :root {
             --dark-bg: #121212;
@@ -13,11 +12,12 @@
             --accent-red: #e74c3c;
             --text-gray: #b3b3b3;
             --white: #ffffff;
+            --success-green: #2ecc71;
         }
 
         body {
             margin: 0;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--dark-bg);
             color: var(--white);
             display: flex;
@@ -42,7 +42,7 @@
         }
 
         .logo-area img {
-            width: 100px;
+            width: 80px;
             border-radius: 50%;
         }
 
@@ -127,8 +127,7 @@
             margin-bottom: 8px;
         }
 
-        input,
-        select {
+        input, select {
             width: 100%;
             padding: 12px;
             background: #2a2a2a;
@@ -136,7 +135,10 @@
             color: white;
             border-radius: 8px;
             box-sizing: border-box;
+            outline: none;
         }
+
+        input:focus { border-color: var(--accent-red); }
 
         .btn-add {
             background: var(--accent-red);
@@ -161,56 +163,66 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #333;
+            padding: 20px;
+            background: #252525;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border: 1px solid #333;
         }
+
+        .fleet-info { display: flex; align-items: center; gap: 15px; }
 
         .fleet-img {
-            width: 60px;
-            height: 40px;
+            width: 70px;
+            height: 50px;
             object-fit: cover;
             border-radius: 5px;
-            margin-right: 15px;
+            background: #000;
         }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-available { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+        .badge-busy { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
     </style>
 </head>
-<div class="card" style="margin-top: 20px;">
-    <h3>Your Registered Fleet</h3>
-    <div id="provider-fleet-list">
-    </div>
-</div>
 
 <body>
-
-
-
     <nav class="sidebar">
         <div class="logo-area">
-            <img src="../assets/images/logo.png" alt="Med-Drive Logo">
+            <img src="../assets/images/logo.png" alt="Med-Drive" onerror="this.src='https://via.placeholder.com/80'">
             <h3 style="color: var(--accent-red); margin-top: 10px;">PROVIDER</h3>
+            <p id="provider-name-display" style="font-size: 12px; color: var(--text-gray);">Loading...</p>
         </div>
         <ul>
             <li><a href="dashboard.html">🏠 Dashboard</a></li>
             <li><a href="provider.html" style="color: var(--accent-red);">🚑 Fleet Management</a></li>
+            <li><a href="#">📋 Manage Bookings</a></li>
             <li><a href="#">📊 Analytics</a></li>
-            <li style="margin-top: auto;"><a href="login.html">🚪 Logout</a></li>
+            <li style="margin-top: 50px;"><a href="#" onclick="logout()">🚪 Logout</a></li>
         </ul>
     </nav>
 
     <main class="main-content">
         <header style="margin-bottom: 30px;">
-            <h1>Hospital Command Center</h1>
-            <p style="color: var(--text-gray);">Manage your ambulance fleet and driver assignments.</p>
+            <h1>Fleet Command Center</h1>
+            <p style="color: var(--text-gray);">Add ambulances and monitor your fleet status in real-time.</p>
         </header>
 
         <div class="dashboard-stats">
             <div class="stat-card">
-                <p>Active Fleet</p>
+                <p>Total Vehicles</p>
                 <h2 id="stat-total">0</h2>
             </div>
             <div class="stat-card">
-                <p>On Trip</p>
-                <h2 id="stat-busy" style="color: #f1c40f;">0</h2>
+                <p>Available Now</p>
+                <h2 id="stat-available" style="color: var(--success-green);">0</h2>
             </div>
             <div class="stat-card">
                 <p>Today's Earnings</p>
@@ -219,11 +231,11 @@
         </div>
 
         <div class="card">
-            <h3 style="margin-top: 0; margin-bottom: 25px; color: var(--accent-red);">Add New Ambulance</h3>
+            <h3 style="margin-top: 0; margin-bottom: 25px; color: var(--accent-red);">Register New Vehicle</h3>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Ambulance Model</label>
-                    <input type="text" id="model-name" placeholder="e.g. Toyota Hiace Premium">
+                    <label>Vehicle Number (Plate)</label>
+                    <input type="text" id="vehicle-number" placeholder="e.g. DHAKA-METRO-KA-1234">
                 </div>
                 <div class="form-group">
                     <label>Ambulance Type</label>
@@ -236,53 +248,56 @@
                 </div>
                 <div class="form-group">
                     <label>Assign Driver Name</label>
-                    <input type="text" id="driver-name" placeholder="Full Name">
+                    <input type="text" id="driver-name" placeholder="Driver's Full Name">
                 </div>
                 <div class="form-group">
-                    <label>Driver Contact Number</label>
-                    <input type="text" id="driver-phone" placeholder="+880">
+                    <label>Base Booking Fare (৳)</label>
+                    <input type="number" id="base-fare" placeholder="1500">
                 </div>
-                <div class="form-group" style="grid-column: span 2;">
-                    <label>Photo Filename (e.g. amb1.png)</label>
-                    <input type="text" id="image-name" placeholder="Enter file name from assets/images/">
-                </div>
-                <button class="btn-add" onclick="registerAmbulance()">CONFIRM FLEET ADDITION</button>
+                <button class="btn-add" onclick="registerAmbulance()">ADD TO FLEET</button>
             </div>
-            <button class="btn-add" onclick="registerAmbulance()">List Ambulance</button>
         </div>
 
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0;">Your Registered Fleet</h3>
-                <button onclick="clearFleet()"
-                    style="background: none; border: 1px solid #444; color: #888; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px;">Wipe
-                    All Data</button>
+                <h3 style="margin: 0;">Live Fleet Status</h3>
+                <button onclick="refreshFleet()" style="background:none; border:1px solid #444; color:#fff; cursor:pointer; padding:5px 10px; border-radius:5px;">🔄 Refresh</button>
             </div>
             <div id="fleet-list">
-                <p style="color: var(--text-gray); text-align: center; padding: 20px;">Loading fleet data...</p>
+                <p style="color: var(--text-gray); text-align: center; padding: 20px;">Fetching fleet status...</p>
             </div>
         </div>
     </main>
 
     <script>
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
+        
+        // Security Check: Only allow Providers
+        window.onload = () => {
+            const role = localStorage.getItem('userRole');
+            if (role !== 'Provider') {
+                alert("Access Denied: Provider login required.");
+                window.location.href = 'login.html';
+            }
+            loadProviderFleet();
+        };
 
         async function registerAmbulance() {
-            const imageName = document.getElementById('image-name').value || 'logo.png';
+            const btn = document.querySelector('.btn-add');
+            btn.innerText = "Processing...";
+            
             const data = {
-                provider_id: localStorage.getItem('userId'),
-                model_name: document.getElementById('model-name').value,
+                provider_id: localStorage.getItem('userId'), // Logged in Provider ID
+                vehicle_number: document.getElementById('vehicle-number').value,
                 ambulance_type: document.getElementById('amb-type').value,
                 driver_name: document.getElementById('driver-name').value,
-                driver_phone: document.getElementById('driver-phone').value,
-                // For the "Closest 5" feature, we simulate a location in Dhaka
-                lat: 23.8103 + (Math.random() - 0.5) * 0.1,
-                lng: 90.4125 + (Math.random() - 0.5) * 0.1,
-                image_url: `../assets/images/${imageName}`
+                base_fare: document.getElementById('base-fare').value,
+                status: 'Available'
             };
 
-            if (!data.model_name || !data.driver_name) {
-                alert("Please fill all fields");
+            if (!data.vehicle_number || !data.driver_name) {
+                alert("Please complete all fields.");
+                btn.innerText = "ADD TO FLEET";
                 return;
             }
 
@@ -294,57 +309,62 @@
                 });
 
                 if (response.ok) {
-                    alert("Ambulance Added Successfully!");
+                    alert("Ambulance added to your fleet!");
                     location.reload();
                 }
             } catch (err) {
-                console.error(err);
+                console.error("Error:", err);
+                alert("Server connection failed.");
+            } finally {
+                btn.innerText = "ADD TO FLEET";
             }
         }
 
         async function loadProviderFleet() {
             const fleetList = document.getElementById('fleet-list');
+            const providerId = localStorage.getItem('userId');
+
             try {
-                const response = await fetch(`${API_BASE}/ambulances`);
+                // Modified query to fetch ONLY this provider's fleet
+                const response = await fetch(`${API_BASE}/ambulances?provider_id=${providerId}`);
                 const fleet = await response.json();
 
                 document.getElementById('stat-total').innerText = fleet.length;
+                document.getElementById('stat-available').innerText = fleet.filter(a => a.status === 'Available').length;
 
                 if (fleet.length === 0) {
-                    fleetList.innerHTML = `<p style="text-align:center; color:gray;">No vehicles registered yet.</p>`;
+                    fleetList.innerHTML = `<p style="text-align:center; color:gray;">No vehicles registered under your ID.</p>`;
                     return;
                 }
 
                 fleetList.innerHTML = fleet.map(amb => `
                     <div class="fleet-item">
-                        <div style="display: flex; align-items: center;">
-                            <img src="${amb.image_url}" class="fleet-img" onerror="this.src='../assets/images/logo.png'">
+                        <div class="fleet-info">
+                            <img src="../assets/images/logo.png" class="fleet-img">
                             <div>
-                                <div style="font-weight: bold;">${amb.model_name}</div>
-                                <div style="font-size: 12px; color: gray;">Driver: ${amb.driver_name}</div>
+                                <div style="font-weight: bold; font-size: 16px;">${amb.vehicle_number}</div>
+                                <div style="font-size: 13px; color: var(--text-gray);">${amb.ambulance_type} | Driver: ${amb.driver_name}</div>
                             </div>
                         </div>
                         <div style="text-align: right;">
-                            <span style="color: #2ecc71; font-size: 12px;">● Available</span>
-                            <div style="font-size: 12px; color: gray;">${amb.ambulance_type}</div>
+                            <span class="badge ${amb.status === 'Available' ? 'badge-available' : 'badge-busy'}">
+                                ${amb.status}
+                            </span>
+                            <div style="margin-top: 5px; font-weight: bold;">৳ ${amb.base_fare || '1500'}</div>
                         </div>
                     </div>
                 `).join('');
             } catch (err) {
-                fleetList.innerHTML = `<p style="color:red;">Error connecting to server.</p>`;
+                fleetList.innerHTML = `<p style="color:red; text-align:center;">Failed to load fleet data.</p>`;
             }
         }
 
-        // Use carefully: This clears your testing data
-        async function clearFleet() {
-            if (confirm("Are you sure you want to delete all ambulances from the system?")) {
-                // This would require a DELETE route on your backend.
-                alert("Please delete manually from your Database or re-register vehicles.");
-            }
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
         }
-
-        window.onload = loadProviderFleet;
+        
+        function refreshFleet() { loadProviderFleet(); }
     </script>
 </body>
-
 </html>

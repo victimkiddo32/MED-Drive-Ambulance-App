@@ -5,166 +5,203 @@ require('dotenv').config();
 
 const app = express();
 
-// 1. IMPROVED CORS (Allows your Vercel frontend to talk to Render)
+// 1. IMPROVED CORS
 app.use(cors({
     origin: '*',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'x-user-role']
 }));
 app.use(express.json());
 
-// 2. DATABASE CONFIGURATION
-const dbConfig = {
+// 2. DATABASE POOL (Better than single connection for TiDB/Render)
+const pool = mysql.createPool({
     host: process.env.DB_HOST || 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
     user: process.env.DB_USER || '3ar8GbsUB4TTTf6.root',
     password: process.env.DB_PASSWORD || 'VIpnInb1NbDJkZMQ',
     database: process.env.DB_NAME || 'AmbulanceServiceDBMS',
     port: process.env.DB_PORT || 4000,
-    ssl: {
-        minVersion: 'TLSv1.2',
-        rejectUnauthorized: false // REQUIRED for TiDB Cloud
-    },
-    connectTimeout: 20000 // 20 seconds
-};
+    ssl: { rejectUnauthorized: false },
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+}).promise(); // Using promises for cleaner async/await code
 
+// Test Connection
+pool.getConnection()
+    .then(conn => {
+        console.log('✅ Connected to TiDB Cloud Pool!');
+        conn.release();
+    })
+    .catch(err => console.error('❌ DB Connection Failed:', err.message));
 
-// 3. RECONNECTION LOGIC (Fixes the "Connection Closed" error)
-let db;
-
-function handleDisconnect() {
-    // Create the connection object
-    db = mysql.createConnection({
-        host: process.env.DB_HOST || 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
-        user: process.env.DB_USER || '3ar8GbsUB4TTTf6.root',
-        password: process.env.DB_PASSWORD || 'VIpnInb1NbDJkZMQ',
-        database: process.env.DB_NAME || 'AmbulanceServiceDBMS',
-        port: 4000,
-        ssl: { rejectUnauthorized: false }
-    });
-
-    // Attempt to connect
-    db.connect((err) => {
-        if (err) {
-            console.error('❌ Error connecting to DB:', err.message);
-            setTimeout(handleDisconnect, 2000); // Wait 2 seconds and try again
-        } else {
-            console.log('✅ Connected to TiDB Cloud!');
-        }
-    });
-
-    // Listen for errors (this catches the "Closed State" issue)
-    db.on('error', (err) => {
-        console.error('❌ DB Error:', err.message);
-        if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
-            console.log('🔄 Connection lost. Reconnecting...');
-            handleDisconnect(); // Restart the connection
-        } else {
-            throw err;
-        }
-    });
-}
-
-
-handleDisconnect();
-
-// 2. Fetch All Ambulances
-app.get('/api/ambulances', (req, res) => {
-    const sql = `
-        SELECT a.ambulance_id AS id, a.vehicle_number, a.ambulance_type, a.status, 
-               a.image_url, d.driver_name, h.hospital_name AS provider
-        FROM Ambulances a
-        LEFT JOIN Drivers d ON a.driver_id = d.driver_id
-        LEFT JOIN Hospitals h ON a.hospital_id = h.hospital_id`;
-
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results || []);
-    });
+// ---------------------------------------------------------
+// 3. ROUTES: AMBULANCES (Updated for 3NF)
+// ---------------------------------------------------------
+app.get('/api/ambulances', async (req, res) => {
+    try {
+        const sql = `
+            SELECT a.ambulance_id AS id, a.vehicle_number, a.ambulance_type, a.status, 
+                   a.image_url, u.full_name AS driver_name, p.company_name AS provider
+            FROM Ambulances a
+            LEFT JOIN Drivers d ON a.ambulance_id = d.ambulance_id
+            LEFT JOIN Users u ON d.user_id = u.user_id
+            LEFT JOIN Providers p ON a.provider_id = p.provider_id`;
+        
+        const [results] = await pool.query(sql);
+        res.json(results);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // ---------------------------------------------------------
-// 5. ROUTE: User Login
+// 4. ROUTES: AUTHENTICATION (Updated for 3NF)
 // ---------------------------------------------------------
-app.post('/api/users/login', (req, res) => {
+app.post('/api/users/login', async (req, res) => {
     const { email, password } = req.body;
-
-    // We select user_id and name to store in the frontend localStorage
-    const sql = `SELECT user_id, name, email FROM Users WHERE email = ? AND password = ?`;
-
-    db.query(sql, [email, password], (err, results) => {
-        if (err) {
-            console.error("❌ Login SQL Error:", err.message);
-            return res.status(500).json({ error: "Internal server error" });
-        }
+    try {
+        // We select full_name and role to handle redirection
+        const sql = `
+            SELECT u.user_id, u.full_name, u.email, u.role, o.discount_rate
+            FROM Users u
+            LEFT JOIN Organizations o ON u.org_id = o.org_id
+            WHERE u.email = ? AND u.password = ?`;
+            
+        const [results] = await pool.query(sql, [email, password]);
 
         if (results.length > 0) {
-            // User found!
-            res.json({
-                success: true,
-                user: results[0]
-            });
+            res.json({ success: true, user: results[0] });
         } else {
-            // No user found with those credentials
-            res.status(401).json({
-                success: false,
-                error: "Invalid email or password"
-            });
+            res.status(401).json({ success: false, error: "Invalid credentials" });
         }
-    });
-});
-
-// 3. Create Booking (Transaction based)
-app.post('/api/bookings', (req, res) => {
-    const { user_id, ambulance_id, pickup_location, destination_hospital , fare } = req.body;
-
-    console.log("📥 Booking Received for Hospital:", destination_hospital);
-
-    db.beginTransaction((err) => {
-        if (err) return res.status(500).json({ error: "Transaction Error" });
-
-        // Change 'destination_hospital' to 'destination' (or vice versa) 
-        // to match exactly what is in your TiDB table.
-        const bookingSql = `INSERT INTO Bookings (user_id, ambulance_id, pickup_location, destination_hospital, fare, status) 
-                    VALUES (?, ?, ?, ?, ?, 'Pending')`;
-
-        db.query(bookingSql, [user_id, ambulance_id, pickup_location, destination_hospital, fare], (err, result) => {
-            if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
-
-            const updateAmbSql = `UPDATE Ambulances SET status = 'Busy' WHERE ambulance_id = ?`;
-            db.query(updateAmbSql, [ambulance_id], (err) => {
-                if (err) return db.rollback(() => res.status(500).json({ error: "Update Failed" }));
-
-                db.commit((err) => {
-                    if (err) return db.rollback(() => res.status(500).json({ error: "Commit Failed" }));
-                    console.log(`✅ Booking created for User ${user_id}. Ambulance ${ambulance_id} is now Busy.`);
-                    res.json({ success: true, booking_id: result.insertId });
-                });
-            });
-        });
-    });
-});
-
-// 4. User Booking History
-app.get('/api/bookings/user/:id', (req, res) => {
-    const userId = req.params.id;
-
-    if (!userId || userId === 'undefined') {
-        return res.status(400).json({ error: "Invalid User ID provided" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    const sql = `SELECT * FROM Bookings WHERE user_id = ? ORDER BY created_at DESC`;
-
-    db.query(sql, [userId], (err, results) => {
-        if (err) {
-            console.error("❌ TiDB Query Error:", err.message);
-            return res.status(500).json({
-                error: "Database error",
-                details: err.message
-            });
-        }
-        res.json(results || []);
-    });
 });
 
-const PORT = process.env.PORT || 10000; // Updated to 10000 to match Render's preference
+// ---------------------------------------------------------
+// 5. ROUTES: BOOKINGS (With Atomic Transaction)
+// ---------------------------------------------------------
+app.post('/api/bookings', async (req, res) => {
+    const { user_id, ambulance_id, pickup_location, destination_hospital, base_fare, final_fare } = req.body;
+    const conn = await pool.getConnection();
+
+    try {
+        await conn.beginTransaction();
+
+        // Insert Booking
+        const bookingSql = `
+            INSERT INTO Bookings (user_id, ambulance_id, pickup_location, destination_hospital, base_fare, final_fare, status) 
+            VALUES (?, ?, ?, ?, ?, ?, 'Pending')`;
+        const [result] = await conn.query(bookingSql, [user_id, ambulance_id, pickup_location, destination_hospital, base_fare, final_fare]);
+
+        // Update Ambulance Status
+        await conn.query(`UPDATE Ambulances SET status = 'Busy' WHERE ambulance_id = ?`, [ambulance_id]);
+
+        await conn.commit();
+        res.json({ success: true, booking_id: result.insertId });
+    } catch (err) {
+        await conn.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        conn.release();
+    }
+});
+
+// ---------------------------------------------------------
+// 6. ROUTES: USER HISTORY
+// ---------------------------------------------------------
+app.get('/api/bookings/user/:id', async (req, res) => {
+    try {
+        const [results] = await pool.query(
+            `SELECT * FROM Bookings WHERE user_id = ? ORDER BY booking_time DESC`, 
+            [req.params.id]
+        );
+        res.json(results);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ---------------------------------------------------------
+// 7. ROUTES: PROVIDER MANAGEMENT (Added for your Provider HTML)
+// ---------------------------------------------------------
+app.post('/api/ambulances/add', async (req, res) => {
+    const { provider_id, vehicle_number, ambulance_type, driver_name } = req.body;
+    try {
+        const sql = `INSERT INTO Ambulances (provider_id, vehicle_number, ambulance_type, status) VALUES (?, ?, ?, 'Available')`;
+        await pool.query(sql, [provider_id, vehicle_number, ambulance_type]);
+        res.status(201).json({ success: true, message: "Added successfully" });
+    } catch (err) {
+        res.status(500).json({ error: "Vehicle number already exists" });
+    }
+});
+
+
+// ---------------------------------------------------------
+// 8. ROUTES: ADMIN MANAGEMENT (Organizations)
+// ---------------------------------------------------------
+
+// GET all organizations with user counts
+app.get('/api/admin/organizations', async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                o.org_id AS id, 
+                o.name, 
+                o.domain, 
+                o.discount_rate,
+                (SELECT COUNT(*) FROM Users u WHERE u.org_id = o.org_id) AS user_count
+            FROM Organizations o`;
+        
+        const [results] = await pool.query(sql);
+        res.json(results);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST a new organization
+app.post('/api/admin/organizations', async (req, res) => {
+    const { name, domain, discount_rate } = req.body;
+    try {
+        const sql = `INSERT INTO Organizations (name, domain, discount_rate) VALUES (?, ?, ?)`;
+        const [result] = await pool.query(sql, [name, domain, discount_rate]);
+        res.status(201).json({ success: true, id: result.insertId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE an organization
+app.delete('/api/admin/organizations/:id', async (req, res) => {
+    try {
+        const sql = `DELETE FROM Organizations WHERE org_id = ?`;
+        await pool.query(sql, [req.params.id]);
+        res.json({ success: true, message: "Organization deleted" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET Admin Dashboard Stats
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const [revenue] = await pool.query(`SELECT SUM(final_fare) as total FROM Bookings WHERE status = 'Completed'`);
+        const [bookings] = await pool.query(`SELECT COUNT(*) as count FROM Bookings`);
+        const [drivers] = await pool.query(`SELECT COUNT(*) as count FROM Drivers`);
+        const [orgs] = await pool.query(`SELECT COUNT(*) as count FROM Organizations`);
+
+        res.json({
+            revenue: revenue[0].total || 0,
+            bookingsCount: bookings[0].count || 0,
+            driversCount: drivers[0].count || 0,
+            orgsCount: orgs[0].count || 0
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

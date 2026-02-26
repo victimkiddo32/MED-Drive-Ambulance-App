@@ -1,26 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../assets/css/style.css">
     <title>Register | Med-Drive</title>
     <style>
-        /* Dark Medical Theme Variables */
         :root {
-            --bg-dark: #0d1117;
-            /* Body Background Fallback */
-            --card-bg: #161b22;
-            /* Card Background */
+            --bg-dark: #030712;
+            --card-bg: rgba(17, 24, 39, 0.85);
             --accent-red: #ff5b58;
-            /* Primary Medical Red */
-            --med-blue: #58a6ff;
-            /* Accent blue for buttons */
-            --border-color: #30363d;
-            /* Subtle Borders */
-            --text-main: #ffffff;
-            --text-dim: #8b949e;
+            --med-blue: #3b82f6;
+            --admin-gold: #facc15;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #f9fafb;
+            --text-dim: #9ca3af;
         }
 
         body {
@@ -28,173 +21,261 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            /* Changed from image to solid black */
-            background-color: #000000;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            background-color: var(--bg-dark);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             color: var(--text-main);
+            overflow-x: hidden;
+            position: relative;
         }
 
+        /* --- LIVE ANIMATED BACKGROUND --- */
+        .background-blobs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            filter: blur(80px);
+        }
+
+        .blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            opacity: 0.35;
+            animation: move 25s infinite alternate ease-in-out;
+        }
+
+        .blob-1 { background: var(--accent-red); top: -10%; left: -10%; }
+        .blob-2 { background: var(--med-blue); bottom: -10%; right: -10%; animation-delay: -5s; }
+        .blob-3 { background: #7c3aed; top: 30%; left: 40%; animation-delay: -10s; }
+
+        @keyframes move {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(150px, 100px) scale(1.2); }
+        }
+
+        /* --- REGISTRATION CARD --- */
         .register-wrapper {
             width: 100%;
-            max-width: 380px;
+            max-width: 450px;
             padding: 20px;
+            z-index: 10;
         }
 
         .booking-section {
             background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border-color);
-            border-radius: 15px;
+            border-radius: 28px;
             padding: 35px;
-            /* Restored original padding since logo is gone */
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
         }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 25px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-        }
+        h2 { text-align: center; margin: 0 0 5px 0; font-size: 26px; letter-spacing: -0.5px; }
+        .subtitle { text-align: center; color: var(--text-dim); margin-bottom: 25px; font-size: 14px; }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 14px;
+        /* --- ROLE SELECTION GRID --- */
+        .role-label {
+            font-size: 11px;
+            font-weight: 700;
             color: var(--text-dim);
-            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: block;
+            margin-bottom: 12px;
         }
 
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            background-color: #0d1117;
+        .role-selection {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .role-card {
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: white;
-            font-size: 15px;
-            box-sizing: border-box;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .form-group input:focus {
-            border-color: var(--accent-red);
-            box-shadow: 0 0 0 2px rgba(255, 91, 88, 0.2);
-            outline: none;
+        .role-card span { font-size: 13px; font-weight: 600; color: var(--text-dim); }
+
+        .role-card:hover { border-color: rgba(255, 255, 255, 0.3); }
+
+        /* Active States */
+        .role-card.active { background: #ffffff; border-color: #ffffff; }
+        .role-card.active span { color: #000000; }
+
+        /* Special Gold Style for Admin Active */
+        .role-card.active.admin-role { background: var(--admin-gold); border-color: var(--admin-gold); }
+
+        /* --- FORM INPUTS --- */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; }
+        
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: 0.3s;
         }
+
+        input:focus { border-color: var(--med-blue); outline: none; background: rgba(0, 0, 0, 0.4); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
 
         .btn-book {
             width: 100%;
-            background-color: var(--accent-red);
-            color: white;
+            background: #ffffff;
+            color: #000000;
             border: none;
             padding: 14px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
-            transition: background 0.3s ease;
             margin-top: 10px;
+            transition: 0.3s;
         }
 
-        .btn-book:hover {
-            background-color: #f84444;
-        }
+        .btn-book:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(255, 255, 255, 0.2); }
+        .btn-book:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; transform: none; }
 
-        .login-footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: var(--text-dim);
-        }
-
-        .login-footer a {
-            color: var(--med-blue);
-            text-decoration: none;
-        }
-
-        .login-footer a:hover {
-            text-decoration: underline;
-        }
+        .login-footer { text-align: center; margin-top: 25px; font-size: 14px; color: var(--text-dim); }
+        .login-footer a { color: #ffffff; text-decoration: none; font-weight: 600; border-bottom: 1px solid transparent; transition: 0.3s; }
+        .login-footer a:hover { border-bottom-color: #ffffff; }
     </style>
 </head>
-
 <body>
+
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
 
     <div class="register-wrapper">
         <div class="booking-section">
-            <h2>Join Med-Drive</h2>
+            <h2>Create Account</h2>
+            <p class="subtitle">Join Med-drive now and get started</p>
 
-            <div class="form-group">
-                <label for="reg-name">Full Name</label>
-                <input type="text" id="reg-name" placeholder="Enter your name">
+            <span class="role-label">Sign up as: </span>
+            <div class="role-selection">
+                <div class="role-card active" onclick="selectRole('User', this)"><span>Patient</span></div>
+                <div class="role-card" onclick="selectRole('Driver', this)"><span>Driver</span></div>
+                <div class="role-card" onclick="selectRole('Provider', this)"><span>Hospital</span></div>
+                <div class="role-card admin-btn" onclick="selectRole('Admin', this)"><span>Admin</span></div>
             </div>
 
             <div class="form-group">
-                <label for="reg-email">Email Address</label>
-                <input type="email" id="reg-email" placeholder="Enter email">
+                <label>Full Name</label>
+                <input type="text" id="reg-name" placeholder="user name">
             </div>
 
             <div class="form-group">
-                <label for="reg-password">Password</label>
-                <input type="password" id="reg-pass" placeholder="Create password">
+                <label>Email Address</label>
+                <input type="email" id="reg-email" placeholder="user@med-drive.com">
             </div>
 
             <div class="form-group">
-                <label for="reg-phone">Phone Number</label>
-                <input type="text" id="reg-phone" placeholder="e.g. 01700000000">
+                <label>Password</label>
+                <input type="password" id="reg-pass" placeholder="••••••••">
             </div>
 
-            <button class="btn-book" onclick="handleRegister()">Create Account</button>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="reg-phone" placeholder="018XXXXXXXX">
+            </div>
+
+            <button class="btn-book" id="regBtn" onclick="handleRegister()">Create Account</button>
 
             <p class="login-footer">
-                Already have an account? <a href="login.html">Login</a>
+                Already have an account? <a href="login.html">Sign in</a>
             </p>
         </div>
     </div>
 
     <script>
+        let selectedRole = 'User';
+
+        function selectRole(role, element) {
+            selectedRole = role;
+            // Clear active classes
+            document.querySelectorAll('.role-card').forEach(card => {
+                card.classList.remove('active');
+                card.classList.remove('admin-role');
+            });
+            
+            // Add active class
+            element.classList.add('active');
+            
+            // If admin, add special gold styling
+            if(role === 'Admin') {
+                element.classList.add('admin-role');
+            }
+        }
+
         async function handleRegister() {
             const name = document.getElementById('reg-name').value;
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-pass').value;
             const phone = document.getElementById('reg-phone').value;
+            const btn = document.getElementById('regBtn');
 
             if (!name || !email || !password || !phone) {
-                alert("Please fill all fields!");
+                alert("Please fill in all the details.");
                 return;
             }
 
             try {
-                const btn = document.querySelector('.btn-book');
-                const originalText = btn.innerText;
-                btn.innerText = "Processing...";
+                btn.innerText = "Registering...";
                 btn.disabled = true;
 
                 const res = await fetch('https://med-drive-ambulance-app.onrender.com/api/users/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, phone })
+                    body: JSON.stringify({ 
+                        name, 
+                        email, 
+                        password, 
+                        phone, 
+                        role: selectedRole 
+                    })
                 });
 
+                const data = await res.json();
+
                 if (res.ok) {
-                    alert("Account created successfully!");
+                    if (data.autoSubscribed) {
+                        alert("Success! Your email domain qualifies for an institutional discount.");
+                    } else {
+                        alert("Account created successfully!");
+                    }
                     window.location.href = 'login.html';
                 } else {
-                    const err = await res.json();
-                    alert("Error: " + err.error);
-                    btn.innerText = originalText;
+                    alert("Registration Failed: " + (data.error || "Internal Error"));
+                    btn.innerText = "Create Account";
                     btn.disabled = false;
                 }
             } catch (err) {
-                alert("Server connection failed!");
-                document.querySelector('.btn-book').disabled = false;
+                alert("Could not connect to the server.");
+                btn.innerText = "Create Account";
+                btn.disabled = false;
             }
         }
     </script>
 </body>
-
 </html>

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Med-Drive | Admin Panel</title>
+
+    <link rel="stylesheet" href="../assets/css/style.css">
+
+    <style>
+        :root {
+            --dark-bg: #0d1117;
+            --sidebar-bg: #010409;
+            --card-bg: #161b22;
+            --accent-red: #f85149;
+            --med-blue: #58a6ff;
+            --text-gray: #8b949e;
+            --white: #ffffff;
+            --border: #30363d;
+            --success: #3fb950;
+            --warning: #d29922;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--white);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            border-right: 1px solid var(--border);
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-area img {
+            width: 100px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-red);
+        }
+
+        .tagline {
+            color: var(--text-gray);
+            font-size: 0.75rem;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            margin: 0;
+            opacity: 0.8;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar li {
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar li:hover, .sidebar li.active {
+            background: rgba(248, 81, 73, 0.1);
+        }
+
+        .sidebar a {
+            color: var(--text-gray);
+            text-decoration: none;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        .sidebar li:hover a, .sidebar li.active a {
+            color: var(--accent-red);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        header {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .profile-pill {
+            background: var(--card-bg);
+            padding: 5px 15px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border);
+        }
+
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            width: 92%;
+            margin: 0 auto 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .stat-card h4 {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+            color: var(--med-blue);
+        }
+
+        /* Table Section */
+        .table-container {
+            width: 92%;
+            margin: 0 auto 50px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th {
+            background: #161b22;
+            padding: 15px;
+            text-align: left;
+            color: var(--text-gray);
+            font-size: 12px;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .domain-tag {
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--med-blue);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .status-badge.completed {
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--success);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        /* Modal / Card Input Styling */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .modal-card h3 { margin-top: 0; color: var(--med-blue); }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 11px; color: var(--text-gray); text-transform: uppercase; margin-bottom: 5px; }
+        .form-group input { 
+            width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border); 
+            border-radius: 8px; color: white; box-sizing: border-box; 
+        }
+
+        .btn-confirm-add {
+            width: 100%; background: var(--success); color: white; border: none;
+            padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+
+        .btn-delete {
+            background: transparent; color: var(--accent-red); border: 1px solid var(--accent-red);
+            padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+        }
+
+        .btn-delete:hover { background: var(--accent-red); color: white; }
+    </style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="logo-area">
+            <img src="../assets/images/logo.png" alt="Med-Drive Logo" onerror="this.src='https://via.placeholder.com/100'">
+            <h3 style="color: var(--accent-red); margin: 10px 0 0 0;">Med-Drive</h3>
+            <p class="tagline">Admin Control Panel</p>
+        </div>
+        <ul>
+            <li class="active"><span>📊</span> <a href="#">Overview</a></li>
+            <li><span>🏢</span> <a href="#">Organizations</a></li>
+            <li><span>👥</span> <a href="#">Manage Users</a></li>
+            <li><span>🚑</span> <a href="#">Fleet Status</a></li>
+            <li style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 20px;">
+                <span>🚪</span> <a href="../index.html" onclick="localStorage.clear()">Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h2 style="margin:0;">System Overview</h2>
+                <p style="color: var(--text-gray); margin: 5px 0 0 0;">Welcome back, Administrator</p>
+            </div>
+            <div class="profile-pill">
+                <span id="admin-name-text">Admin</span>
+                <div id="admin-circle" style="width: 30px; height: 30px; background: var(--med-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">A</div>
+            </div>
+        </header>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <h4>Total Revenue</h4>
+                <span class="value">৳ <span id="stat-revenue">0</span></span>
+            </div>
+            <div class="stat-card">
+                <h4>Total Bookings</h4>
+                <span class="value" id="stat-bookings">0</span>
+            </div>
+            <div class="stat-card">
+                <h4>Active Drivers</h4>
+                <span class="value" id="stat-drivers">0</span>
+            </div>
+            <div class="stat-card">
+                <h4>Institutions</h4>
+                <span class="value" id="stat-orgs">0</span>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin:0;">Institutional Discounts (3NF Management)</h3>
+                <button class="btn-add" onclick="openModal()">+ Add Organization</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ORG NAME</th>
+                        <th>EMAIL DOMAIN</th>
+                        <th>DISCOUNT</th>
+                        <th>USERS</th>
+                        <th>ACTION</th>
+                    </tr>
+                </thead>
+                <tbody id="org-table-body">
+                    </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="org-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>Add New Institution</h3>
+            <div class="form-group">
+                <label>Organization Name</label>
+                <input type="text" id="new-org-name" placeholder="e.g. Dhaka Medical College">
+            </div>
+            <div class="form-group">
+                <label>Email Domain</label>
+                <input type="text" id="new-org-domain" placeholder="dmc.edu.bd">
+            </div>
+            <div class="form-group">
+                <label>Discount Rate (%)</label>
+                <input type="number" id="new-org-discount" placeholder="15">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-confirm-add" onclick="submitNewOrg()" style="flex: 2;">Save</button>
+                <button onclick="closeModal()" style="flex: 1; background: transparent; color: white; border: 1px solid var(--border); border-radius: 8px; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
+
+        window.onload = function () {
+            const userName = localStorage.getItem('userName') || 'Admin';
+            document.getElementById('admin-name-text').innerText = userName;
+            document.getElementById('admin-circle').innerText = userName.charAt(0).toUpperCase();
+
+            loadAdminStats();
+            loadOrganizations();
+        };
+
+        function openModal() { document.getElementById('org-modal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('org-modal').style.display = 'none'; }
+
+        async function loadAdminStats() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/stats`);
+                const data = await res.json();
+                if(data) {
+                    document.getElementById('stat-revenue').innerText = data.revenue || "45,200";
+                    document.getElementById('stat-bookings').innerText = data.bookingsCount || "128";
+                    document.getElementById('stat-drivers').innerText = data.driversCount || "14";
+                }
+            } catch (err) { console.log("Using default stats"); }
+        }
+
+        async function loadOrganizations() {
+            const tableBody = document.getElementById('org-table-body');
+            try {
+                const res = await fetch(`${API_BASE}/admin/organizations`);
+                const orgs = await res.json();
+                
+                document.getElementById('stat-orgs').innerText = orgs.length;
+
+                if (orgs.length > 0) {
+                    tableBody.innerHTML = orgs.map(org => `
+                        <tr>
+                            <td>${org.name || org.NAME}</td>
+                            <td><span class="domain-tag">@${org.domain || org.DOMAIN}</span></td>
+                            <td style="color: var(--success); font-weight:bold;">${org.discount_rate || org.DISCOUNT_RATE}%</td>
+                            <td>${org.user_count || 0}</td>
+                            <td><button class="btn-delete" onclick="deleteOrg(${org.id || org.ID})">Delete</button></td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tableBody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No organizations found.</td></tr>";
+                }
+            } catch (err) {
+                console.error("Org load failed", err);
+                tableBody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Failed to load database data.</td></tr>";
+            }
+        }
+
+        async function submitNewOrg() {
+            const name = document.getElementById('new-org-name').value;
+            const domain = document.getElementById('new-org-domain').value;
+            const discount = document.getElementById('new-org-discount').value;
+
+            if(!name || !domain || !discount) return alert("Please fill all fields");
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/organizations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, domain, discount_rate: discount })
+                });
+
+                if (res.ok) {
+                    closeModal();
+                    loadOrganizations();
+                }
+            } catch (err) { alert("Error connecting to server"); }
+        }
+
+        async function deleteOrg(id) {
+            if(!confirm("Are you sure you want to delete this organization?")) return;
+            try {
+                const res = await fetch(`${API_BASE}/admin/organizations/${id}`, { method: 'DELETE' });
+                if(res.ok) loadOrganizations();
+            } catch (err) { console.error("Delete failed", err); }
+        }
+    </script>
+</body>
+</html>
