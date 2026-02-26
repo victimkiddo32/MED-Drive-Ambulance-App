@@ -143,12 +143,13 @@ app.post('/api/ambulances/add', async (req, res) => {
 // ---------------------------------------------------------
 
 // GET all organizations with user counts
+// 8. ROUTES: ADMIN MANAGEMENT (Organizations) - UPDATED COLUMN NAMES
 app.get('/api/admin/organizations', async (req, res) => {
     try {
         const sql = `
             SELECT 
                 o.org_id AS id, 
-                o.name, 
+                o.org_name AS name, -- Changed from o.name to o.org_name
                 o.domain, 
                 o.discount_rate,
                 (SELECT COUNT(*) FROM Users u WHERE u.org_id = o.org_id) AS user_count
@@ -157,6 +158,7 @@ app.get('/api/admin/organizations', async (req, res) => {
         const [results] = await pool.query(sql);
         res.json(results);
     } catch (err) {
+        console.error("SQL Error:", err.message);
         res.status(500).json({ error: err.message });
     }
 });

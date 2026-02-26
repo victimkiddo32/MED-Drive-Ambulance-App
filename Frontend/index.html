@@ -4,15 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Med-Drive | Home</title>
+    <title>Login | Med-Drive</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         :root {
-            --bg-dark: #0d1117;
-            --card-bg: #161b22;
-            --med-blue: #58a6ff;
-            --border-color: #30363d;
-            --text-dim: #8b949e;
+            --bg-dark: #030712;
+            --card-bg: rgba(17, 24, 39, 0.8);
+            --accent-red: #ff5b58;
+            --med-blue: #3b82f6;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-dim: #9ca3af;
         }
 
         body {
@@ -21,120 +22,149 @@
             display: flex;
             height: 100vh;
             background-color: var(--bg-dark);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             color: white;
             overflow: hidden;
         }
 
+        /* --- LEFT SIDE: VISUAL + LIVE BACKGROUND --- */
         .login-visual {
             flex: 1.2;
-            /* PATH FIX: Go up out of Frontend/ then into public/assets */
-            background: linear-gradient(rgba(13, 17, 23, 0.6), rgba(13, 17, 23, 0.6)),
-                url('../assets/images/app1.jpg');
+            position: relative;
+            background: linear-gradient(rgba(3, 7, 18, 0.5), rgba(3, 7, 18, 0.8)),
+                        url('../assets/images/app1.jpg');
             background-size: cover;
             background-position: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
             padding: 80px;
+            overflow: hidden;
+        }
+
+        /* Animated Blobs inside the visual side */
+        .background-blobs {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            filter: blur(80px);
+            opacity: 0.5;
+        }
+
+        .blob {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            animation: move 20s infinite alternate ease-in-out;
+        }
+        .blob-1 { background: var(--accent-red); top: -10%; left: -10%; }
+        .blob-2 { background: var(--med-blue); bottom: 10%; right: -5%; animation-delay: -5s; }
+
+        @keyframes move {
+            from { transform: translate(0, 0) scale(1); }
+            to { transform: translate(50px, 50px) scale(1.2); }
+        }
+
+        .visual-content {
+            position: relative;
+            z-index: 1;
         }
 
         .visual-content h1 {
-            font-size: 3.5rem;
+            font-size: 4rem;
             margin: 0;
-            font-weight: 700;
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: linear-gradient(to right, #fff, #9ca3af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .visual-content p {
             font-size: 1.2rem;
             color: #c9d1d9;
-            max-width: 400px;
+            max-width: 450px;
             line-height: 1.6;
+            margin-top: 20px;
         }
 
+        /* --- RIGHT SIDE: LOGIN CONTAINER --- */
         .login-container {
             flex: 0.8;
             display: flex;
             justify-content: center;
             align-items: center;
             background: var(--bg-dark);
+            position: relative;
         }
 
         .login-box {
             width: 100%;
-            max-width: 360px;
+            max-width: 380px;
             background: var(--card-bg);
+            backdrop-filter: blur(12px);
             border: 1px solid var(--border-color);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            padding: 45px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        h2 {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
+        h2 { font-size: 28px; margin-bottom: 8px; font-weight: 700; }
+        .subtitle { color: var(--text-dim); font-size: 15px; margin-bottom: 35px; }
 
-        .subtitle {
-            color: var(--text-dim);
-            font-size: 14px;
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            font-size: 13px;
-            color: var(--text-dim);
-            margin-bottom: 8px;
-        }
+        .form-group { margin-bottom: 22px; text-align: left; }
+        label { display: block; font-size: 12px; font-weight: 600; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
 
         input {
             width: 100%;
-            padding: 12px;
-            background: #0d1117;
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 12px;
             color: white;
+            font-size: 15px;
             box-sizing: border-box;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--med-blue);
+            outline: none;
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         }
 
         button {
             width: 100%;
-            padding: 14px;
-            background: var(--med-blue);
-            color: white;
+            padding: 16px;
+            background: #ffffff;
+            color: #000000;
             border: none;
-            border-radius: 6px;
-            font-weight: 600;
+            border-radius: 12px;
+            font-weight: 700;
             cursor: pointer;
-            margin-top: 10px;
+            font-size: 16px;
+            margin-top: 15px;
+            transition: 0.3s;
         }
 
-        .footer-links {
-            text-align: center;
-            margin-top: 25px;
-            font-size: 14px;
-            color: var(--text-dim);
+        button:hover {
+            background: #f3f4f6;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.1);
         }
 
-        .footer-links a {
-            color: var(--med-blue);
-            text-decoration: none;
-        }
+        .footer-links { text-align: center; margin-top: 30px; font-size: 14px; color: var(--text-dim); }
+        .footer-links a { color: #ffffff; text-decoration: none; font-weight: 600; transition: 0.3s; }
+        .footer-links a:hover { border-bottom: 1px solid white; }
 
-        @media (max-width: 900px) {
-            .login-visual {
-                display: none;
-            }
-
-            .login-container {
-                flex: 1;
-                padding: 20px;
-            }
+        @media (max-width: 1024px) {
+            .login-visual { display: none; }
+            .login-container { flex: 1; padding: 20px; }
         }
     </style>
 </head>
@@ -142,6 +172,10 @@
 <body>
 
     <div class="login-visual">
+        <div class="background-blobs">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+        </div>
         <div class="visual-content">
             <h1>Med-Drive</h1>
             <p>Quick-Response Ambulance Booking at your fingertips.</p>
@@ -151,11 +185,11 @@
     <div class="login-container">
         <div class="login-box">
             <h2>Welcome Back</h2>
-            <p class="subtitle">Please enter your details to login</p>
+            <p class="subtitle">Please enter your credentials</p>
 
             <div class="form-group">
                 <label>Email Address</label>
-                <input type="email" id="email" placeholder="name@med-drive.com">
+                <input type="email" id="email" placeholder="name@domain.com">
             </div>
 
             <div class="form-group">
@@ -163,10 +197,10 @@
                 <input type="password" id="pass" placeholder="••••••••">
             </div>
 
-            <button onclick="handleLogin()">Login to Dashboard</button>
+            <button id="loginBtn" onclick="handleLogin()">Sign In</button>
 
             <div class="footer-links">
-                New to the platform? <a href="pages/register.html">Create an account</a>
+                Don't have an account? <a href="register.html">Create one</a>
             </div>
         </div>
     </div>
@@ -175,11 +209,15 @@
         async function handleLogin() {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
+            const btn = document.getElementById('loginBtn');
 
             if (!email || !pass) {
                 alert("Please enter both email and password.");
                 return;
             }
+
+            btn.innerText = "Authenticating...";
+            btn.disabled = true;
 
             try {
                 const res = await fetch('https://med-drive-ambulance-app.onrender.com/api/users/login', {
@@ -188,17 +226,34 @@
                     body: JSON.stringify({ email, password: pass })
                 });
 
-                if (res.ok) {
-                    const data = await res.json();
-                    localStorage.setItem('userId', data.user.user_id || data.user.id);
-                    localStorage.setItem('userName', data.user.name);
-                    // PATH FIX: Dashboard is inside pages/
-                    window.location.href = 'pages/dashboard.html';
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    // Save session data
+                    localStorage.setItem('userId', data.user.user_id);
+                    localStorage.setItem('userName', data.user.full_name);
+                    localStorage.setItem('userRole', data.user.role);
+
+                    // Multi-Role Redirection Logic
+                    const role = data.user.role;
+                    if (role === 'Admin') {
+                        window.location.href = 'admin_dashboard.html';
+                    } else if (role === 'Provider') {
+                        window.location.href = 'provider_dashboard.html';
+                    } else if (role === 'Driver') {
+                        window.location.href = 'driver_dashboard.html';
+                    } else {
+                        window.location.href = 'dashboard.html'; // Regular User
+                    }
                 } else {
-                    alert("Authentication Failed.");
+                    alert("Error: " + (data.error || "Login failed."));
+                    btn.innerText = "Sign In";
+                    btn.disabled = false;
                 }
             } catch (err) {
-                alert("Network error.");
+                alert("Server connection error.");
+                btn.innerText = "Sign In";
+                btn.disabled = false;
             }
         }
     </script>
