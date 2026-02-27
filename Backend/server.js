@@ -89,37 +89,42 @@ app.post('/api/users/login', async (req, res) => {
 
 
 // --- USER REGISTRATION ROUTE ---
+// --- UPDATED REGISTRATION ROUTE ---
 app.post('/api/users/register', async (req, res) => {
-    const { name, email, password, phone, role } = req.body;
+    // Destructure using the names sent from the frontend
+    const { full_name, email, password, phone_number, role } = req.body;
 
     try {
-        // 1. Insert into Users table
+        // 1. Insert into Users table using exact database column names
         const [result] = await pool.query(
-            'INSERT INTO Users (name, email, password, phone, role) VALUES (?, ?, ?, ?, ?)',
-            [name, email, password, phone, role]
+            'INSERT INTO Users (full_name, email, password, phone_number, role) VALUES (?, ?, ?, ?, ?)',
+            [full_name, email, password, phone_number, role]
         );
 
+        // In your schema, the primary key is user_id
         const newUserId = result.insertId;
 
-        // 2. Logic: If they registered as a Driver, we must create a Driver record too!
+        // 2. Role-specific logic (Optional but recommended)
         if (role === 'Driver') {
             await pool.query(
                 'INSERT INTO Drivers (driver_id, name, status) VALUES (?, ?, "Inactive")',
-                [newUserId, name]
+                [newUserId, full_name]
             );
         }
 
         res.status(201).json({ 
             success: true, 
-            message: "Account created!",
+            message: "User registered successfully", 
             userId: newUserId 
         });
+
     } catch (err) {
-        console.error(err);
+        console.error("Registration Error:", err);
+        // Specifically check for duplicate email/phone errors
         if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ error: "Email already exists." });
+            return res.status(400).json({ error: "Email or Phone Number already registered." });
         }
-        res.status(500).json({ error: "Database error during registration." });
+        res.status(500).json({ error: "Database error: " + err.message });
     }
 });
 

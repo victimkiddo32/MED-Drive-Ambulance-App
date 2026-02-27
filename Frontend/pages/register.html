@@ -222,44 +222,48 @@
         }
 
         async function handleRegister() {
-            const name = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-pass').value;
-            const phone = document.getElementById('reg-phone').value;
-            const btn = document.getElementById('regBtn');
+    const btn = document.getElementById('regBtn');
+    
+    // Map the UI values to the exact keys expected by your new backend route
+    const payload = {
+        full_name: document.getElementById('reg-name').value,
+        email: document.getElementById('reg-email').value,
+        password: document.getElementById('reg-pass').value,
+        phone_number: document.getElementById('reg-phone').value,
+        role: selectedRole 
+    };
 
-            if (!name || !email || !password || !phone) {
-                alert("Please fill in all the details.");
-                return;
-            }
+    if (!payload.full_name || !payload.email || !payload.password || !payload.phone_number) {
+        alert("Please fill in all the details.");
+        return;
+    }
 
-            try {
-                btn.innerText = "Registering...";
-                btn.disabled = true;
+    try {
+        btn.innerText = "Registering...";
+        btn.disabled = true;
 
-                const res = await fetch(`${API_BASE}/users/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, phone, role: selectedRole })
-                });
+        const res = await fetch('https://med-drive-ambulance-app.onrender.com/api/users/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-                const data = await res.json();
+        const data = await res.json();
 
-                if (res.ok) {
-                    alert("Account created successfully!");
-                    window.location.href = 'login.html';
-                } else {
-                    alert("Registration Failed: " + (data.error || "Internal Error"));
-                    btn.innerText = "Create Account";
-                    btn.disabled = false;
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Could not connect to the server. Check if the Render service is awake.");
-                btn.innerText = "Create Account";
-                btn.disabled = false;
-            }
+        if (res.ok) {
+            alert("Account created successfully!");
+            window.location.href = 'login.html';
+        } else {
+            alert("Registration Failed: " + (data.error || "Unknown error"));
+            btn.innerText = "Create Account";
+            btn.disabled = false;
         }
+    } catch (err) {
+        alert("Connection Error: Is the server awake?");
+        btn.innerText = "Create Account";
+        btn.disabled = false;
+    }
+}
     </script>
 </body>
 </html>
