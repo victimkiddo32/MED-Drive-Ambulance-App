@@ -237,13 +237,13 @@
                     // Multi-Role Redirection Logic
                     const role = data.user.role;
                     if (role === 'Admin') {
-                        window.location.href = 'admin_dashboard.html';
+                        window.location.href = 'pages/admin_dashboard.html';
                     } else if (role === 'Provider') {
-                        window.location.href = 'provider_dashboard.html';
+                        window.location.href = 'pages/provider_dashboard.html';
                     } else if (role === 'Driver') {
-                        window.location.href = 'driver_dashboard.html';
+                        window.location.href = 'pages/driver_dashboard.html';
                     } else {
-                        window.location.href = 'user_dashboard.html'; // Regular User
+                        window.location.href = 'pages/user_dashboard.html'; // Regular User
                     }
                 } else {
                     alert("Error: " + (data.error || "Login failed."));
