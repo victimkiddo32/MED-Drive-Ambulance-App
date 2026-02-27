@@ -146,19 +146,28 @@ app.post('/api/ambulances/add', async (req, res) => {
 // 8. ROUTES: ADMIN MANAGEMENT (Organizations) - UPDATED COLUMN NAMES
 app.get('/api/admin/organizations', async (req, res) => {
     try {
+        // Change 'org_domain' and 'org_name' to whatever you see in the Debug Route
         const sql = `
             SELECT 
-                o.org_id AS id, 
-                o.org_name AS name, -- Changed from o.name to o.org_name
-                o.domain, 
-                o.discount_rate,
-                (SELECT COUNT(*) FROM Users u WHERE u.org_id = o.org_id) AS user_count
-            FROM Organizations o`;
+                org_id AS id, 
+                org_name AS name, 
+                org_domain AS domain, 
+                discount_rate 
+            FROM Organizations`;
         
         const [results] = await pool.query(sql);
         res.json(results);
     } catch (err) {
-        console.error("SQL Error:", err.message);
+        res.status(500).json({ error: "SQL Error: " + err.message });
+    }
+});
+
+// TEMPORARY DEBUG ROUTE
+app.get('/api/debug/organizations-schema', async (req, res) => {
+    try {
+        const [columns] = await pool.query("SHOW COLUMNS FROM Organizations");
+        res.json(columns);
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -202,6 +211,15 @@ app.get('/api/admin/stats', async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/debug/columns', async (req, res) => {
+    try {
+        const [results] = await pool.query("DESCRIBE Organizations");
+        res.json(results);
+    } catch (err) {
+        res.status(500).json(err);
     }
 });
 
