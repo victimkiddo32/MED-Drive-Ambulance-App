@@ -87,6 +87,42 @@ app.post('/api/users/login', async (req, res) => {
     }
 });
 
+
+// --- USER REGISTRATION ROUTE ---
+app.post('/api/users/register', async (req, res) => {
+    const { name, email, password, phone, role } = req.body;
+
+    try {
+        // 1. Insert into Users table
+        const [result] = await pool.query(
+            'INSERT INTO Users (name, email, password, phone, role) VALUES (?, ?, ?, ?, ?)',
+            [name, email, password, phone, role]
+        );
+
+        const newUserId = result.insertId;
+
+        // 2. Logic: If they registered as a Driver, we must create a Driver record too!
+        if (role === 'Driver') {
+            await pool.query(
+                'INSERT INTO Drivers (driver_id, name, status) VALUES (?, ?, "Inactive")',
+                [newUserId, name]
+            );
+        }
+
+        res.status(201).json({ 
+            success: true, 
+            message: "Account created!",
+            userId: newUserId 
+        });
+    } catch (err) {
+        console.error(err);
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ error: "Email already exists." });
+        }
+        res.status(500).json({ error: "Database error during registration." });
+    }
+});
+
 // ---------------------------------------------------------
 // 5. ROUTES: BOOKINGS (With Atomic Transaction)
 // ---------------------------------------------------------

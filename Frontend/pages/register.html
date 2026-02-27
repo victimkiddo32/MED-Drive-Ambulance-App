@@ -80,7 +80,6 @@
         h2 { text-align: center; margin: 0 0 5px 0; font-size: 26px; letter-spacing: -0.5px; }
         .subtitle { text-align: center; color: var(--text-dim); margin-bottom: 25px; font-size: 14px; }
 
-        /* --- ROLE SELECTION GRID --- */
         .role-label {
             font-size: 11px;
             font-weight: 700;
@@ -112,14 +111,11 @@
 
         .role-card:hover { border-color: rgba(255, 255, 255, 0.3); }
 
-        /* Active States */
         .role-card.active { background: #ffffff; border-color: #ffffff; }
         .role-card.active span { color: #000000; }
 
-        /* Special Gold Style for Admin Active */
         .role-card.active.admin-role { background: var(--admin-gold); border-color: var(--admin-gold); }
 
-        /* --- FORM INPUTS --- */
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; }
         
@@ -182,7 +178,7 @@
 
             <div class="form-group">
                 <label>Full Name</label>
-                <input type="text" id="reg-name" placeholder="user name">
+                <input type="text" id="reg-name" placeholder="Enter Full Name">
             </div>
 
             <div class="form-group">
@@ -210,19 +206,16 @@
 
     <script>
         let selectedRole = 'User';
+        // Ensure this matches your backend URL exactly
+        const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
 
         function selectRole(role, element) {
             selectedRole = role;
-            // Clear active classes
             document.querySelectorAll('.role-card').forEach(card => {
                 card.classList.remove('active');
                 card.classList.remove('admin-role');
             });
-            
-            // Add active class
             element.classList.add('active');
-            
-            // If admin, add special gold styling
             if(role === 'Admin') {
                 element.classList.add('admin-role');
             }
@@ -244,26 +237,16 @@
                 btn.innerText = "Registering...";
                 btn.disabled = true;
 
-                const res = await fetch('https://med-drive-ambulance-app.onrender.com/api/users/register', {
+                const res = await fetch(`${API_BASE}/users/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        name, 
-                        email, 
-                        password, 
-                        phone, 
-                        role: selectedRole 
-                    })
+                    body: JSON.stringify({ name, email, password, phone, role: selectedRole })
                 });
 
                 const data = await res.json();
 
                 if (res.ok) {
-                    if (data.autoSubscribed) {
-                        alert("Success! Your email domain qualifies for an institutional discount.");
-                    } else {
-                        alert("Account created successfully!");
-                    }
+                    alert("Account created successfully!");
                     window.location.href = 'login.html';
                 } else {
                     alert("Registration Failed: " + (data.error || "Internal Error"));
@@ -271,7 +254,8 @@
                     btn.disabled = false;
                 }
             } catch (err) {
-                alert("Could not connect to the server.");
+                console.error(err);
+                alert("Could not connect to the server. Check if the Render service is awake.");
                 btn.innerText = "Create Account";
                 btn.disabled = false;
             }
