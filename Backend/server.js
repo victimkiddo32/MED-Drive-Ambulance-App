@@ -119,6 +119,61 @@ app.post('/api/bookings', async (req, res) => {
     }
 });
 
+app.post('/api/bookings/accept', async (req, res) => {
+    const { booking_id, ambulance_id, driver_id } = req.body;
+    const conn = await pool.getConnection();
+
+    try {
+        await conn.beginTransaction();
+
+        // 1. Set the Booking to Accepted
+        await conn.query('UPDATE Bookings SET status = "Accepted" WHERE booking_id = ?', [booking_id]);
+
+        // 2. Set the Ambulance to Busy (Matches your Ambulance table)
+        await conn.query('UPDATE Ambulances SET status = "Busy" WHERE ambulance_id = ?', [ambulance_id]);
+
+        // 3. Set the Driver to Busy (Matches your Drivers table)
+        await conn.query('UPDATE Drivers SET status = "Busy" WHERE driver_id = ?', [driver_id]);
+
+        await conn.commit();
+        res.json({ success: true, message: "Trip started. Both Ambulance and Driver are now Busy." });
+    } catch (err) {
+        await conn.rollback();
+        console.error("Accept Trip Error:", err);
+        res.status(500).json({ error: "Failed to update status sync." });
+    } finally {
+        conn.release();
+    }
+});
+
+
+
+app.post('/api/bookings/complete', async (req, res) => {
+    const { booking_id, ambulance_id, driver_id } = req.body;
+    const conn = await pool.getConnection();
+
+    try {
+        await conn.beginTransaction();
+
+        // 1. Mark Booking as Completed
+        await conn.query('UPDATE Bookings SET status = "Completed" WHERE booking_id = ?', [booking_id]);
+
+        // 2. Make Ambulance Available again
+        await conn.query('UPDATE Ambulances SET status = "Available" WHERE ambulance_id = ?', [ambulance_id]);
+
+        // 3. Make Driver Active again
+        await conn.query('UPDATE Drivers SET status = "Active" WHERE driver_id = ?', [driver_id]);
+
+        await conn.commit();
+        res.json({ success: true, message: "Trip finished. You are now available for new calls!" });
+    } catch (err) {
+        await conn.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        conn.release();
+    }
+});
+
 // ---------------------------------------------------------
 // 6. ROUTES: USER HISTORY
 // ---------------------------------------------------------
@@ -145,6 +200,26 @@ app.post('/api/ambulances/add', async (req, res) => {
         res.status(201).json({ success: true, message: "Added successfully" });
     } catch (err) {
         res.status(500).json({ error: "Vehicle number already exists" });
+    }
+});
+
+
+
+app.get('/api/drivers/notifications/:driverId', async (req, res) => {
+    const { driverId } = req.params;
+    try {
+        const sql = `
+            SELECT b.*, u.name as user_name, a.vehicle_number 
+            FROM Bookings b
+            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            JOIN Users u ON b.user_id = u.user_id
+            WHERE a.driver_id = ? AND b.status = 'Pending'
+            LIMIT 1`;
+            
+        const [rows] = await pool.query(sql, [driverId]);
+        res.json(rows[0] || { message: "No pending rides" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
