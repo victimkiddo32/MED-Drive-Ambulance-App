@@ -168,7 +168,7 @@ app.get('/api/admin/organizations', async (req, res) => {
 app.post('/api/admin/organizations', async (req, res) => {
     const { name, domain, discount_rate } = req.body;
     try {
-        const sql = `INSERT INTO Organizations (name, domain, discount_rate) VALUES (?, ?, ?)`;
+        const sql = `INSERT INTO Organizations (org_name, email_domain, discount_rate) VALUES (?, ?, ?)`;
         const [result] = await pool.query(sql, [name, domain, discount_rate]);
         res.status(201).json({ success: true, id: result.insertId });
     } catch (err) {
