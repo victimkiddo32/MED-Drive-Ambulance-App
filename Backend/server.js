@@ -146,7 +146,6 @@ app.post('/api/ambulances/add', async (req, res) => {
 // 8. ROUTES: ADMIN MANAGEMENT (Organizations) - UPDATED COLUMN NAMES
 app.get('/api/admin/organizations', async (req, res) => {
     try {
-        // Change 'org_domain' and 'org_name' to whatever you see in the Debug Route
         const sql = `
             SELECT 
                 org_id AS id, 
@@ -158,30 +157,33 @@ app.get('/api/admin/organizations', async (req, res) => {
         const [results] = await pool.query(sql);
         res.json(results);
     } catch (err) {
-        res.status(500).json({ error: "SQL Error: " + err.message });
-    }
-});
-
-
-
-// POST a new organization
-app.post('/api/admin/organizations', async (req, res) => {
-    const { name, domain, discount_rate } = req.body;
-    try {
-        const sql = `INSERT INTO Organizations (org_name, email_domain, discount_rate) VALUES (?, ?, ?)`;
-        const [result] = await pool.query(sql, [name, domain, discount_rate]);
-        res.status(201).json({ success: true, id: result.insertId });
-    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+
+// POST a new organization
+app.post('/api/admin/organizations', async (req, res) => {
+    // These names come from your Frontend 'orgData' object
+    const { name, domain, discount_rate } = req.body; 
+
+    try {
+        // SQL updated with: org_name, email_domain, discount_rate
+        const sql = `INSERT INTO Organizations (org_name, email_domain, discount_rate) VALUES (?, ?, ?)`;
+        
+        const [result] = await pool.query(sql, [name, domain, discount_rate]);
+        res.status(201).json({ success: true, id: result.insertId });
+    } catch (err) {
+        console.error("SQL Save Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
 // DELETE an organization
 app.delete('/api/admin/organizations/:id', async (req, res) => {
     try {
         const sql = `DELETE FROM Organizations WHERE org_id = ?`;
         await pool.query(sql, [req.params.id]);
-        res.json({ success: true, message: "Organization deleted" });
+        res.json({ success: true, message: "Deleted" });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
