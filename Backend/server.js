@@ -39,17 +39,25 @@ pool.getConnection()
 // ---------------------------------------------------------
 app.get('/api/ambulances', async (req, res) => {
     try {
+        // IMPORTANT: Ensure the column names here match your DB (ambulance_id, etc.)
         const sql = `
-            SELECT a.ambulance_id AS id, a.vehicle_number, a.ambulance_type, a.status, 
-                   a.image_url, u.full_name AS driver_name, p.company_name AS provider
+            SELECT 
+                a.ambulance_id AS id, 
+                a.vehicle_number, 
+                a.ambulance_type, 
+                a.status, 
+                a.image_url, 
+                d.name AS driver_name, 
+                d.rating AS driver_rating,
+                p.company_name AS provider
             FROM Ambulances a
-            LEFT JOIN Drivers d ON a.ambulance_id = d.ambulance_id
-            LEFT JOIN Users u ON d.user_id = u.user_id
+            LEFT JOIN Drivers d ON a.driver_id = d.driver_id
             LEFT JOIN Providers p ON a.provider_id = p.provider_id`;
         
         const [results] = await pool.query(sql);
         res.json(results);
     } catch (err) {
+        console.error("Database Error:", err.message);
         res.status(500).json({ error: err.message });
     }
 });

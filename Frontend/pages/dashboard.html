@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Med-Drive | Dashboard</title>
-
+    <title>Med-Drive | User Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="../assets/css/style.css">
-
     <style>
         :root {
             --dark-bg: #0d1117;
@@ -42,89 +38,27 @@
             border-right: 1px solid var(--border);
         }
 
-        .logo-area {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+        .logo-area { text-align: center; margin-bottom: 40px; }
+        .logo-area img { width: 80px; border-radius: 50%; border: 2px solid var(--accent-red); padding: 5px; }
+        
+        .sidebar ul { list-style: none; padding: 0; margin-top: 20px; }
+        .sidebar li { padding: 12px 15px; margin-bottom: 8px; border-radius: 8px; transition: 0.3s; display: flex; align-items: center; gap: 12px; }
+        .sidebar li:hover { background: rgba(248, 81, 73, 0.1); }
+        .sidebar a { color: var(--text-gray); text-decoration: none; font-weight: 500; width: 100%; }
+        .sidebar li.active { background: rgba(248, 81, 73, 0.15); border-left: 3px solid var(--accent-red); }
+        .sidebar li.active a { color: var(--white); }
 
-        .logo-area img {
-            width: 100px;
-            border-radius: 50%;
-            border: 2px solid var(--accent-red);
-        }
+        /* Main Content */
+        .main-content { flex: 1; overflow-y: auto; position: relative; }
+        header { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: rgba(13, 17, 23, 0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
+        
+        .profile-pill { background: var(--card-bg); padding: 5px 15px; border-radius: 30px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); }
 
-        .tagline {
-            color: var(--text-gray);
-            font-size: 0.75rem;
-            font-weight: 400;
-            letter-spacing: 0.5px;
-            margin: 0;
-            opacity: 0.8;
-        }
-
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .sidebar li {
-            padding: 12px 15px;
-            margin-bottom: 5px;
-            border-radius: 8px;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .sidebar li:hover {
-            background: rgba(248, 81, 73, 0.1);
-        }
-
-        .sidebar a {
-            color: var(--text-gray);
-            text-decoration: none;
-            font-weight: 500;
-            width: 100%;
-        }
-
-        .sidebar li:hover a {
-            color: var(--accent-red);
-        }
-
-        /* Main Content Area */
-        .main-content {
-            flex: 1;
-            overflow-y: auto;
-            position: relative;
-        }
-
-        header {
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .profile-pill {
-            background: var(--card-bg);
-            padding: 5px 15px;
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: 1px solid var(--border);
-        }
-
-        /* Components */
-        #map {
-            height: 350px;
-            width: 92%;
-            margin: 0 auto 20px;
-            border-radius: 15px;
-            border: 1px solid var(--border);
-            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
-        }
+        /* Map & Booking Card */
+        #map { height: 350px; width: 92%; margin: 20px auto; border-radius: 15px; border: 1px solid var(--border); z-index: 1; }
+        
+        /* Dark Map Filter */
+        .leaflet-tile-container { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
 
         .booking-card {
             background: var(--card-bg);
@@ -139,122 +73,54 @@
             gap: 20px;
         }
 
-        .form-group label {
-            font-size: 11px;
-            color: var(--text-gray);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: block;
-            margin-bottom: 5px;
-        }
+        .form-group label { font-size: 11px; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px; }
+        input, select { background: var(--dark-bg); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; width: 100%; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--accent-red); }
 
-        input,
-        select {
-            background: var(--dark-bg);
-            border: 1px solid var(--border);
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            width: 100%;
-            box-sizing: border-box;
-        }
+        .btn-confirm { grid-column: span 2; background: var(--accent-red); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; margin-top: 10px; }
+        .btn-confirm:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(248, 81, 73, 0.3); }
+        .btn-confirm:disabled { background: var(--border); cursor: not-allowed; }
 
-        .btn-confirm {
-            grid-column: span 2;
-            background: var(--accent-red);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 16px;
-            transition: 0.3s;
-        }
-
-        .btn-confirm:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-
-        /* Table Section */
-        .history-section {
-            width: 90%;
-            margin: 0 auto 50px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: var(--card-bg);
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-
-        th {
-            background: #161b22;
-            padding: 15px;
-            text-align: left;
-            color: var(--text-gray);
-            font-size: 12px;
-        }
-
-        td {
-            padding: 15px;
-            border-bottom: 1px solid var(--border);
-            font-size: 14px;
-        }
-
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .completed {
-            background: rgba(63, 185, 80, 0.15);
-            color: var(--success);
-        }
-
-        .pending {
-            background: rgba(210, 153, 34, 0.15);
-            color: var(--warning);
-        }
+        /* History Table */
+        .history-section { width: 92%; margin: 0 auto 50px; }
+        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+        th { background: #1c2128; padding: 15px; text-align: left; color: var(--text-gray); font-size: 12px; text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: capitalize; }
+        .completed { background: rgba(63, 185, 80, 0.15); color: var(--success); }
+        .pending { background: rgba(210, 153, 34, 0.15); color: var(--warning); }
+        .cancelled { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
     </style>
 </head>
-
 <body>
+
     <nav class="sidebar">
         <div class="logo-area">
-            <img src="../assets/images/logo.png" alt="Med-Drive Logo"
-                onerror="this.src='https://via.placeholder.com/100'">
-            <h3 style="color: var(--accent-red); margin: 10px 0 0 0;">Med-Drive</h3>
-            <p class="tagline">Ambulance at your doorstep</p>
+            <img src="../assets/images/logo.png" alt="Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1032/1032989.png'">
+            <h3 style="color: var(--accent-red); margin: 10px 0 5px 0;">Med-Drive</h3>
+            <p style="color: var(--text-gray); font-size: 10px; letter-spacing: 1px;">PATIENT PORTAL</p>
         </div>
         <ul>
-            <li><span>🏠</span> <a href="dashboard.html">Dashboard</a></li>
-            <li><span>🚑</span> <a href="ambulance.html">Ambulances</a></li>
-            <li><span>🕒</span> <a href="#">History</a></li>
-            <li style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 20px;">
-                <span>🚪</span> <a href="../index.html" onclick="localStorage.clear()">Logout</a>
-            </li>
+            <li class="active"><a href="#">🏠 Dashboard</a></li>
+            <li><a href="ambulance.html">🚑 Ambulances</a></li>
+            <li><a href="#">🕒 My Bookings</a></li>
+            <li><a href="#">⚙️ Profile Settings</a></li>
         </ul>
+        <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
+            <a href="../index.html" onclick="localStorage.clear()" style="color: var(--text-gray); text-decoration: none; font-size: 14px;">🚪 Logout</a>
+        </div>
     </nav>
 
     <main class="main-content">
         <header>
             <div>
-                <h2 style="margin:0;">Dashboard</h2>
-                <p style="color: var(--text-gray); margin: 5px 0 0 0;">Welcome, <span
-                        id="user-display-name">Guest</span></p>
+                <h2 style="margin:0;">Welcome Back, <span id="user-display-name">Guest</span></h2>
+                <p style="color: var(--text-gray); margin: 5px 0 0 0; font-size: 14px;">Need an ambulance? Select one on the map below.</p>
             </div>
             <div class="profile-pill">
                 <span id="user-name-text">Guest</span>
-                <div id="profile-circle"
-                    style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                    G</div>
+                <div id="profile-circle" style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">G</div>
             </div>
         </header>
 
@@ -263,59 +129,56 @@
         <div class="booking-card">
             <div class="form-group">
                 <label>Selected Ambulance</label>
-                <input type="text" id="selected-id" readonly placeholder="Select on Map">
+                <input type="text" id="selected-id" readonly placeholder="Click a red marker on map">
             </div>
             <div class="form-group">
                 <label>Payment Method</label>
                 <select id="payment-method">
                     <option value="Cash">Cash on Delivery</option>
-                    <option value="bKash">bKash / Mobile</option>
-                    <option value="Card">Credit Card</option>
+                    <option value="bKash">bKash / Bkash</option>
+                    <option value="Card">Debit / Credit Card</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Pickup Location</label>
-                <input type="text" id="pickup" placeholder="Enter Pickup Address">
+                <label>Pickup Point</label>
+                <input type="text" id="pickup" placeholder="e.g. House 12, Road 5, Noakhali">
             </div>
             <div class="form-group">
-                <label>Hospital</label>
-                <input type="text" id="hospital" placeholder="Destination Hospital">
+                <label>Destination Hospital</label>
+                <input type="text" id="hospital" placeholder="e.g. General Hospital">
             </div>
-            <div
-                style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+            <div style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;">
                 <span style="color: var(--text-gray);">Estimated Fare:</span>
-                <span style="font-size: 24px; font-weight: bold; color: var(--accent-red);">৳ <span
-                        id="estimated-price">0</span></span>
+                <span style="font-size: 26px; font-weight: bold; color: var(--accent-red);">৳ <span id="estimated-price">0</span></span>
             </div>
-            <button class="btn-confirm" onclick="confirmBooking()">CONFIRM BOOKING</button>
+            <button class="btn-confirm" id="confirm-btn" onclick="confirmBooking()">CONFIRM & DISPATCH</button>
         </div>
 
         <div class="history-section">
-            <h3 style="margin-bottom: 20px;">Recent Activity</h3>
+            <h3 style="margin-bottom: 20px; font-size: 18px;">Your Recent Bookings</h3>
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>DESTINATION</th>
-                        <th>STATUS</th>
-                        <th>FARE</th>
-                        <th>DATE</th>
+                        <th>Booking ID</th>
+                        <th>Hospital</th>
+                        <th>Status</th>
+                        <th>Fare</th>
+                        <th>Date</th>
                     </tr>
                 </thead>
-                <tbody id="booking-table-body"></tbody>
+                <tbody id="booking-table-body">
+                    <tr><td colspan="5" style="text-align:center; color: var(--text-gray);">Loading history...</td></tr>
+                </tbody>
             </table>
         </div>
     </main>
 
-    <div id="success-overlay"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; flex-direction: column;">
-        <div
-            style="background: #161b22; padding: 40px; border-radius: 20px; text-align: center; border: 1px solid var(--border); width: 320px;">
-            <div style="font-size: 50px; color: var(--success); margin-bottom: 20px;">✔</div>
-            <h2 style="margin-bottom: 10px;">Booking Placed!</h2>
-            <p style="color: #8b949e;">Your ambulance is being dispatched.</p>
-            <button onclick="location.reload()"
-                style="background: var(--accent-red); color: white; border: none; padding: 12px 30px; border-radius: 8px; margin-top: 20px; cursor: pointer; width: 100%;">DONE</button>
+    <div id="success-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px);">
+        <div style="background: var(--card-bg); padding: 40px; border-radius: 20px; text-align: center; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+            <div style="font-size: 60px; color: var(--success); margin-bottom: 15px;">✅</div>
+            <h2 style="margin-bottom: 10px;">Booking Confirmed!</h2>
+            <p style="color: var(--text-gray); margin-bottom: 25px;">Your ambulance is on the way. Please stay reachable via phone.</p>
+            <button onclick="location.reload()" style="background: var(--accent-red); color: white; border: none; padding: 12px 40px; border-radius: 8px; cursor: pointer; font-weight: bold;">VIEW DASHBOARD</button>
         </div>
     </div>
 
@@ -324,177 +187,141 @@
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
 
         // 1. Map Initialization
-        const map = L.map('map', { zoomControl: false }).setView([22.8246, 91.1017], 13);
+        const map = L.map('map', { zoomControl: false }).setView([22.8246, 91.1017], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // 2. Select Ambulance from Map
+        // 2. Select Ambulance logic
         function selectAmbulance(id, type) {
-            const inputField = document.getElementById('selected-id');
-            inputField.value = `${type} (ID: ${id})`;
+            document.getElementById('selected-id').value = `${type} (ID: ${id})`;
             localStorage.setItem('selectedAmbulanceId', id);
             updateFare();
+            // Smooth scroll to booking form
+            document.querySelector('.booking-card').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 3. Fare Logic
+        // 3. Fare Calculation
         function updateFare() {
             const pickup = document.getElementById('pickup').value;
             const hospital = document.getElementById('hospital').value;
             const priceDisplay = document.getElementById('estimated-price');
 
-            if (pickup && hospital) {
+            if (pickup.length > 3 && hospital.length > 3) {
                 const base = 500;
-                const distFactor = (pickup.length + hospital.length) * 10;
-                priceDisplay.innerText = base + distFactor;
+                const dynamic = (pickup.length + hospital.length) * 8;
+                priceDisplay.innerText = base + dynamic;
+            } else {
+                priceDisplay.innerText = "0";
             }
         }
 
-        // 4. Booking Logic
+        // 4. Booking Logic (Alinged with Backend)
         async function confirmBooking() {
-    const userId = localStorage.getItem('userId') || 1;
-    const ambId = localStorage.getItem('selectedAmbulanceId');
-    const pickup = document.getElementById('pickup').value;
-    const hospital = document.getElementById('hospital').value;
-    
-    // Clean the fare: removes '৳' and spaces so the DB gets a number
-    const fareRaw = document.getElementById('estimated-price').innerText;
-    const fare = fareRaw.replace(/[^\d.]/g, ''); 
+            const userId = localStorage.getItem('userId') || 1;
+            const ambId = localStorage.getItem('selectedAmbulanceId');
+            const pickup = document.getElementById('pickup').value;
+            const hospital = document.getElementById('hospital').value;
+            const fare = document.getElementById('estimated-price').innerText;
+            const btn = document.getElementById('confirm-btn');
 
-    // 1. Debugging: Check your console to see if these are empty
-    console.log("Attempting to book:", { userId, ambId, pickup, hospital, fare });
+            if (!ambId || fare === "0") {
+                alert("Please select an ambulance and enter locations.");
+                return;
+            }
 
-    if (!ambId || !pickup || !hospital) {
-        alert("🚨 Missing Info: Select an ambulance and enter locations!");
-        return;
-    }
+            btn.disabled = true;
+            btn.innerText = "PROCESSING...";
 
-    try {
-        const response = await fetch(`${API_BASE}/bookings`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: userId,
-                ambulance_id: ambId,
-                pickup_location: pickup,
-                destination_hospital: hospital, // Captured from the 'hospital' ID
-                fare: fare
-            })
-        });
+            try {
+                const response = await fetch(`${API_BASE}/bookings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        ambulance_id: ambId,
+                        pickup_location: pickup,
+                        destination_hospital: hospital,
+                        fare: fare
+                    })
+                });
 
-        const result = await response.json();
-        if (result.success) {
-            localStorage.removeItem('selectedAmbulanceId');
-            document.getElementById('success-overlay').style.display = 'flex';
-            
-            // Refresh table
-            setTimeout(() => {
-                loadBookingHistory();
-                // Optional: Close modal if you have one
-                if(typeof closeModal === 'function') closeModal(); 
-            }, 1500);
-        } else {
-            alert("Server Error: " + (result.error || "Unknown error"));
+                const result = await response.json();
+                if (result.success) {
+                    localStorage.removeItem('selectedAmbulanceId');
+                    document.getElementById('success-overlay').style.display = 'flex';
+                } else {
+                    alert("Booking Failed: " + result.error);
+                    btn.disabled = false;
+                    btn.innerText = "CONFIRM & DISPATCH";
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Connection error. Please check your internet.");
+                btn.disabled = false;
+                btn.innerText = "CONFIRM & DISPATCH";
+            }
         }
-    } catch (err) {
-        console.error("Booking failed:", err);
-        alert("Connection Error. Is your backend running?");
-    }
-}
 
-        // 5. Load Map Markers
+        // 5. Load Real-time Map Markers
         async function loadMapAmbulances() {
             try {
                 const res = await fetch(`${API_BASE}/ambulances`);
                 const ambulances = await res.json();
-
+                
                 ambulances.filter(a => a.status === 'Available').forEach(amb => {
                     const marker = L.marker([amb.lat || 22.82, amb.lng || 91.10]).addTo(map);
                     marker.bindPopup(`
-                        <div style="color:black; padding:5px;">
-                            <h4 style="margin:0; color:#f85149;">${amb.ambulance_type}</h4>
-                            <p style="margin:5px 0;">Provider: ${amb.provider}</p>
+                        <div style="color:black; font-family: sans-serif; min-width:150px;">
+                            <b style="color:var(--accent-red); font-size:14px;">${amb.ambulance_type}</b><br>
+                            <small>Provider: ${amb.provider}</small><br>
                             <button onclick="selectAmbulance(${amb.id}, '${amb.ambulance_type}')" 
-                                style="background:#f85149; color:white; border:none; padding:5px 10px; cursor:pointer; width:100%;">
-                                BOOK NOW
+                                style="background:#f85149; color:white; border:none; padding:8px; width:100%; border-radius:5px; cursor:pointer; margin-top:10px; font-weight:bold;">
+                                SELECT THIS
                             </button>
                         </div>
                     `);
                 });
-            } catch (err) { console.error("Map load failed", err); }
+            } catch (err) { console.error("Map Error:", err); }
         }
 
-        // 6. Load History
-        async function loadBookingHistory() {
-            const tableBody = document.getElementById('booking-table-body');
-            const userId = localStorage.getItem('userId');
-
-            // Prevent fetching if userId is missing
-            if (!userId || userId === 'undefined') {
-                console.warn("User ID not found in localStorage.");
-                tableBody.innerHTML = "<tr><td colspan='5'>Please login to see history.</td></tr>";
-                return;
-            }
+        // 6. History with correct DB keys
+        async function loadHistory() {
+            const userId = localStorage.getItem('userId') || 1;
+            const tbody = document.getElementById('booking-table-body');
 
             try {
-                // 1. Just a simple GET request (no method/body needed)
                 const res = await fetch(`${API_BASE}/bookings/user/${userId}`);
-
-                if (!res.ok) throw new Error("Server responded with an error");
-
                 const data = await res.json();
-                console.log("Check this object in Console:", data[0]);
 
-                // 2. Render the rows
                 if (data.length > 0) {
-                    tableBody.innerHTML = data.slice(0, 5).map(b => `
-                <tr>
-                    <td>#${b.booking_id || b.id}</td>
-                    <td>${b.destination_hospital || b.destination || b.DESTINATION_HOSPITAL || 'Not Specified'}</td>
-                    <td><span class="status-badge ${(b.status || 'pending').toLowerCase()}">${b.status || 'Pending'}</span></td>
-                    <td>৳ ${b.fare || '0'}</td>
-                    <td>${b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Recent'}</td>
-                </tr>
-            `).join('');
+                    tbody.innerHTML = data.slice(0, 8).map(b => `
+                        <tr>
+                            <td style="color:var(--accent-red); font-weight:bold;">#${b.booking_id}</td>
+                            <td>${b.destination_hospital || 'Not Set'}</td>
+                            <td><span class="status-badge ${(b.status || 'pending').toLowerCase()}">${b.status || 'Pending'}</span></td>
+                            <td>৳ ${b.fare}</td>
+                            <td style="color:var(--text-gray); font-size:12px;">${new Date(b.booking_time || b.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
                 } else {
-                    tableBody.innerHTML = "<tr><td colspan='5'>No recent activity found.</td></tr>";
+                    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No bookings found.</td></tr>";
                 }
             } catch (err) {
-                console.error("❌ History Load Error:", err);
-                tableBody.innerHTML = "<tr><td colspan='5'>Error loading history.</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Failed to load history.</td></tr>";
             }
         }
 
-        function checkStoredBooking() {
-            const storedData = localStorage.getItem('selectedAmbulance');
-            if (storedData) {
-                const amb = JSON.parse(storedData);
-                const inputField = document.getElementById('selected-id');
-                if (inputField) {
-                    inputField.value = `${amb.ambulance_type} (${amb.id})`;
-                    localStorage.setItem('selectedAmbulanceId', amb.id);
-                    if (amb.lat && amb.lng) {
-                        map.setView([amb.lat, amb.lng], 15);
-                        L.marker([amb.lat, amb.lng]).addTo(map)
-                            .bindPopup(`Selected: ${amb.ambulance_type}`)
-                            .openPopup();
-                    }
-                }
-            }
-        }
-
-        window.onload = function () {
-            const userName = localStorage.getItem('userName') || 'Guest User';
-            document.getElementById('user-display-name').innerText = userName;
-            document.getElementById('user-name-text').innerText = userName;
-            document.getElementById('profile-circle').innerText = userName.charAt(0).toUpperCase();
+        window.onload = () => {
+            const name = localStorage.getItem('userName') || 'User';
+            document.getElementById('user-display-name').innerText = name;
+            document.getElementById('user-name-text').innerText = name;
+            document.getElementById('profile-circle').innerText = name[0].toUpperCase();
 
             document.getElementById('pickup').addEventListener('input', updateFare);
             document.getElementById('hospital').addEventListener('input', updateFare);
 
-            checkStoredBooking();
             loadMapAmbulances();
-            loadBookingHistory();
+            loadHistory();
         };
     </script>
 </body>
-
 </html>

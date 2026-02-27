@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fleet | Med-Drive</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         :root {
             --dark-bg: #0d1117;
@@ -16,7 +14,6 @@
             --white: #ffffff;
             --text-gray: #8b949e;
             --border-color: #30363d;
-            --star-gold: #f1c40f;
         }
 
         body {
@@ -28,6 +25,7 @@
             min-height: 100vh;
         }
 
+        /* Sidebar */
         .sidebar {
             width: 260px;
             background: var(--sidebar-bg);
@@ -37,68 +35,54 @@
             position: fixed;
             display: flex;
             flex-direction: column;
-            z-index: 1000;
         }
 
-        .logo-area {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+        .logo-area { text-align: center; margin-bottom: 40px; }
+        .logo-area img { width: 80px; border-radius: 50%; border: 2px solid var(--accent-red); padding: 5px; }
 
-        .logo-area img {
-            width: 80px;
-            border-radius: 50%;
-            border: 2px solid var(--accent-red);
-            margin-bottom: 10px;
-        }
+        .sidebar ul { list-style: none; padding: 0; }
+        .sidebar li { padding: 12px 15px; margin-bottom: 8px; border-radius: 8px; transition: 0.3s; display: flex; align-items: center; gap: 12px; }
+        .sidebar li:hover { background: rgba(248, 81, 73, 0.1); }
+        .sidebar li.active { background: rgba(248, 81, 73, 0.15); border-left: 3px solid var(--accent-red); }
+        .sidebar a { color: var(--text-gray); text-decoration: none; font-weight: 500; width: 100%; }
+        .sidebar li.active a { color: var(--white); }
 
-        .tagline {
-            color: var(--text-gray);
-            font-size: 0.75rem;
-            opacity: 0.8;
-        }
-
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .sidebar li {
-            padding: 12px 15px;
-            margin-bottom: 5px;
-            border-radius: 8px;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .sidebar li:hover {
-            background: rgba(248, 81, 73, 0.1);
-        }
-
-        .sidebar a {
-            color: var(--text-gray);
-            text-decoration: none;
-            font-weight: 500;
-            width: 100%;
-        }
-
-        .sidebar li:hover a {
-            color: var(--accent-red);
-        }
-
+        /* Content Area */
         .main-content {
             margin-left: 300px;
             padding: 40px;
-            width: calc(100% - 300px);
+            width: calc(100% - 340px);
         }
 
+        .header-section { margin-bottom: 30px; }
+        
+        /* Filter Bar */
+        .filter-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-section input, .filter-section select {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--dark-bg);
+            color: white;
+            outline: none;
+            transition: 0.3s;
+        }
+        .filter-section input:focus { border-color: var(--accent-red); }
+
+        /* Fleet Grid */
         .ambulance-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 25px;
-            margin-top: 30px;
         }
 
         .amb-card {
@@ -106,43 +90,28 @@
             border-radius: 16px;
             border: 1px solid var(--border-color);
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-
-        .amb-card:hover {
-            transform: translateY(-8px);
-            border-color: var(--accent-red);
-        }
-
-        .amb-card img {
-            width: 100%;
-            height: 190px;
-            object-fit: cover;
-        }
-
-        .amb-info {
-            padding: 20px;
-            flex-grow: 1;
+            transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
         }
 
-        .amb-type {
-            font-size: 1.25rem;
-            font-weight: bold;
-            margin: 0 0 15px 0;
-            color: var(--white);
-        }
+        .amb-card:hover { transform: translateY(-8px); border-color: var(--accent-red); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
 
+        .amb-card img { width: 100%; height: 180px; object-fit: cover; border-bottom: 1px solid var(--border-color); }
+
+        .amb-info { padding: 20px; flex-grow: 1; }
+        .amb-type { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; color: var(--white); }
+        
         .driver-box {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 15px;
+            border-radius: 10px;
+            padding: 12px;
             margin-bottom: 15px;
+            font-size: 0.9rem;
         }
+
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
 
         .btn-select {
             background: var(--accent-red);
@@ -153,28 +122,11 @@
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            text-transform: uppercase;
+            transition: 0.3s;
         }
 
-        .btn-select:disabled {
-            background: #21262d;
-            color: var(--text-gray);
-            cursor: not-allowed;
-        }
-
-        .filter-section input, .filter-section select {
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background: var(--card-bg);
-            color: white;
-            outline: none;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .main-content { margin-left: 0; width: 100%; }
-        }
+        .btn-select:disabled { background: var(--border-color); color: var(--text-gray); cursor: not-allowed; }
+        .btn-select:hover:not(:disabled) { filter: brightness(1.1); }
     </style>
 </head>
 
@@ -182,127 +134,128 @@
 
     <nav class="sidebar">
         <div class="logo-area">
-            <img src="../assets/images/logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/100'">
+            <img src="../assets/images/logo.png" alt="Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1032/1032989.png'">
             <h3 style="color: var(--accent-red); margin: 10px 0 0 0;">Med-Drive</h3>
-            <p class="tagline">Ambulance at your doorstep</p>
         </div>
         <ul>
-            <li><span>🏠</span> <a href="dashboard.html">Dashboard</a></li>
-            <li><span>🚑</span> <a href="ambulance.html" style="color: var(--accent-red);">Ambulances</a></li>
-            <li><span>🕒</span> <a href="#">History</a></li>
-            <li style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                <span>🚪</span> <a href="../index.html" onclick="localStorage.clear()">Logout</a>
-            </li>
+            <li><a href="dashboard.html">🏠 Dashboard</a></li>
+            <li class="active"><a href="ambulance.html">🚑 Ambulances</a></li>
+            <li><a href="#">🕒 History</a></li>
         </ul>
+        <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <a href="../index.html" onclick="localStorage.clear()" style="color: var(--text-gray); text-decoration: none;">🚪 Logout</a>
+        </div>
     </nav>
 
     <div class="main-content">
-        <h1>Ambulance Fleet</h1>
-        <p style="color: var(--text-gray); margin-top: 5px;">Available specialized medical transport in Noakhali.</p>
+        <div class="header-section">
+            <h1>Emergency Fleet</h1>
+            <p style="color: var(--text-gray);">Select an ambulance to proceed with booking.</p>
+        </div>
 
-        <div class="filter-section" style="width: 100%; margin: 20px 0; display: flex; gap: 15px;">
-            <input type="text" id="searchInput" placeholder="Search by Hospital or Type..." style="flex: 2;">
+        <div class="filter-section">
+            <input type="text" id="searchInput" placeholder="Search by provider or type..." style="flex: 2;">
             <select id="typeFilter" style="flex: 1;">
-                <option value="all">All Types</option>
+                <option value="all">All Vehicle Types</option>
                 <option value="AC">AC Ambulance</option>
                 <option value="Non-AC">Non-AC Ambulance</option>
-                <option value="ICU">ICU/Freezer</option>
+                <option value="ICU">ICU / Freezer</option>
             </select>
         </div>
 
-        <div id="fleet-container" class="ambulance-grid"></div>
+        <div id="fleet-container" class="ambulance-grid">
+            </div>
     </div>
 
     <script>
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
-        let allAmbulances = []; // Master data from server
+        let allAmbulances = [];
 
-        // 1. Unified Load Function
         async function loadFleet() {
-    const container = document.getElementById('fleet-container');
-    try {
-        const response = await fetch(`${API_BASE}/ambulances`);
-        const data = await response.json();
+            const container = document.getElementById('fleet-container');
+            container.innerHTML = "<p>Scanning for available units...</p>";
+            
+            try {
+                const response = await fetch(`${API_BASE}/ambulances`);
+                const data = await response.json();
 
-        // Check if data is actually an array before trying to use it
-        if (Array.isArray(data)) {
-            allAmbulances = data;
-            renderAmbulances(allAmbulances);
-        } else {
-            console.error("Received non-array data:", data);
-            container.innerHTML = "<p style='color:yellow;'>Server returned an error. Check logs.</p>";
+                if (Array.isArray(data)) {
+                    allAmbulances = data;
+                    renderAmbulances(allAmbulances);
+                }
+            } catch (error) {
+                container.innerHTML = "<p style='color:var(--accent-red);'>Unable to reach fleet server.</p>";
+            }
         }
-    } catch (error) {
-        console.error("Fetch Error:", error);
-        container.innerHTML = "<p style='color:red;'>Failed to connect to server.</p>";
-    }
-}
 
-        // 2. Render Cards to UI
         function renderAmbulances(data) {
             const container = document.getElementById('fleet-container');
-            if (!data || data.length === 0) {
-                container.innerHTML = "<p style='color:white; text-align:center; grid-column: 1/-1;'>No ambulances found.</p>";
+            if (data.length === 0) {
+                container.innerHTML = "<p>No matching ambulances found.</p>";
                 return;
             }
 
             container.innerHTML = data.map(amb => {
                 const isAvailable = amb.status === 'Available';
-                const getStars = (rating) => '⭐'.repeat(Math.round(rating || 5));
                 
                 return `
                 <div class="amb-card">
-                    <img src="${amb.image_url || '../assets/images/logo.png'}" 
-     onerror="this.src='../assets/images/logo.png';">
+                    <img src="${amb.image_url || 'https://via.placeholder.com/300x180/161b22/f85149?text=Med-Drive+Unit'}" 
+                         onerror="this.src='https://via.placeholder.com/300x180/161b22/f85149?text=Ambulance';">
                     <div class="amb-info">
-                        <span style="color: #58a6ff; font-weight: bold; font-size: 0.85rem; margin-bottom: 5px;">
-                            Provider: ${amb.provider || 'General Service'}
+                        <span style="color: var(--accent-red); font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">
+                            ${amb.provider || 'Independent'}
                         </span>
                         <h3 class="amb-type">${amb.ambulance_type}</h3>
+                        
                         <div class="driver-box">
-                            <span style="display:block; font-weight:600;">👨‍✈️ ${amb.driver_name || 'Assigned on Booking'}</span>
-                            <span style="color: #8b949e; font-size: 0.8rem;">🚘 ${amb.vehicle_number || 'N/A'}</span>
-                            <div style="color: #f1c40f; font-size: 0.9rem; margin-top:5px;">${getStars(amb.driver_rating)}</div>
+                            <span style="display:block; margin-bottom:5px;">👨‍✈️ <b>${amb.driver_name || 'Dispatch Pending'}</b></span>
+                            <span style="color: var(--text-gray); font-size: 0.8rem;">🆔 Plate: ${amb.vehicle_number || 'N/A'}</span>
                         </div>
-                        <div style="margin-bottom: 15px; font-weight: bold; color: ${isAvailable ? '#3fb950' : '#f85149'};">
-                            ${isAvailable ? '● Available' : '● Busy'}
+
+                        <div style="margin-bottom: 20px; font-size: 0.9rem;">
+                            <span class="status-dot" style="background: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}"></span>
+                            <span style="color: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}">
+                                ${isAvailable ? 'Ready for Dispatch' : 'Currently Busy'}
+                            </span>
                         </div>
+
                         <button class="btn-select" 
-                                onclick="selectForBooking(${amb.id})" 
-                                ${!isAvailable ? 'disabled' : ''}
-                                style="background: ${isAvailable ? '#f85149' : '#30363d'}">
-                            ${isAvailable ? 'BOOK NOW' : 'OCCUPIED'}
+                                onclick="selectAndRedirect(${amb.id})" 
+                                ${!isAvailable ? 'disabled' : ''}>
+                            ${isAvailable ? 'BOOK THIS UNIT' : 'UNAVAILABLE'}
                         </button>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        // 3. Filter Logic
         function applyFilters() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const typeTerm = document.getElementById('typeFilter').value;
 
             const filtered = allAmbulances.filter(amb => {
-                const nameMatch = (amb.provider || '').toLowerCase().includes(searchTerm) || 
-                                  (amb.ambulance_type || '').toLowerCase().includes(searchTerm);
-                const typeMatch = typeTerm === 'all' || amb.ambulance_type.includes(typeTerm);
-                return nameMatch && typeMatch;
+                const matchesSearch = (amb.provider || '').toLowerCase().includes(searchTerm) || 
+                                     (amb.ambulance_type || '').toLowerCase().includes(searchTerm);
+                const matchesType = typeTerm === 'all' || amb.ambulance_type.includes(typeTerm);
+                return matchesSearch && matchesType;
             });
-
             renderAmbulances(filtered);
         }
 
-        // 4. Global Booking Function
-        function selectForBooking(id) {
+        // THE KEY FUNCTION: Matches the Dashboard's checkStoredBooking()
+        function selectAndRedirect(id) {
             const selectedAmb = allAmbulances.find(a => a.id == id);
             if (selectedAmb) {
+                // We save it as 'selectedAmbulance' which dashboard.html parses
                 localStorage.setItem('selectedAmbulance', JSON.stringify(selectedAmb));
+                // We also save the raw ID for the booking POST request
+                localStorage.setItem('selectedAmbulanceId', selectedAmb.id);
+                
                 window.location.href = 'dashboard.html';
             }
         }
 
-        // 5. Setup Listeners on Load
         document.addEventListener('DOMContentLoaded', () => {
             loadFleet();
             document.getElementById('searchInput').addEventListener('input', applyFilters);
