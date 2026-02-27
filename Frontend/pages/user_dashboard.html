@@ -216,51 +216,61 @@
 
         // 4. Booking Logic (Alinged with Backend)
         async function confirmBooking() {
-            const userId = localStorage.getItem('userId') || 1;
-            const ambId = localStorage.getItem('selectedAmbulanceId');
-            const pickup = document.getElementById('pickup').value;
-            const hospital = document.getElementById('hospital').value;
-            const fare = document.getElementById('estimated-price').innerText;
-            const btn = document.getElementById('confirm-btn');
+    const userId = localStorage.getItem('userId') || 1;
+    const ambId = localStorage.getItem('selectedAmbulanceId');
+    const pickup = document.getElementById('pickup').value;
+    const hospital = document.getElementById('hospital').value;
+    
+    // 1. Get the raw text (e.g., "৳ 716")
+    const fareText = document.getElementById('estimated-price').innerText;
+    
+    // 2. Clean the string to get just the number (e.g., 716)
+    const totalFare = parseFloat(fareText.replace(/[^0-9.]/g, '')) || 0;
 
-            if (!ambId || fare === "0") {
-                alert("Please select an ambulance and enter locations.");
-                return;
-            }
+    // 3. Define the base_fare (Ensure this matches your ambulance type logic)
+    // You can also grab this from a hidden field if you store it during selection
+    const baseFare = 500.00; 
 
-            btn.disabled = true;
-            btn.innerText = "PROCESSING...";
+    const btn = document.getElementById('confirm-btn');
 
-            try {
-                const response = await fetch(`${API_BASE}/bookings`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        ambulance_id: ambId,
-                        pickup_location: pickup,
-                        destination_hospital: hospital,
-                        fare: fare
-                    })
-                });
+    if (!ambId || totalFare === 0 || !pickup || !hospital) {
+        alert("Please select an ambulance and enter locations.");
+        return;
+    }
 
-                const result = await response.json();
-                if (result.success) {
-                    localStorage.removeItem('selectedAmbulanceId');
-                    document.getElementById('success-overlay').style.display = 'flex';
-                } else {
-                    alert("Booking Failed: " + result.error);
-                    btn.disabled = false;
-                    btn.innerText = "CONFIRM & DISPATCH";
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Connection error. Please check your internet.");
-                btn.disabled = false;
-                btn.innerText = "CONFIRM & DISPATCH";
-            }
+    btn.disabled = true;
+    btn.innerText = "PROCESSING...";
+
+    try {
+        const response = await fetch(`${API_BASE}/bookings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                ambulance_id: ambId,
+                pickup_location: pickup,
+                destination_hospital: hospital,
+                base_fare: baseFare, // Added as per your backend change
+                fare: totalFare      // This is the final fare
+            })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            localStorage.removeItem('selectedAmbulanceId');
+            document.getElementById('success-overlay').style.display = 'flex';
+        } else {
+            alert("Booking Failed: " + result.error);
+            btn.disabled = false;
+            btn.innerText = "CONFIRM & DISPATCH";
         }
-
+    } catch (err) {
+        console.error(err);
+        alert("Connection error. Please check your internet.");
+        btn.disabled = false;
+        btn.innerText = "CONFIRM & DISPATCH";
+    }
+}
         // 5. Load Real-time Map Markers
         async function loadMapAmbulances() {
             try {
@@ -282,7 +292,6 @@
                 });
             } catch (err) { console.error("Map Error:", err); }
         }
-
         // 6. History with correct DB keys
         async function loadHistory() {
             const userId = localStorage.getItem('userId') || 1;

@@ -91,25 +91,28 @@ app.post('/api/users/login', async (req, res) => {
 // 5. ROUTES: BOOKINGS (With Atomic Transaction)
 // ---------------------------------------------------------
 app.post('/api/bookings', async (req, res) => {
-    const { user_id, ambulance_id, pickup_location, destination_hospital, base_fare, final_fare } = req.body;
+    // We now use 'fare' to represent the total/final amount
+    const { user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare } = req.body;
     const conn = await pool.getConnection();
 
     try {
         await conn.beginTransaction();
 
-        // Insert Booking
+        // Updated INSERT statement: removed final_fare, using 'fare' instead
         const bookingSql = `
-            INSERT INTO Bookings (user_id, ambulance_id, pickup_location, destination_hospital, base_fare, final_fare, status) 
+            INSERT INTO Bookings (user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare, status) 
             VALUES (?, ?, ?, ?, ?, ?, 'Pending')`;
-        const [result] = await conn.query(bookingSql, [user_id, ambulance_id, pickup_location, destination_hospital, base_fare, final_fare]);
+            
+        const [result] = await conn.query(bookingSql, [user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare]);
 
-        // Update Ambulance Status
+        // Update Ambulance Status to Busy
         await conn.query(`UPDATE Ambulances SET status = 'Busy' WHERE ambulance_id = ?`, [ambulance_id]);
 
         await conn.commit();
         res.json({ success: true, booking_id: result.insertId });
     } catch (err) {
         await conn.rollback();
+        console.error("Booking Error:", err.message);
         res.status(500).json({ error: err.message });
     } finally {
         conn.release();
