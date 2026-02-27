@@ -190,38 +190,48 @@ app.delete('/api/admin/organizations/:id', async (req, res) => {
 });
 
 // GET Admin Dashboard Stats
-
 app.get('/api/admin/stats', async (req, res) => {
     try {
-        // 1. Total Revenue (Uses confirmed 'fare' column)
-        const [revenueRes] = await pool.query(`SELECT SUM(fare) as total FROM Bookings WHERE status = 'Completed'`);
-        
-        // 2. Total Bookings (Uses confirmed 'booking_id' column)
-        const [bookingsRes] = await pool.query(`SELECT COUNT(booking_id) as count FROM Bookings`);
-        
-        // 3. Total Organizations (Uses confirmed 'org_id' column)
-        const [orgsRes] = await pool.query(`SELECT COUNT(org_id) as count FROM Organizations`);
+        // 1. Get Revenue (Using 'fare' from your verified Bookings table)
+        const [revenueRes] = await db.execute('SELECT SUM(fare) as totalRevenue FROM Bookings');
+        const totalRevenue = revenueRes[0].totalRevenue || 0;
 
-        // 4. Safe check for Drivers (wrapped in try/catch to prevent 500 if table missing)
+        // 2. Get Bookings Count
+        const [bookingsRes] = await db.execute('SELECT COUNT(*) as count FROM Bookings');
+        const bookingsCount = bookingsRes[0].count || 0;
+
+        // 3. Get Organizations Count
+        const [orgsRes] = await db.execute('SELECT COUNT(*) as count FROM Organizations');
+        const orgsCount = orgsRes[0].count || 0;
+
+        // 4. Get Drivers Count (Wrapped in its own try/catch to prevent 500 if table is missing)
         let driversCount = 0;
         try {
-            const [driversRes] = await pool.query(`SELECT COUNT(*) as count FROM Drivers`);
-            driversCount = driversRes[0].count;
-        } catch (e) {
-            console.log("Drivers table not found, defaulting to 0");
+            const [driversRes] = await db.execute('SELECT COUNT(*) as count FROM Drivers');
+            driversCount = driversRes[0].count || 0;
+        } catch (driverErr) {
+            console.error("DRIVERS TABLE ERROR (Setting to 0):", driverErr.message);
         }
 
-        // Send response in the format your HTML expects
-        res.json({
+        // Send the successful response
+        res.status(200).json({
             success: true,
-            revenue: parseFloat(revenueRes[0].total || 0).toLocaleString(), 
-            bookingsCount: bookingsRes[0].count || 0,
+            revenue: totalRevenue,
+            bookingsCount: bookingsCount,
             driversCount: driversCount,
-            orgsCount: orgsRes[0].count || 0
+            orgsCount: orgsCount
         });
-    } catch (err) {
-        console.error("Stats SQL Error:", err.message);
-        res.status(500).json({ success: false, error: err.message });
+
+    } catch (error) {
+        // This is the "Critical Error" log Google mentioned
+        console.error('--- CRITICAL STATS ERROR ---');
+        console.error(error.message);
+        
+        res.status(500).json({ 
+            success: false, 
+            message: 'Internal Server Error',
+            error: error.message 
+        });
     }
 });
 
