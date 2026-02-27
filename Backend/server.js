@@ -151,7 +151,7 @@ app.get('/api/admin/organizations', async (req, res) => {
             SELECT 
                 org_id AS id, 
                 org_name AS name, 
-                org_domain AS domain, 
+                email_domain AS domain, 
                 discount_rate 
             FROM Organizations`;
         
@@ -162,15 +162,7 @@ app.get('/api/admin/organizations', async (req, res) => {
     }
 });
 
-// TEMPORARY DEBUG ROUTE
-app.get('/api/debug/organizations-schema', async (req, res) => {
-    try {
-        const [columns] = await pool.query("SHOW COLUMNS FROM Organizations");
-        res.json(columns);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+
 
 // POST a new organization
 app.post('/api/admin/organizations', async (req, res) => {
