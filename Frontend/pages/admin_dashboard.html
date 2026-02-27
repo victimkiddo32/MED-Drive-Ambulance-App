@@ -274,6 +274,31 @@
             background: var(--accent-red);
             color: white;
         }
+
+        /* Spinner Animation */
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Visually dim the button when disabled */
+        .btn-confirm-add:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            background: var(--text-gray);
+        }
     </style>
 </head>
 
@@ -427,25 +452,47 @@
             }
         }
 
-        async function submitNewOrg(event) {
-            event.preventDefault();
-            const data = {
-                name: document.getElementById('org-name').value,
-                domain: document.getElementById('org-domain').value,
-                discount_rate: document.getElementById('org-discount').value
-            };
+        async function submitNewOrg() {
+            const name = document.getElementById('new-org-name').value;
+            const domain = document.getElementById('new-org-domain').value;
+            const discount = document.getElementById('new-org-discount').value;
+            const saveBtn = document.querySelector('.btn-confirm-add');
 
-            const res = await fetch(`${API_BASE}/admin/organizations`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json' // <--- THIS MUST BE HERE
-                },
-                body: JSON.stringify(data)
-            });
+            if (!name || !domain || !discount) {
+                alert("Please fill all fields");
+                return;
+            }
 
-            if (res.ok) {
-                alert("Saved successfully!");
-                loadOrganizations(); // Refresh table
+            // 1. Create the data object correctly
+            const orgData = { name, domain, discount_rate: discount };
+
+            // 2. Start Loading State
+            const originalText = saveBtn.innerText;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<span class="spinner"></span> Saving...`;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/organizations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orgData) // Now 'orgData' is defined!
+                });
+
+                if (res.ok) {
+                    alert("Saved successfully!");
+                    closeModal(); // Hide the card
+                    loadOrganizations(); // Refresh the table
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + (err.error || "Failed to save"));
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Server connection failed.");
+            } finally {
+                // 3. Reset Loading State
+                saveBtn.disabled = false;
+                saveBtn.innerText = originalText;
             }
         }
 
