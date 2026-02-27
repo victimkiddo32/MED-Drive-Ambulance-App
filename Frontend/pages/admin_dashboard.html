@@ -414,16 +414,21 @@
         function closeModal() { document.getElementById('org-modal').style.display = 'none'; }
 
         async function loadAdminStats() {
-            try {
-                const res = await fetch(`${API_BASE}/admin/stats`);
-                const data = await res.json();
-                if (data) {
-                    document.getElementById('stat-revenue').innerText = data.revenue || "45,200";
-                    document.getElementById('stat-bookings').innerText = data.bookingsCount || "128";
-                    document.getElementById('stat-drivers').innerText = data.driversCount || "14";
-                }
-            } catch (err) { console.log("Using default stats"); }
+    try {
+        const res = await fetch(`${API_BASE}/admin/stats`);
+        const data = await res.json();
+        
+        if (data.success) {
+            // Match the IDs in your HTML (stat-revenue, stat-bookings, etc.)
+            document.getElementById('stat-revenue').innerText = data.revenue;
+            document.getElementById('stat-bookings').innerText = data.bookingsCount;
+            document.getElementById('stat-drivers').innerText = data.driversCount;
+            document.getElementById('stat-orgs').innerText = data.orgsCount;
         }
+    } catch (err) { 
+        console.error("Dashboard stats failed to load:", err);
+    }
+}
 
         async function loadOrganizations() {
             const tableBody = document.getElementById('org-table-body');

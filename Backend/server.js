@@ -190,21 +190,38 @@ app.delete('/api/admin/organizations/:id', async (req, res) => {
 });
 
 // GET Admin Dashboard Stats
+
 app.get('/api/admin/stats', async (req, res) => {
     try {
-        const [revenue] = await pool.query(`SELECT SUM(final_fare) as total FROM Bookings WHERE status = 'Completed'`);
-        const [bookings] = await pool.query(`SELECT COUNT(*) as count FROM Bookings`);
-        const [drivers] = await pool.query(`SELECT COUNT(*) as count FROM Drivers`);
-        const [orgs] = await pool.query(`SELECT COUNT(*) as count FROM Organizations`);
+        // 1. Total Revenue (Uses confirmed 'fare' column)
+        const [revenueRes] = await pool.query(`SELECT SUM(fare) as total FROM Bookings WHERE status = 'Completed'`);
+        
+        // 2. Total Bookings (Uses confirmed 'booking_id' column)
+        const [bookingsRes] = await pool.query(`SELECT COUNT(booking_id) as count FROM Bookings`);
+        
+        // 3. Total Organizations (Uses confirmed 'org_id' column)
+        const [orgsRes] = await pool.query(`SELECT COUNT(org_id) as count FROM Organizations`);
 
+        // 4. Safe check for Drivers (wrapped in try/catch to prevent 500 if table missing)
+        let driversCount = 0;
+        try {
+            const [driversRes] = await pool.query(`SELECT COUNT(*) as count FROM Drivers`);
+            driversCount = driversRes[0].count;
+        } catch (e) {
+            console.log("Drivers table not found, defaulting to 0");
+        }
+
+        // Send response in the format your HTML expects
         res.json({
-            revenue: revenue[0].total || 0,
-            bookingsCount: bookings[0].count || 0,
-            driversCount: drivers[0].count || 0,
-            orgsCount: orgs[0].count || 0
+            success: true,
+            revenue: parseFloat(revenueRes[0].total || 0).toLocaleString(), 
+            bookingsCount: bookingsRes[0].count || 0,
+            driversCount: driversCount,
+            orgsCount: orgsRes[0].count || 0
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("Stats SQL Error:", err.message);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
