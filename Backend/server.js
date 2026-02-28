@@ -37,25 +37,23 @@ const pool = mysql.createPool({
 app.patch('/api/drivers/status', async (req, res) => {
     const { driver_id, status } = req.body;
     try {
-        // Map 'Active' to 1 (Online) and 'Inactive' to 0 (Offline)
+        // Map 'Active' to 1 and 'Inactive' to 0 for the new is_online column
         const isOnline = (status === 'Active') ? 1 : 0;
         
         const [result] = await pool.query(
-            'UPDATE Drivers SET status = ?, is_online = ? WHERE driver_id = ?', 
+            'UPDATE Drivers SET status = ?, is_online = ? WHERE user_id = ?', 
             [status, isOnline, driver_id]
         );
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: "Driver not found" });
         }
-
-        res.json({ success: true, message: `Driver status updated to ${status}` });
+        res.json({ success: true, message: `Status updated to ${status}` });
     } catch (err) {
         console.error("PATCH Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
-
 // ---------------------------------------------------------
 // 4. ROUTES: AMBULANCES
 // ---------------------------------------------------------

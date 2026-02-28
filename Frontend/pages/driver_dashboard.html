@@ -275,7 +275,7 @@
     </main>
 
     <script>
-        const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
+        const API_BASE = "https://med-drive-ambulance-app.onrender.com/api";
         const driverId = localStorage.getItem('userId');
         let currentBooking = null;
 
@@ -285,15 +285,21 @@
         }
 
         // 2. Fixed Toggle Function
-       async function toggleStatus() {
+    async function toggleStatus() {
     const toggle = document.getElementById('status-toggle');
     const isOnline = toggle.checked;
     const statusText = document.getElementById('status-text');
+    
+    // IMPORTANT: Check what this prints in your console!
+    const targetUrl = `${API_BASE}/drivers/status`;
+    console.log("Calling URL:", targetUrl); 
 
     try {
-        const response = await fetch(`${API_BASE}/drivers/status`, {
-            method: 'PATCH', // Ensure this matches your backend route
-            headers: { 'Content-Type': 'application/json' },
+        const response = await fetch(targetUrl, {
+            method: 'PATCH', // backend must have app.patch
+            headers: { 
+                'Content-Type': 'application/json' 
+            },
             body: JSON.stringify({ 
                 driver_id: driverId, 
                 status: isOnline ? 'Active' : 'Inactive' 
@@ -301,27 +307,20 @@
         });
 
         if (!response.ok) {
-            // Revert UI if the server says no
             toggle.checked = !isOnline;
-            const errorData = await response.json().catch(() => ({ message: 'No detailed error.' }));
+            const errorData = await response.json().catch(() => ({ message: 'Route not found' }));
             throw new Error(`Server status ${response.status}: ${errorData.message}`);
         }
 
         const data = await response.json();
         console.log('Update successful:', data);
         
-        // Update text only on success
         statusText.innerText = isOnline ? 'Online' : 'Offline';
         statusText.style.color = isOnline ? 'var(--success)' : 'var(--text-gray)';
 
     } catch (err) {
-        // Revert toggle on network failure
         toggle.checked = !isOnline;
-        if (err instanceof TypeError && err.message === 'Failed to fetch') {
-            console.error("Network or CORS Error: Could not reach server.", err);
-        } else {
-            console.error("Error during status update:", err);
-        }
+        console.error("Error during status update:", err);
     }
 }
 
