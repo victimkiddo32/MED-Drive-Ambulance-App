@@ -473,12 +473,12 @@
         }
 
         async function showTrackingCard(bookingId) {
-            const res = await fetch(`${API_BASE}/bookings/track/${bookingId}`);
-            const result = await res.json();
+    const res = await fetch(`${API_BASE}/bookings/track/${bookingId}`);
+    const result = await res.json();
 
-            if (result.success) {
-                const info = result.data;
-                const trackingHTML = `
+    if (result.success) {
+        const info = result.data;
+        const trackingHTML = `
             <div id="tracking-card" class="booking-card" style="border-top: 4px solid var(--success); grid-column: span 2;">
                 <h3 style="color: var(--success); margin-top:0;">🚑 Ambulance is on the way!</h3>
                 <div style="display:flex; justify-content: space-between;">
@@ -487,15 +487,14 @@
                         <p><b>Vehicle:</b> ${info.vehicle_number} (${info.ambulance_type})</p>
                     </div>
                     <div style="text-align:right;">
-                        <a href="tel:${info.driver_phone}" style="background:var(--success); color:white; padding:10px 20px; border-radius:8px; text-decoration:none; font-weight:bold;">📞 CALL DRIVER</a>
+                        <a href="tel:${info.phone_number}" style="background:var(--success); color:white; padding:10px 20px; border-radius:8px; text-decoration:none; font-weight:bold;">📞 CALL DRIVER</a>
                     </div>
                 </div>
             </div>
         `;
-                // Insert this card above your history table
-                document.querySelector('.history-section').insertAdjacentHTML('beforebegin', trackingHTML);
-            }
-        }
+        document.querySelector('.history-section').insertAdjacentHTML('beforebegin', trackingHTML);
+    }
+}
 
         // --- 4. LOAD HISTORY ---
         async function loadHistory() {

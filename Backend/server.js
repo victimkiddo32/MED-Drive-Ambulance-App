@@ -165,13 +165,30 @@ app.post('/api/bookings', async (req, res) => {
     const { user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare } = req.body;
 
     try {
-        const sql = `INSERT INTO Bookings 
-            (user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare, status, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())`;
-        
-        const [result] = await pool.query(sql, [user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare]);
+        // 1. FIRST: Find out who is currently driving this specific ambulance
+        const [ambInfo] = await pool.query(
+            'SELECT driver_id FROM Ambulances WHERE ambulance_id = ?', 
+            [ambulance_id]
+        );
 
-        // IMPORTANT: Also update the ambulance status to 'Busy' so others can't book it
+        const assignedDriverId = ambInfo[0]?.driver_id;
+
+        // 2. SECOND: Insert the booking WITH that driver's ID immediately
+        const sql = `INSERT INTO Bookings 
+            (user_id, ambulance_id, driver_id, pickup_location, destination_hospital, base_fare, fare, status, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())`;
+        
+        const [result] = await pool.query(sql, [
+            user_id, 
+            ambulance_id, 
+            assignedDriverId, // This locks Jashim or Nurul to this specific trip!
+            pickup_location, 
+            destination_hospital, 
+            base_fare, 
+            fare
+        ]);
+
+        // 3. THIRD: Mark the Ambulance as Busy
         await pool.query('UPDATE Ambulances SET status = "Busy" WHERE ambulance_id = ?', [ambulance_id]);
 
         res.json({ success: true, bookingId: result.insertId });
@@ -209,19 +226,20 @@ app.get('/api/bookings/user/:id', async (req, res) => {
     }
 });
 
-// --- GET ASSIGNED DRIVER DETAILS FOR USER ---
 app.get('/api/bookings/track/:id', async (req, res) => {
     const bookingId = req.params.id;
     try {
         const sql = `
             SELECT 
                 b.status, b.pickup_location, b.destination_hospital,
-                d.name AS driver_name, d.phone_number AS driver_phone,
+                d.name AS driver_name, 
+                d.phone_number, -- Changed from phone to phone_number
                 a.vehicle_number, a.ambulance_type
             FROM Bookings b
-            JOIN Drivers d ON b.driver_id = d.driver_id
-            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
-            WHERE b.booking_id = ? AND b.status = 'Accepted'`;
+            LEFT JOIN Drivers d ON b.driver_id = d.driver_id
+            LEFT JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            WHERE b.booking_id = ? 
+            AND b.status IN ('Pending', 'Accepted')`;
             
         const [rows] = await pool.query(sql, [bookingId]);
         res.json({ success: rows.length > 0, data: rows[0] || null });
