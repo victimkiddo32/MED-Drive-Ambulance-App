@@ -263,6 +263,9 @@
     </div>
 
     <script>
+        if (!localStorage.getItem('userId')) {
+    window.location.href = 'login.html';
+} 
         async function handleLogin() {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;

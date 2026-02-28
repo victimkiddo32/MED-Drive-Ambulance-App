@@ -193,7 +193,7 @@
 
             <div class="form-group">
                 <label>Phone Number</label>
-                <input type="text" id="reg-phone" placeholder="018XXXXXXXX">
+                <input type="text" id="reg-phone_number" placeholder="018XXXXXXXX">
             </div>
 
             <button class="btn-book" id="regBtn" onclick="handleRegister()">Create Account</button>
@@ -225,14 +225,15 @@
     const btn = document.getElementById('regBtn');
     
     // Map the UI values to the exact keys expected by your new backend route
-    const payload = {
+   const payload = {
         full_name: document.getElementById('reg-name').value,
         email: document.getElementById('reg-email').value,
         password: document.getElementById('reg-pass').value,
-        phone_number: document.getElementById('reg-phone').value,
+        phone_number: document.getElementById('reg-phone_number').value, // This must match the backend destructuring
         role: selectedRole 
     };
-
+ 
+    
     if (!payload.full_name || !payload.email || !payload.password || !payload.phone_number) {
         alert("Please fill in all the details.");
         return;

@@ -91,20 +91,19 @@ app.post('/api/users/login', async (req, res) => {
 // --- USER REGISTRATION ROUTE ---
 // --- UPDATED REGISTRATION ROUTE ---
 app.post('/api/users/register', async (req, res) => {
-    // Destructure using the names sent from the frontend
+    // 1. Destructure using the new keys from the frontend
     const { full_name, email, password, phone_number, role } = req.body;
 
     try {
-        // 1. Insert into Users table using exact database column names
+        // 2. Use the exact column names from your DESCRIBE Users; output
         const [result] = await pool.query(
             'INSERT INTO Users (full_name, email, password, phone_number, role) VALUES (?, ?, ?, ?, ?)',
             [full_name, email, password, phone_number, role]
         );
 
-        // In your schema, the primary key is user_id
         const newUserId = result.insertId;
 
-        // 2. Role-specific logic (Optional but recommended)
+        // 3. Optional: Link to Driver table if applicable
         if (role === 'Driver') {
             await pool.query(
                 'INSERT INTO Drivers (driver_id, name, status) VALUES (?, ?, "Inactive")',
@@ -112,19 +111,12 @@ app.post('/api/users/register', async (req, res) => {
             );
         }
 
-        res.status(201).json({ 
-            success: true, 
-            message: "User registered successfully", 
-            userId: newUserId 
-        });
+        res.status(201).json({ success: true, userId: newUserId });
 
     } catch (err) {
-        console.error("Registration Error:", err);
-        // Specifically check for duplicate email/phone errors
-        if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ error: "Email or Phone Number already registered." });
-        }
-        res.status(500).json({ error: "Database error: " + err.message });
+        console.error("DB Error:", err);
+        // Catching the specific 'field' error to give you a better alert
+        res.status(500).json({ error: "Database mapping error: " + err.message });
     }
 });
 
@@ -157,6 +149,40 @@ app.post('/api/bookings', async (req, res) => {
         res.status(500).json({ error: err.message });
     } finally {
         conn.release();
+    }
+});
+
+// --- server.js ---
+app.get('/api/bookings/available', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM Bookings WHERE status = "Pending"');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: "Error fetching bookings" });
+    }
+});
+
+
+// Add this to your server.js
+app.get('/api/drivers/incoming/:id', async (req, res) => {
+    const driverId = req.params.id;
+    try {
+        // Querying bookings where this driver is assigned
+        // Note: Using 'user_id' or 'driver_id' based on your schema
+        const [rows] = await pool.query(
+            `SELECT * FROM Bookings 
+             WHERE driver_id = ? AND status = 'Assigned'`, 
+            [driverId]
+        );
+        
+        if (rows.length === 0) {
+            return res.status(200).json([]); // Return empty array if no trips
+        }
+        
+        res.json(rows);
+    } catch (err) {
+        console.error("Error fetching incoming trips:", err);
+        res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
