@@ -331,27 +331,39 @@
         }
 
         async function acceptTrip(bookingId, ambId, destination) {
-            try {
-                const res = await fetch(`${API_BASE}/bookings/accept`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        booking_id: bookingId,
-                        ambulance_id: ambId,
-                        driver_id: driverId
-                    })
-                });
+    // 1. Ensure driverId is grabbed from localStorage if not global
+    const currentDriverId = localStorage.getItem('userId'); 
 
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('request-container').style.display = 'none';
-                    showActiveTripUI(bookingId, ambId, destination);
-                    showToast();
-                }
-            } catch (e) {
-                alert("Error accepting trip.");
-            }
+    if (!currentDriverId) {
+        alert("Session expired. Please login again.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/bookings/accept`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                booking_id: bookingId,
+                ambulance_id: ambId,
+                driver_id: currentDriverId // Use the verified ID
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('request-container').style.display = 'none';
+            // Ensure this function exists to update your UI state
+            showActiveTripUI(bookingId, ambId, destination); 
+            showToast("Trip Accepted!");
+        } else {
+            alert("Trip already taken or unavailable.");
         }
+    } catch (e) {
+        console.error("Accept Error:", e);
+        alert("Error connecting to server.");
+    }
+}
 
         function showActiveTripUI(bookingId, ambId, destination) {
             const existing = document.getElementById('active-trip-card');
@@ -369,26 +381,29 @@
         }
 
         async function completeTrip(bookingId, ambId) {
-            try {
-                const res = await fetch(`${API_BASE}/bookings/complete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        booking_id: bookingId,
-                        ambulance_id: ambId,
-                        driver_id: driverId
-                    })
-                });
+    const currentDriverId = localStorage.getItem('userId');
 
-                const data = await res.json();
-                if (data.success) {
-                    alert("Ride Completed!");
-                    location.reload();
-                }
-            } catch (e) {
-                alert("Failed to complete trip.");
-            }
+    try {
+        const res = await fetch(`${API_BASE}/bookings/complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                booking_id: bookingId,
+                ambulance_id: ambId,
+                driver_id: currentDriverId
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert("Ride Completed!");
+            location.reload(); // Resets UI and triggers fresh polling
         }
+    } catch (e) {
+        console.error("Complete Error:", e);
+        alert("Failed to complete trip.");
+    }
+}
 
         async function loadStats() {
             if (!driverId) return;

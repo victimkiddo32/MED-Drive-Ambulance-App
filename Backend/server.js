@@ -85,6 +85,26 @@ app.post('/api/users/login', async (req, res) => {
     }
 });
 
+// Change this route in server.js
+app.get('/api/bookings/user/:userId', async (req, res) => {
+    const userId = req.params.userId;
+    try {
+        const sql = `
+            SELECT b.*, a.vehicle_number, a.ambulance_type 
+            FROM Bookings b
+            LEFT JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            WHERE b.user_id = ? 
+            ORDER BY b.created_at DESC`;
+
+        // USE 'pool' instead of 'db'
+        const [rows] = await pool.query(sql, [userId]);
+        res.json(rows);
+    } catch (err) {
+        console.error("User Booking Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // 6. ROUTES: BOOKINGS
 app.post('/api/bookings/accept', async (req, res) => {
     const { booking_id, ambulance_id, driver_id } = req.body;
