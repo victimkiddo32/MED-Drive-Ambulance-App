@@ -109,16 +109,27 @@ app.post('/api/users/register', async (req, res) => {
 // ---------------------------------------------------------
 app.post('/api/bookings/accept', async (req, res) => {
     const { booking_id, ambulance_id, driver_id } = req.body;
+    
+    // DEBUG: This will show up in your Render "Logs" tab
+    console.log("Accepting Booking:", { booking_id, ambulance_id, driver_id });
+
+    if (!booking_id || !driver_id) {
+        return res.status(400).json({ error: "Missing booking_id or driver_id" });
+    }
+
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
+        
+        // Use shorter status strings if your DB is tight on space
         await conn.query('UPDATE Bookings SET status = "Accepted", driver_id = ? WHERE booking_id = ?', [driver_id, booking_id]);
         await conn.query('UPDATE Ambulances SET status = "Busy" WHERE ambulance_id = ?', [ambulance_id]);
-        await conn.query('UPDATE Drivers SET status = "Busy" WHERE driver_id = ?', [driver_id]);
+        
         await conn.commit();
         res.json({ success: true });
     } catch (err) {
         await conn.rollback();
+        console.error("DATABASE ERROR:", err.message); // This will tell you the column name!
         res.status(500).json({ error: err.message });
     } finally {
         conn.release();
