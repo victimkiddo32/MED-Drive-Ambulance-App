@@ -54,13 +54,15 @@
 
         /* Modern Toast Notification */
         .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-        }
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    pointer-events: none; /* This allows clicks to pass THROUGH the empty container */
+}
 
         .toast {
+            pointer-events: auto;
             background: var(--card-bg);
             border-left: 5px solid var(--success);
             color: white;
@@ -92,6 +94,9 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
+            position: relative;
+            z-index: 1000;
+            pointer-events: all;
         }
 
         .switch {

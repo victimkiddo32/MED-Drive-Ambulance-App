@@ -7,11 +7,19 @@ const app = express();
 
 // 1. IMPROVED CORS
 
-app.use(cors({
-    origin: '*', // Allows all origins (good for development)
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // Added PATCH here
-    allowedHeaders: ['Content-Type', 'x-user-role', 'Authorization']
-}));
+app.use((req, res, next) => {
+    // Replace with your actual Vercel URL for production security
+    res.header('Access-Control-Allow-Origin', '*'); 
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-user-role');
+    
+    // Handle Browser "Preflight" requests
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
 app.use(express.json());
 
 // 2. DATABASE POOL
