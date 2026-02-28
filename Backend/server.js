@@ -6,10 +6,11 @@ require('dotenv').config();
 const app = express();
 
 // 1. IMPROVED CORS
+
 app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'x-user-role']
+    origin: '*', // Allows all origins (good for development)
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // Added PATCH here
+    allowedHeaders: ['Content-Type', 'x-user-role', 'Authorization']
 }));
 app.use(express.json());
 

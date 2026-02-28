@@ -281,29 +281,33 @@
 
     // 2. Fixed Toggle Function
     async function toggleStatus() {
-        const toggle = document.getElementById('status-toggle');
-        const isOnline = toggle.checked;
-        const statusText = document.getElementById('status-text');
-        
-        // Update UI
-        statusText.innerText = isOnline ? 'Online' : 'Offline';
-        statusText.style.color = isOnline ? 'var(--success)' : 'var(--text-gray)';
+    const toggle = document.getElementById('status-toggle');
+    const isOnline = toggle.checked;
+    const statusText = document.getElementById('status-text');
+    
+    // 1. Update UI IMMEDIATELY so it feels fast
+    statusText.innerText = isOnline ? 'Online' : 'Offline';
+    statusText.style.color = isOnline ? 'var(--success)' : 'var(--text-gray)';
 
-        try {
-            // Tell the backend the driver is active/inactive
-            await fetch(`${API_BASE}/drivers/status`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    driver_id: driverId, 
-                    status: isOnline ? 'Active' : 'Inactive' 
-                })
-            });
-            console.log("Status updated to:", isOnline);
-        } catch (err) {
-            console.error("Could not sync status with server");
-        }
+    try {
+        // 2. Send the update to the server in the background
+        const res = await fetch(`${API_BASE}/drivers/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                driver_id: driverId, 
+                status: isOnline ? 'Active' : 'Inactive' 
+            })
+        });
+
+        if (!res.ok) throw new Error("Server rejected update");
+
+    } catch (err) {
+        console.error("CORS or Network Error:", err);
+        // Optional: Reset toggle if it's critical that the server knows
+        // toggle.checked = !isOnline; 
     }
+}
 
     // 3. Polling for Trips
     async function checkIncomingTrips() {
