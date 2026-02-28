@@ -32,7 +32,7 @@
             flex: 1.2;
             position: relative;
             background: linear-gradient(rgba(3, 7, 18, 0.5), rgba(3, 7, 18, 0.8)),
-                        url('../assets/images/app1.jpg');
+                url('../assets/images/app1.jpg');
             background-size: cover;
             background-position: center;
             display: flex;
@@ -61,12 +61,28 @@
             border-radius: 50%;
             animation: move 20s infinite alternate ease-in-out;
         }
-        .blob-1 { background: var(--accent-red); top: -10%; left: -10%; }
-        .blob-2 { background: var(--med-blue); bottom: 10%; right: -5%; animation-delay: -5s; }
+
+        .blob-1 {
+            background: var(--accent-red);
+            top: -10%;
+            left: -10%;
+        }
+
+        .blob-2 {
+            background: var(--med-blue);
+            bottom: 10%;
+            right: -5%;
+            animation-delay: -5s;
+        }
 
         @keyframes move {
-            from { transform: translate(0, 0) scale(1); }
-            to { transform: translate(50px, 50px) scale(1.2); }
+            from {
+                transform: translate(0, 0) scale(1);
+            }
+
+            to {
+                transform: translate(50px, 50px) scale(1.2);
+            }
         }
 
         .visual-content {
@@ -113,11 +129,32 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        h2 { font-size: 28px; margin-bottom: 8px; font-weight: 700; }
-        .subtitle { color: var(--text-dim); font-size: 15px; margin-bottom: 35px; }
+        h2 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
 
-        .form-group { margin-bottom: 22px; text-align: left; }
-        label { display: block; font-size: 12px; font-weight: 600; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 15px;
+            margin-bottom: 35px;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
 
         input {
             width: 100%;
@@ -158,13 +195,33 @@
             box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.1);
         }
 
-        .footer-links { text-align: center; margin-top: 30px; font-size: 14px; color: var(--text-dim); }
-        .footer-links a { color: #ffffff; text-decoration: none; font-weight: 600; transition: 0.3s; }
-        .footer-links a:hover { border-bottom: 1px solid white; }
+        .footer-links {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: var(--text-dim);
+        }
+
+        .footer-links a {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .footer-links a:hover {
+            border-bottom: 1px solid white;
+        }
 
         @media (max-width: 1024px) {
-            .login-visual { display: none; }
-            .login-container { flex: 1; padding: 20px; }
+            .login-visual {
+                display: none;
+            }
+
+            .login-container {
+                flex: 1;
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -207,8 +264,22 @@
 
     <script>
         if (!localStorage.getItem('userId')) {
-    window.location.href = 'pages/login.html';
-}
+            window.location.href = 'login.html';
+        }
+
+        // 1. REMOVED the redirect loop. 
+        // Only redirect AWAY from login if the user is ALREADY logged in.
+        if (localStorage.getItem('userId')) {
+            const role = localStorage.getItem('userRole');
+            const dashboards = {
+                'Admin': 'pages/admin_dashboard.html',
+                'Provider': 'pages/provider_dashboard.html',
+                'Driver': 'pages/driver_dashboard.html',
+                'User': 'pages/user_dashboard.html'
+            };
+            // window.location.href = dashboards[role] || 'user_dashboard.html';
+        }
+
         async function handleLogin() {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
@@ -232,33 +303,39 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    // Save session data
-                    localStorage.setItem('userId', data.user.user_id);
-                    localStorage.setItem('userName', data.user.full_name);
+                    // FIXED MAPPING: Use driver_id if user_id is missing (for Drivers)
+                    const idToSave = data.user.driver_id || data.user.user_id;
+                    const nameToSave = data.user.full_name || data.user.name;
+
+                    localStorage.setItem('userId', idToSave);
+                    localStorage.setItem('userName', nameToSave);
                     localStorage.setItem('userRole', data.user.role);
 
-                    // Multi-Role Redirection Logic
+                    console.log("Login Success. Saved ID:", idToSave);
+
+                    // Multi-Role Redirection
                     const role = data.user.role;
-                    if (role === 'Admin') {
-                        window.location.href = 'pages/admin_dashboard.html';
-                    } else if (role === 'Provider') {
-                        window.location.href = 'pages/provider_dashboard.html';
-                    } else if (role === 'Driver') {
-                        window.location.href = 'pages/driver_dashboard.html';
-                    } else {
-                        window.location.href = 'pages/user_dashboard.html'; // Regular User
-                    }
+                    const dashboards = {
+                        'Admin': 'pages/admin_dashboard.html',
+                        'Provider': 'pages/provider_dashboard.html',
+                        'Driver': 'pages/driver_dashboard.html',
+                        'User': 'pages/user_dashboard.html'
+                    };
+
+                    window.location.href = dashboards[role] || 'pages/user_dashboard.html';
                 } else {
-                    alert("Error: " + (data.error || "Login failed."));
+                    alert("Login Failed: " + (data.error || "Invalid credentials"));
                     btn.innerText = "Sign In";
                     btn.disabled = false;
                 }
             } catch (err) {
-                alert("Server connection error.");
+                console.error("Login Error:", err);
+                alert("Could not connect to the server.");
                 btn.innerText = "Sign In";
                 btn.disabled = false;
             }
         }
+
     </script>
 </body>
 

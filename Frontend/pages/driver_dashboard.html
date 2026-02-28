@@ -171,6 +171,37 @@
             margin-top: 15px;
         }
     </style>
+    <button onclick="handleLogout()" class="btn-logout">
+    <span>Logout</span>
+    <i class="icon-exit">🚪</i>
+</button>
+
+<style>
+    .btn-logout {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(255, 91, 88, 0.1);
+        color: #ff5b58;
+        border: 1px solid #ff5b58;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 1000;
+    }
+
+    .btn-logout:hover {
+        background: #ff5b58;
+        color: white;
+        transform: translateY(-2px);
+    }
+</style>
+
 </head>
 
 <body>

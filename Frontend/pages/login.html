@@ -264,8 +264,22 @@
 
     <script>
         if (!localStorage.getItem('userId')) {
-    window.location.href = 'login.html';
-} 
+            window.location.href = 'login.html';
+        }
+
+        // 1. REMOVED the redirect loop. 
+        // Only redirect AWAY from login if the user is ALREADY logged in.
+        if (localStorage.getItem('userId')) {
+            const role = localStorage.getItem('userRole');
+            const dashboards = {
+                'Admin': 'admin_dashboard.html',
+                'Provider': 'provider_dashboard.html',
+                'Driver': 'driver_dashboard.html',
+                'User': 'user_dashboard.html'
+            };
+            // window.location.href = dashboards[role] || 'user_dashboard.html';
+        }
+
         async function handleLogin() {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
@@ -289,10 +303,15 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    // Mapping the database columns (user_id, full_name) to local storage
-                    localStorage.setItem('userId', data.user.user_id);
-                    localStorage.setItem('userName', data.user.full_name);
+                    // FIXED MAPPING: Use driver_id if user_id is missing (for Drivers)
+                    const idToSave = data.user.driver_id || data.user.user_id;
+                    const nameToSave = data.user.full_name || data.user.name;
+
+                    localStorage.setItem('userId', idToSave);
+                    localStorage.setItem('userName', nameToSave);
                     localStorage.setItem('userRole', data.user.role);
+
+                    console.log("Login Success. Saved ID:", idToSave);
 
                     // Multi-Role Redirection
                     const role = data.user.role;
@@ -311,11 +330,12 @@
                 }
             } catch (err) {
                 console.error("Login Error:", err);
-                alert("Could not connect to the server. Please try again later.");
+                alert("Could not connect to the server.");
                 btn.innerText = "Sign In";
                 btn.disabled = false;
             }
         }
+
     </script>
 </body>
 
