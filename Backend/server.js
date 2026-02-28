@@ -39,28 +39,29 @@ app.patch('/api/drivers/status', async (req, res) => {
     try {
         const isOnline = (status === 'Active') ? 1 : 0;
         
-        // 1. Update the Driver table
+        // 1. Update the Driver table first
         const [result] = await pool.query(
             'UPDATE Drivers SET status = ?, is_online = ? WHERE driver_id = ?', 
             [status, isOnline, driver_id]
         );
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: "Driver ID not found" });
+            return res.status(404).json({ success: false, message: `Driver ID ${driver_id} not found in database.` });
         }
 
-        // 2. Try to update Ambulance, but don't crash if it fails
+        // 2. Wrap the Ambulance update in its own try/catch so it doesn't crash the whole request
         try {
-            await pool.query('UPDATE Ambulances SET status = ? WHERE driver_id = ?', 
-                [isOnline ? 'Available' : 'Inactive', driver_id]
-            );
+            const ambStatus = (status === 'Active') ? 'Available' : 'Inactive';
+            await pool.query('UPDATE Ambulances SET status = ? WHERE driver_id = ?', [ambStatus, driver_id]);
         } catch (ambErr) {
-            console.warn("Ambulance sync failed, but driver updated:", ambErr.message);
+            console.warn("Ambulance sync failed:", ambErr.message);
+            // We don't return 500 here because the Driver status DID update successfully
         }
 
         res.json({ success: true, message: `Status updated to ${status}` });
     } catch (err) {
         console.error("PATCH Error:", err.message);
+        // Send the actual error message back to the frontend to see it in the console
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -150,6 +151,33 @@ app.get('/api/drivers/stats/:id', async (req, res) => {
         res.json({ success: true, earnings: rows[0].earnings, trips: rows[0].trips });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// 7. DRIVER INCOMING BOOKINGS
+app.get('/api/drivers/incoming/:id', async (req, res) => {
+    const driverId = req.params.id;
+    console.log(`Checking incoming bookings for Driver ID: ${driverId}`);
+    
+    try {
+        // We look for 'Pending' bookings assigned to this driver
+        const sql = `
+            SELECT b.*, u.full_name AS customer_name, u.phone_number AS customer_phone
+            FROM Bookings b
+            JOIN Users u ON b.user_id = u.user_id
+            WHERE b.driver_id = ? AND b.status = 'Pending'
+            ORDER BY b.created_at DESC LIMIT 1`;
+            
+        const [rows] = await pool.query(sql, [driverId]);
+
+        if (rows.length > 0) {
+            res.json({ hasBooking: true, booking: rows[0] });
+        } else {
+            res.json({ hasBooking: false, booking: null });
+        }
+    } catch (err) {
+        console.error("Incoming Route Error:", err.message);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 

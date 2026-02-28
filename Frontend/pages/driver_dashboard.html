@@ -52,14 +52,13 @@
             padding: 20px 40px;
         }
 
-        /* Modern Toast Notification */
         .toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-    pointer-events: none; /* This allows clicks to pass THROUGH the empty container */
-}
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            pointer-events: none;
+        }
 
         .toast {
             pointer-events: auto;
@@ -143,15 +142,8 @@
         }
 
         @keyframes blink {
-
-            0%,
-            100% {
-                border-color: var(--accent-red);
-            }
-
-            50% {
-                border-color: transparent;
-            }
+            0%, 100% { border-color: var(--accent-red); }
+            50% { border-color: transparent; }
         }
 
         .btn-accept,
@@ -167,21 +159,9 @@
             transition: 0.2s;
         }
 
-        .btn-accept {
-            background: var(--success);
-        }
+        .btn-accept { background: var(--success); }
+        .btn-complete { background: #2188ff; margin-top: 15px; }
 
-        .btn-complete {
-            background: #2188ff;
-            margin-top: 15px;
-        }
-    </style>
-    <button onclick="handleLogout()" class="btn-logout">
-        <span>Logout</span>
-        <i class="icon-exit">🚪</i>
-    </button>
-
-    <style>
         .btn-logout {
             position: fixed;
             bottom: 20px;
@@ -206,7 +186,6 @@
             transform: translateY(-2px);
         }
     </style>
-
 </head>
 
 <body>
@@ -219,6 +198,12 @@
             </div>
         </div>
     </div>
+
+    <button onclick="handleLogout()" class="btn-logout">
+        <span>Logout</span>
+        <i>🚪</i>
+    </button>
+
     <nav class="sidebar">
         <div class="logo-area">
             <img src="../assets/images/logo.png" alt="Logo"
@@ -230,8 +215,7 @@
             <li style="padding: 15px; background: rgba(248,81,73,0.1); border-radius: 8px;">
                 <a href="#" style="color: var(--accent-red); text-decoration: none; font-weight: bold;">🚨 Requests</a>
             </li>
-            <li style="padding: 15px;"><a href="#" style="color: var(--text-gray); text-decoration: none;">💰 My
-                    Earnings</a></li>
+            <li style="padding: 15px;"><a href="#" style="color: var(--text-gray); text-decoration: none;">💰 My Earnings</a></li>
             <li style="padding: 15px; margin-top: auto; border-top: 1px solid var(--border);">
                 <a href="#" onclick="handleLogout()" style="color: var(--text-gray); text-decoration: none;">Logout</a>
             </li>
@@ -261,13 +245,11 @@
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
-            <div
-                style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+            <div style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
                 <h4 style="color: var(--text-gray); margin: 0;">Today's Earnings</h4>
                 <h2 style="color: var(--success);">৳ <span id="daily-total">0</span></h2>
             </div>
-            <div
-                style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+            <div style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
                 <h4 style="color: var(--text-gray); margin: 0;">Total Trips</h4>
                 <h2><span id="trip-count">0</span></h2>
             </div>
@@ -279,60 +261,50 @@
         const driverId = localStorage.getItem('userId');
         let currentBooking = null;
 
-        // 1. Initial Redirect Check
         if (!driverId) {
             window.location.href = 'login.html';
         }
 
-        // 2. Fixed Toggle Function
-    async function toggleStatus() {
-    const toggle = document.getElementById('status-toggle');
-    const isOnline = toggle.checked;
-    const statusText = document.getElementById('status-text');
-    
-    // IMPORTANT: Check what this prints in your console!
-    const targetUrl = `${API_BASE}/drivers/status`;
-    console.log("Calling URL:", targetUrl); 
+        async function toggleStatus() {
+            const toggle = document.getElementById('status-toggle');
+            const isOnline = toggle.checked;
+            const statusText = document.getElementById('status-text');
+            const targetUrl = `${API_BASE}/drivers/status`; 
 
-    try {
-        const response = await fetch(targetUrl, {
-            method: 'PATCH', // backend must have app.patch
-            headers: { 
-                'Content-Type': 'application/json' 
-            },
-            body: JSON.stringify({ 
-                driver_id: driverId, 
-                status: isOnline ? 'Active' : 'Inactive' 
-            }),
-        });
+            try {
+                const response = await fetch(targetUrl, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        driver_id: driverId, 
+                        status: isOnline ? 'Active' : 'Inactive' 
+                    }),
+                });
 
-        if (!response.ok) {
-            toggle.checked = !isOnline;
-            const errorData = await response.json().catch(() => ({ message: 'Route not found' }));
-            throw new Error(`Server status ${response.status}: ${errorData.message}`);
+                if (!response.ok) {
+                    toggle.checked = !isOnline;
+                    const errorData = await response.json().catch(() => ({ message: 'Update failed' }));
+                    throw new Error(errorData.message || 'Server Error');
+                }
+
+                statusText.innerText = isOnline ? 'Online' : 'Offline';
+                statusText.style.color = isOnline ? 'var(--success)' : 'var(--text-gray)';
+                if (isOnline) loadStats();
+
+            } catch (err) {
+                toggle.checked = !isOnline;
+                console.error("Status update error:", err);
+            }
         }
 
-        const data = await response.json();
-        console.log('Update successful:', data);
-        
-        statusText.innerText = isOnline ? 'Online' : 'Offline';
-        statusText.style.color = isOnline ? 'var(--success)' : 'var(--text-gray)';
-
-    } catch (err) {
-        toggle.checked = !isOnline;
-        console.error("Error during status update:", err);
-    }
-}
-
-        // 3. Polling for Trips
         async function checkIncomingTrips() {
-            // Only poll if the toggle is ON
-            if (!document.getElementById('status-toggle').checked) return;
+            if (!driverId || !document.getElementById('status-toggle').checked) return;
 
             try {
                 const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
-                const data = await res.json();
+                if (!res.ok) return;
 
+                const data = await res.json();
                 if (data && data.hasBooking) {
                     currentBooking = data.booking;
                     document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
@@ -350,7 +322,6 @@
             }
         }
 
-        // 4. UI Helper
         function showToast() {
             const toast = document.getElementById('success-toast');
             if (toast) {
@@ -359,7 +330,6 @@
             }
         }
 
-        // 5. Action Functions
         async function acceptTrip(bookingId, ambId, destination) {
             try {
                 const res = await fetch(`${API_BASE}/bookings/accept`, {
@@ -388,14 +358,13 @@
             if (existing) existing.remove();
 
             const activeTripHTML = `
-            <div id="active-trip-card" class="booking-card" style="display:block; border-top: 4px solid var(--success); background: var(--card-bg);">
-                <h3 style="color: var(--success); margin-top:0;">TRIP IN PROGRESS</h3>
-                <p><b>Patient Destination:</b> ${destination}</p> 
-                <button class="btn-complete" onclick="completeTrip(${bookingId}, ${ambId})">
-                    MARK AS COMPLETED (FINISH RIDE)
-                </button>
-            </div>
-        `;
+                <div id="active-trip-card" class="booking-card" style="display:block; border-top: 4px solid var(--success); background: var(--card-bg);">
+                    <h3 style="color: var(--success); margin-top:0;">TRIP IN PROGRESS</h3>
+                    <p><b>Patient Destination:</b> ${destination}</p> 
+                    <button class="btn-complete" onclick="completeTrip(${bookingId}, ${ambId})">
+                        MARK AS COMPLETED (FINISH RIDE)
+                    </button>
+                </div>`;
             document.getElementById('main-dashboard-area').insertAdjacentHTML('beforeend', activeTripHTML);
         }
 
@@ -436,10 +405,8 @@
             window.location.href = 'login.html';
         }
 
-        // Start Processes
         setInterval(checkIncomingTrips, 5000);
         loadStats();
     </script>
 </body>
-
 </html>
