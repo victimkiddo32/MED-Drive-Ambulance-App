@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// 2. GET a single driver profile by User ID
+// 2. GET a single driver profile by User ID (Important for Dashboard)
 router.get('/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
@@ -36,36 +36,54 @@ router.get('/:userId', async (req, res) => {
     }
 });
 
-// 3. FIX: The Status Toggle Route (Matches your Frontend PATCH call)
-// This MUST match the method (PATCH) and path (/status)
+// 3. FIX: The Status Toggle Route
+// Matches: PATCH /api/drivers/status
 router.patch('/status', async (req, res) => {
-    const { driver_id, status } = req.body;
     try {
+        const { driver_id, status } = req.body;
+        
+        console.log(`Updating status for Driver/User ID ${driver_id} to ${status}`);
+
+        // Convert 'Active' to 1 (Online) and 'Inactive' to 0 (Offline)
         const isOnline = (status === 'Active') ? 1 : 0;
-        await pool.query('UPDATE Drivers SET is_online = ? WHERE user_id = ?', [isOnline, driver_id]);
-        res.json({ success: true, message: "Status updated" });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+
+        // Update both the status string AND the is_online boolean
+        const [result] = await pool.query(
+            'UPDATE Drivers SET is_online = ?, status = ? WHERE user_id = ?', 
+            [isOnline, status, driver_id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Driver record not found' });
+        }
+
+        res.status(200).json({ 
+            success: true,
+            message: 'Driver status updated successfully', 
+            driver_id, 
+            status 
+        });
+
+    } catch (error) {
+        console.error('Error updating driver status:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
-// 4. Fetch Incoming/Active Booking for a Driver
+// 4. Fetch Incoming/Active Booking
 router.get('/incoming/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
-        // Find booking where status is 'Pending' assigned to this driver's ambulance
         const [rows] = await pool.query(`
-            SELECT b.* FROM Bookings b
+            SELECT b.*, u.full_name AS customer_name, u.phone_number AS customer_phone
+            FROM Bookings b
+            JOIN Users u ON b.user_id = u.user_id
             JOIN Drivers d ON b.ambulance_id = d.ambulance_id
             WHERE d.user_id = ? AND b.status = 'Pending'
             ORDER BY b.created_at DESC LIMIT 1
         `, [userId]);
 
-        if (rows.length > 0) {
-            res.json({ hasBooking: true, booking: rows[0] });
-        } else {
-            res.json({ hasBooking: false });
-        }
+        res.json({ hasBooking: rows.length > 0, booking: rows[0] || null });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
