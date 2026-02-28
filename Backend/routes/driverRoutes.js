@@ -37,26 +37,14 @@ router.get('/:userId', async (req, res) => {
 });
 
 // 3. FIX: The Status Toggle Route (Matches your Frontend PATCH call)
+// This MUST match the method (PATCH) and path (/status)
 router.patch('/status', async (req, res) => {
-    const { driver_id, status } = req.body; 
-    
-    // Convert 'Active'/'Inactive' strings to 1/0 for the database is_online column
-    const onlineValue = (status === 'Active' || status === true) ? 1 : 0;
-
+    const { driver_id, status } = req.body;
     try {
-        // We use user_id here because your localStorage 'userId' (30001) is likely the User ID
-        const [result] = await pool.query(
-            'UPDATE Drivers SET is_online = ? WHERE user_id = ?', 
-            [onlineValue, driver_id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: "Driver record not found" });
-        }
-
-        res.json({ success: true, message: `Status updated to ${status}` });
+        const isOnline = (status === 'Active') ? 1 : 0;
+        await pool.query('UPDATE Drivers SET is_online = ? WHERE user_id = ?', [isOnline, driver_id]);
+        res.json({ success: true, message: "Status updated" });
     } catch (err) {
-        console.error("Database Error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });

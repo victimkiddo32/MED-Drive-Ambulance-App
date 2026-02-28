@@ -270,109 +270,120 @@
     </main>
 
     <script>
-    const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
-    const driverId = localStorage.getItem('userId');
-    let currentBooking = null;
+        const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
+        const driverId = localStorage.getItem('userId');
+        let currentBooking = null;
 
-    // 1. Initial Redirect Check
-    if (!driverId) {
-        window.location.href = 'login.html';
-    }
+        // 1. Initial Redirect Check
+        if (!driverId) {
+            window.location.href = 'login.html';
+        }
 
-    // 2. Fixed Toggle Function
-    async function toggleStatus() {
+        // 2. Fixed Toggle Function
+       async function toggleStatus() {
     const toggle = document.getElementById('status-toggle');
     const isOnline = toggle.checked;
     const statusText = document.getElementById('status-text');
-    
-    // 1. Update UI IMMEDIATELY so it feels fast
-    statusText.innerText = isOnline ? 'Online' : 'Offline';
-    statusText.style.color = isOnline ? 'var(--success)' : 'var(--text-gray)';
 
     try {
-        // 2. Send the update to the server in the background
-        const res = await fetch(`${API_BASE}/drivers/status`, {
-            method: 'PATCH',
+        const response = await fetch(`${API_BASE}/drivers/status`, {
+            method: 'PATCH', // Ensure this matches your backend route
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 driver_id: driverId, 
                 status: isOnline ? 'Active' : 'Inactive' 
-            })
+            }),
         });
 
-        if (!res.ok) throw new Error("Server rejected update");
+        if (!response.ok) {
+            // Revert UI if the server says no
+            toggle.checked = !isOnline;
+            const errorData = await response.json().catch(() => ({ message: 'No detailed error.' }));
+            throw new Error(`Server status ${response.status}: ${errorData.message}`);
+        }
+
+        const data = await response.json();
+        console.log('Update successful:', data);
+        
+        // Update text only on success
+        statusText.innerText = isOnline ? 'Online' : 'Offline';
+        statusText.style.color = isOnline ? 'var(--success)' : 'var(--text-gray)';
 
     } catch (err) {
-        console.error("CORS or Network Error:", err);
-        // Optional: Reset toggle if it's critical that the server knows
-        // toggle.checked = !isOnline; 
+        // Revert toggle on network failure
+        toggle.checked = !isOnline;
+        if (err instanceof TypeError && err.message === 'Failed to fetch') {
+            console.error("Network or CORS Error: Could not reach server.", err);
+        } else {
+            console.error("Error during status update:", err);
+        }
     }
 }
 
-    // 3. Polling for Trips
-    async function checkIncomingTrips() {
-        // Only poll if the toggle is ON
-        if (!document.getElementById('status-toggle').checked) return;
+        // 3. Polling for Trips
+        async function checkIncomingTrips() {
+            // Only poll if the toggle is ON
+            if (!document.getElementById('status-toggle').checked) return;
 
-        try {
-            const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
-            const data = await res.json();
+            try {
+                const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
+                const data = await res.json();
 
-            if (data && data.hasBooking) {
-                currentBooking = data.booking;
-                document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
-                document.getElementById('dest-loc').innerText = currentBooking.destination_hospital;
-                document.getElementById('fare-amount').innerText = currentBooking.fare;
-                document.getElementById('request-container').style.display = 'block';
+                if (data && data.hasBooking) {
+                    currentBooking = data.booking;
+                    document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
+                    document.getElementById('dest-loc').innerText = currentBooking.destination_hospital;
+                    document.getElementById('fare-amount').innerText = currentBooking.fare;
+                    document.getElementById('request-container').style.display = 'block';
 
-                document.getElementById('confirm-accept-btn').onclick = () =>
-                    acceptTrip(currentBooking.booking_id, currentBooking.ambulance_id, currentBooking.destination_hospital);
-            } else {
-                document.getElementById('request-container').style.display = 'none';
+                    document.getElementById('confirm-accept-btn').onclick = () =>
+                        acceptTrip(currentBooking.booking_id, currentBooking.ambulance_id, currentBooking.destination_hospital);
+                } else {
+                    document.getElementById('request-container').style.display = 'none';
+                }
+            } catch (err) {
+                console.log("Polling...");
             }
-        } catch (err) {
-            console.log("Polling...");
         }
-    }
 
-    // 4. UI Helper
-    function showToast() {
-        const toast = document.getElementById('success-toast');
-        if(toast) {
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 4000);
-        }
-    }
-
-    // 5. Action Functions
-    async function acceptTrip(bookingId, ambId, destination) {
-        try {
-            const res = await fetch(`${API_BASE}/bookings/accept`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    booking_id: bookingId,
-                    ambulance_id: ambId,
-                    driver_id: driverId
-                })
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                document.getElementById('request-container').style.display = 'none';
-                showActiveTripUI(bookingId, ambId, destination);
-                showToast();
+        // 4. UI Helper
+        function showToast() {
+            const toast = document.getElementById('success-toast');
+            if (toast) {
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 4000);
             }
-        } catch (e) {
-            alert("Error accepting trip.");
         }
-    }
 
-    function showActiveTripUI(bookingId, ambId, destination) {
-        const existing = document.getElementById('active-trip-card');
-        if (existing) existing.remove();
+        // 5. Action Functions
+        async function acceptTrip(bookingId, ambId, destination) {
+            try {
+                const res = await fetch(`${API_BASE}/bookings/accept`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        booking_id: bookingId,
+                        ambulance_id: ambId,
+                        driver_id: driverId
+                    })
+                });
 
-        const activeTripHTML = `
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('request-container').style.display = 'none';
+                    showActiveTripUI(bookingId, ambId, destination);
+                    showToast();
+                }
+            } catch (e) {
+                alert("Error accepting trip.");
+            }
+        }
+
+        function showActiveTripUI(bookingId, ambId, destination) {
+            const existing = document.getElementById('active-trip-card');
+            if (existing) existing.remove();
+
+            const activeTripHTML = `
             <div id="active-trip-card" class="booking-card" style="display:block; border-top: 4px solid var(--success); background: var(--card-bg);">
                 <h3 style="color: var(--success); margin-top:0;">TRIP IN PROGRESS</h3>
                 <p><b>Patient Destination:</b> ${destination}</p> 
@@ -381,50 +392,50 @@
                 </button>
             </div>
         `;
-        document.getElementById('main-dashboard-area').insertAdjacentHTML('beforeend', activeTripHTML);
-    }
-
-    async function completeTrip(bookingId, ambId) {
-        try {
-            const res = await fetch(`${API_BASE}/bookings/complete`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    booking_id: bookingId,
-                    ambulance_id: ambId,
-                    driver_id: driverId
-                })
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                alert("Ride Completed!");
-                location.reload();
-            }
-        } catch (e) {
-            alert("Failed to complete trip.");
+            document.getElementById('main-dashboard-area').insertAdjacentHTML('beforeend', activeTripHTML);
         }
-    }
 
-    async function loadStats() {
-        if(!driverId) return;
-        try {
-            const res = await fetch(`${API_BASE}/drivers/stats/${driverId}`);
-            const data = await res.json();
-            document.getElementById('daily-total').innerText = data.earnings || 0;
-            document.getElementById('trip-count').innerText = data.trips || 0;
-        } catch (e) { console.log("Stats error"); }
-    }
+        async function completeTrip(bookingId, ambId) {
+            try {
+                const res = await fetch(`${API_BASE}/bookings/complete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        booking_id: bookingId,
+                        ambulance_id: ambId,
+                        driver_id: driverId
+                    })
+                });
 
-    function handleLogout() {
-        localStorage.clear();
-        window.location.href = 'login.html';
-    }
+                const data = await res.json();
+                if (data.success) {
+                    alert("Ride Completed!");
+                    location.reload();
+                }
+            } catch (e) {
+                alert("Failed to complete trip.");
+            }
+        }
 
-    // Start Processes
-    setInterval(checkIncomingTrips, 5000);
-    loadStats();
-</script>
+        async function loadStats() {
+            if (!driverId) return;
+            try {
+                const res = await fetch(`${API_BASE}/drivers/stats/${driverId}`);
+                const data = await res.json();
+                document.getElementById('daily-total').innerText = data.earnings || 0;
+                document.getElementById('trip-count').innerText = data.trips || 0;
+            } catch (e) { console.log("Stats error"); }
+        }
+
+        function handleLogout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        // Start Processes
+        setInterval(checkIncomingTrips, 5000);
+        loadStats();
+    </script>
 </body>
 
 </html>
