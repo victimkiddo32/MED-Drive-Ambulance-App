@@ -85,9 +85,10 @@ app.post('/api/users/login', async (req, res) => {
     }
 });
 
-// Change this route in server.js
+// Ensure this is exactly as written here
 app.get('/api/bookings/user/:userId', async (req, res) => {
     const userId = req.params.userId;
+    console.log(`Fetching bookings for user: ${userId}`); // Add this for debugging
     try {
         const sql = `
             SELECT b.*, a.vehicle_number, a.ambulance_type 
@@ -96,9 +97,10 @@ app.get('/api/bookings/user/:userId', async (req, res) => {
             WHERE b.user_id = ? 
             ORDER BY b.created_at DESC`;
 
-        // USE 'pool' instead of 'db'
         const [rows] = await pool.query(sql, [userId]);
-        res.json(rows);
+        
+        // Return an empty array [] instead of a 404 if no bookings exist
+        res.json(rows); 
     } catch (err) {
         console.error("User Booking Error:", err);
         res.status(500).json({ error: err.message });
