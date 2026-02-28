@@ -263,10 +263,7 @@
     </div>
 
     <script>
-        if (!localStorage.getItem('userId')) {
-            window.location.href = 'login.html';
-        }
-
+        
         // 1. REMOVED the redirect loop. 
         // Only redirect AWAY from login if the user is ALREADY logged in.
         if (localStorage.getItem('userId')) {

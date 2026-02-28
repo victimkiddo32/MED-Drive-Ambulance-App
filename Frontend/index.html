@@ -263,9 +263,7 @@
     </div>
 
     <script>
-        if (!localStorage.getItem('userId')) {
-            window.location.href = 'pages/login.html';
-        }
+        
 
         // 1. REMOVED the redirect loop. 
         // Only redirect AWAY from login if the user is ALREADY logged in.
@@ -332,7 +330,7 @@
                 console.error("Login Error:", err);
                 alert("Could not connect to the server.");
                 btn.innerText = "Sign In";
-                btn.disabled = false;
+                btn.disabled = false; 
             }
         }
 
