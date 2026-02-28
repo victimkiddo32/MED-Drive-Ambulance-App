@@ -274,29 +274,44 @@
         const driverId = localStorage.getItem('userId');
         let currentBooking = null;
 
-        if (!driverId) {
-            window.location.href = 'login.html';
-        }
+        // if (!driverId) {
+        //     window.location.href = 'login.html';
+        // }
 
         async function toggleStatus() {
-            const isOnline = document.getElementById('status-toggle').checked;
-            const statusText = document.getElementById('status-text');
-            const status = isOnline ? 'Active' : 'Inactive';
+    try {
+        const toggle = document.getElementById('status-toggle');
+        const isOnline = toggle.checked;
+        const statusText = document.getElementById('status-text');
+        
+        // Update UI immediately
+        statusText.innerText = isOnline ? 'Online' : 'Offline';
+        statusText.style.color = isOnline ? '#3fb950' : '#8b949e';
 
-            statusText.innerText = isOnline ? 'Online' : 'Offline';
-            statusText.style.color = isOnline ? 'var(--success)' : 'var(--text-gray)';
+        console.log("Attempting to change status to:", isOnline);
 
-            // MANDATORY: Tell the database you are ready!
-            try {
-                await fetch(`${API_BASE}/drivers/status`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ driver_id: driverId, status: status })
-                });
-            } catch (err) {
-                console.error("Failed to update status on server");
-            }
+        // Update Backend
+        const res = await fetch(`${API_BASE}/drivers/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                driver_id: driverId, 
+                status: isOnline ? 'Active' : 'Inactive' 
+            })
+        });
+
+        if (!res.ok) {
+            // If the server fails, flip the toggle back and alert the user
+            toggle.checked = !isOnline;
+            statusText.innerText = !isOnline ? 'Online' : 'Offline';
+            alert("Server connection failed. Please try again.");
         }
+    } catch (err) {
+        console.error("Toggle Error:", err);
+        // Reset the toggle if the network is down
+        document.getElementById('status-toggle').checked = false;
+    }
+}
 
         async function checkIncomingTrips() {
             if (!document.getElementById('status-toggle').checked) return;
