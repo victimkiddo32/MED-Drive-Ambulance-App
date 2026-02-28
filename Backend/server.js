@@ -35,14 +35,17 @@ const pool = mysql.createPool({
 // 3. DRIVER STATUS TOGGLE (Matches frontend 3000x IDs)
 // ---------------------------------------------------------
 // Add this to your server.js
-app.patch('/api/drivers/status', (req, res) => {
+// Changed 'db.query' to 'pool.query' and used async/await to match your setup
+app.patch('/api/drivers/status', async (req, res) => {
     const { driver_id, status } = req.body;
-    
-    const sql = "UPDATE drivers SET status = ? WHERE driver_id = ?";
-    db.query(sql, [status, driver_id], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
+    try {
+        const sql = "UPDATE drivers SET status = ? WHERE driver_id = ?";
+        await pool.query(sql, [status, driver_id]);
         res.json({ success: true, message: "Status updated" });
-    });
+    } catch (err) {
+        console.error("Status Update Error:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // 4. ROUTES: AMBULANCES
@@ -135,27 +138,28 @@ app.get('/api/drivers/stats/:id', async (req, res) => {
 
 // 7. DRIVER INCOMING BOOKINGS
 // Add this to your server.js
-app.get('/api/drivers/incoming/:id', (req, res) => {
+// This route now uses your 'pool' and correctly joins tables to find pending trips
+app.get('/api/drivers/incoming/:id', async (req, res) => {
     const driverId = req.params.id;
-    
-    // SQL: Join bookings and ambulances to find trips for THIS driver
-    const sql = `
-        SELECT b.* FROM bookings b
-        JOIN ambulances a ON b.ambulance_id = a.ambulance_id
-        WHERE a.driver_id = ? AND b.status = 'Pending'
-        LIMIT 1
-    `;
+    try {
+        const sql = `
+            SELECT b.* FROM bookings b
+            JOIN ambulances a ON b.ambulance_id = a.ambulance_id
+            WHERE a.driver_id = ? AND b.status = 'Pending'
+            LIMIT 1
+        `;
 
-    db.query(sql, [driverId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+        const [results] = await pool.query(sql, [driverId]);
         
         if (results.length > 0) {
             res.json({ hasBooking: true, booking: results[0] });
         } else {
             res.json({ hasBooking: false });
         }
-    });
+    } catch (err) {
+        console.error("Incoming Booking Error:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
-
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
