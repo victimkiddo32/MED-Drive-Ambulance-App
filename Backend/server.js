@@ -125,6 +125,79 @@ app.post('/api/bookings/accept', async (req, res) => {
     }
 });
 
+// --- COMPLETE TRIP ROUTE ---
+app.post('/api/bookings/complete', async (req, res) => {
+    const { booking_id, ambulance_id, driver_id } = req.body;
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // 1. Mark Booking as Completed (This makes the earnings show up!)
+        await conn.query('UPDATE Bookings SET status = "Completed" WHERE booking_id = ?', [booking_id]);
+
+        // 2. Make Ambulance and Driver available for the next patient
+        await conn.query('UPDATE Ambulances SET status = "Available" WHERE ambulance_id = ?', [ambulance_id]);
+        await conn.query('UPDATE Drivers SET status = "Active" WHERE driver_id = ?', [driver_id]);
+
+        await conn.commit();
+        res.json({ success: true, message: "Trip finalized successfully" });
+    } catch (err) {
+        await conn.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        conn.release();
+    }
+});
+
+
+app.post('/api/bookings', async (req, res) => {
+    const { user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare } = req.body;
+
+    try {
+        const sql = `INSERT INTO Bookings 
+            (user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare, status, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())`;
+        
+        const [result] = await pool.query(sql, [user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare]);
+
+        // IMPORTANT: Also update the ambulance status to 'Busy' so others can't book it
+        await pool.query('UPDATE Ambulances SET status = "Busy" WHERE ambulance_id = ?', [ambulance_id]);
+
+        res.json({ success: true, bookingId: result.insertId });
+    } catch (err) {
+        console.error("Booking Error:", err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- GET USER BOOKING HISTORY ---
+app.get('/api/bookings/user/:id', async (req, res) => {
+    const userId = req.params.id;
+    
+    try {
+        // We join with Ambulances to show the vehicle number in the history if needed
+        const sql = `
+            SELECT 
+                b.booking_id, 
+                b.destination_hospital, 
+                b.status, 
+                b.fare, 
+                b.created_at,
+                a.vehicle_number
+            FROM Bookings b
+            LEFT JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            WHERE b.user_id = ?
+            ORDER BY b.created_at DESC 
+            LIMIT 10`;
+
+        const [rows] = await pool.query(sql, [userId]);
+        res.json(rows);
+    } catch (err) {
+        console.error("History Error:", err.message);
+        res.status(500).json({ error: "Could not fetch booking history" });
+    }
+});
+
 // FIXED INCOMING ROUTE: Check for both 'Pending' (Broadcast) and 'Assigned' (Direct)
 app.get('/api/drivers/incoming/:id', async (req, res) => {
     const driverId = req.params.id;
@@ -141,24 +214,29 @@ app.get('/api/drivers/incoming/:id', async (req, res) => {
     }
 });
 
+// NEW ROUTE: Fetch individual driver stats
 app.get('/api/drivers/stats/:id', async (req, res) => {
     const driverId = req.params.id;
     try {
+        // This query calculates earnings and trip counts from the Bookings table
         const sql = `
             SELECT 
-                IFNULL(SUM(fare), 0) as earnings, 
-                COUNT(*) as trips 
+                IFNULL(SUM(fare), 0) AS earnings, 
+                COUNT(*) AS trips 
             FROM Bookings 
             WHERE driver_id = ? AND status = 'Completed'`;
             
         const [rows] = await pool.query(sql, [driverId]);
+        
+        // Return JSON so the frontend can update the "Today's Earnings" and "Total Trips" cards
         res.json({
             success: true,
             earnings: rows[0].earnings,
             trips: rows[0].trips
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("Stats Error:", err.message);
+        res.status(500).json({ error: "Internal Server Error" });
     }
 });
 

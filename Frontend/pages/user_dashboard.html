@@ -54,7 +54,6 @@
         
         .profile-pill { background: var(--card-bg); padding: 5px 15px; border-radius: 30px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); }
 
-        /* Map & Booking Card */
         #map { height: 350px; width: 92%; margin: 20px auto; border-radius: 15px; border: 1px solid var(--border); z-index: 1; }
         
         /* Dark Map Filter */
@@ -81,7 +80,6 @@
         .btn-confirm:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(248, 81, 73, 0.3); }
         .btn-confirm:disabled { background: var(--border); cursor: not-allowed; }
 
-        /* History Table */
         .history-section { width: 92%; margin: 0 auto 50px; }
         table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
         th { background: #1c2128; padding: 15px; text-align: left; color: var(--text-gray); font-size: 12px; text-transform: uppercase; }
@@ -129,13 +127,13 @@
         <div class="booking-card">
             <div class="form-group">
                 <label>Selected Ambulance</label>
-                <input type="text" id="selected-id" readonly placeholder="Click a red marker on map">
+                <input type="text" id="selected-display" readonly placeholder="Click a red marker on map">
             </div>
             <div class="form-group">
                 <label>Payment Method</label>
                 <select id="payment-method">
                     <option value="Cash">Cash on Delivery</option>
-                    <option value="bKash">bKash / Bkash</option>
+                    <option value="bKash">bKash</option>
                     <option value="Card">Debit / Credit Card</option>
                 </select>
             </div>
@@ -186,20 +184,21 @@
     <script>
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
 
-        // 1. Map Initialization
+        // Initialize Map
         const map = L.map('map', { zoomControl: false }).setView([22.8246, 91.1017], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // 2. Select Ambulance logic
+        // --- 1. FIXED SELECT LOGIC ---
         function selectAmbulance(id, type) {
-            document.getElementById('selected-id').value = `${type} (ID: ${id})`;
-            localStorage.setItem('selectedAmbulanceId', id);
+            // Log for debugging
+            console.log("Selecting Ambulance ID:", id);
+            
+            document.getElementById('selected-display').value = `${type} (ID: ${id})`;
+            localStorage.setItem('selectedAmbulanceId', id); // Stores 30001, etc.
             updateFare();
-            // Smooth scroll to booking form
             document.querySelector('.booking-card').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 3. Fare Calculation
         function updateFare() {
             const pickup = document.getElementById('pickup').value;
             const hospital = document.getElementById('hospital').value;
@@ -214,64 +213,60 @@
             }
         }
 
-        // 4. Booking Logic (Alinged with Backend)
+        // --- 2. UPDATED CONFIRM LOGIC ---
         async function confirmBooking() {
-    const userId = localStorage.getItem('userId') || 1;
-    const ambId = localStorage.getItem('selectedAmbulanceId');
-    const pickup = document.getElementById('pickup').value;
-    const hospital = document.getElementById('hospital').value;
-    
-    // 1. Get the raw text (e.g., "৳ 716")
-    const fareText = document.getElementById('estimated-price').innerText;
-    
-    // 2. Clean the string to get just the number (e.g., 716)
-    const totalFare = parseFloat(fareText.replace(/[^0-9.]/g, '')) || 0;
+            const userId = localStorage.getItem('userId');
+            const ambId = localStorage.getItem('selectedAmbulanceId');
+            const pickup = document.getElementById('pickup').value;
+            const hospital = document.getElementById('hospital').value;
+            const totalFare = parseInt(document.getElementById('estimated-price').innerText);
+            const btn = document.getElementById('confirm-btn');
 
-    // 3. Define the base_fare (Ensure this matches your ambulance type logic)
-    // You can also grab this from a hidden field if you store it during selection
-    const baseFare = 500.00; 
+            if (!userId) {
+                alert("Session expired. Please login again.");
+                window.location.href = 'login.html';
+                return;
+            }
 
-    const btn = document.getElementById('confirm-btn');
+            if (!ambId || totalFare < 500 || !pickup || !hospital) {
+                alert("Please select an ambulance and enter valid locations.");
+                return;
+            }
 
-    if (!ambId || totalFare === 0 || !pickup || !hospital) {
-        alert("Please select an ambulance and enter locations.");
-        return;
-    }
+            btn.disabled = true;
+            btn.innerText = "PROCESSING...";
 
-    btn.disabled = true;
-    btn.innerText = "PROCESSING...";
+            try {
+                const response = await fetch(`${API_BASE}/bookings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        ambulance_id: ambId,
+                        pickup_location: pickup,
+                        destination_hospital: hospital,
+                        base_fare: 500.00,
+                        fare: totalFare
+                    })
+                });
 
-    try {
-        const response = await fetch(`${API_BASE}/bookings`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: userId,
-                ambulance_id: ambId,
-                pickup_location: pickup,
-                destination_hospital: hospital,
-                base_fare: baseFare, // Added as per your backend change
-                fare: totalFare      // This is the final fare
-            })
-        });
-
-        const result = await response.json();
-        if (result.success) {
-            localStorage.removeItem('selectedAmbulanceId');
-            document.getElementById('success-overlay').style.display = 'flex';
-        } else {
-            alert("Booking Failed: " + result.error);
-            btn.disabled = false;
-            btn.innerText = "CONFIRM & DISPATCH";
+                const result = await response.json();
+                if (result.success) {
+                    localStorage.removeItem('selectedAmbulanceId');
+                    document.getElementById('success-overlay').style.display = 'flex';
+                } else {
+                    alert("Booking Failed: " + result.error);
+                    btn.disabled = false;
+                    btn.innerText = "CONFIRM & DISPATCH";
+                }
+            } catch (err) {
+                alert("Server error. Please try again.");
+                btn.disabled = false;
+                btn.innerText = "CONFIRM & DISPATCH";
+            }
         }
-    } catch (err) {
-        console.error(err);
-        alert("Connection error. Please check your internet.");
-        btn.disabled = false;
-        btn.innerText = "CONFIRM & DISPATCH";
-    }
-}
-        // 5. Load Real-time Map Markers
+
+        // --- 3. FETCH AVAILABLE AMBULANCES ---
         async function loadMapAmbulances() {
             try {
                 const res = await fetch(`${API_BASE}/ambulances`);
@@ -282,8 +277,8 @@
                     marker.bindPopup(`
                         <div style="color:black; font-family: sans-serif; min-width:150px;">
                             <b style="color:var(--accent-red); font-size:14px;">${amb.ambulance_type}</b><br>
-                            <small>Provider: ${amb.provider}</small><br>
-                            <button onclick="selectAmbulance(${amb.id}, '${amb.ambulance_type}')" 
+                            <small>Vehicle: ${amb.vehicle_number}</small><br>
+                            <button onclick="selectAmbulance(${amb.ambulance_id}, '${amb.ambulance_type}')" 
                                 style="background:#f85149; color:white; border:none; padding:8px; width:100%; border-radius:5px; cursor:pointer; margin-top:10px; font-weight:bold;">
                                 SELECT THIS
                             </button>
@@ -292,30 +287,32 @@
                 });
             } catch (err) { console.error("Map Error:", err); }
         }
-        // 6. History with correct DB keys
+
+        // --- 4. LOAD HISTORY ---
         async function loadHistory() {
-            const userId = localStorage.getItem('userId') || 1;
+            const userId = localStorage.getItem('userId');
             const tbody = document.getElementById('booking-table-body');
+            if(!userId) return;
 
             try {
                 const res = await fetch(`${API_BASE}/bookings/user/${userId}`);
                 const data = await res.json();
 
                 if (data.length > 0) {
-                    tbody.innerHTML = data.slice(0, 8).map(b => `
+                    tbody.innerHTML = data.map(b => `
                         <tr>
                             <td style="color:var(--accent-red); font-weight:bold;">#${b.booking_id}</td>
-                            <td>${b.destination_hospital || 'Not Set'}</td>
-                            <td><span class="status-badge ${(b.status || 'pending').toLowerCase()}">${b.status || 'Pending'}</span></td>
+                            <td>${b.destination_hospital || '---'}</td>
+                            <td><span class="status-badge ${b.status.toLowerCase()}">${b.status}</span></td>
                             <td>৳ ${b.fare}</td>
-                            <td style="color:var(--text-gray); font-size:12px;">${new Date(b.booking_time || b.created_at).toLocaleDateString()}</td>
+                            <td style="color:var(--text-gray); font-size:12px;">${new Date(b.created_at).toLocaleDateString()}</td>
                         </tr>
                     `).join('');
                 } else {
-                    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No bookings found.</td></tr>";
+                    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No history found.</td></tr>";
                 }
             } catch (err) {
-                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Failed to load history.</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Error loading data.</td></tr>";
             }
         }
 
