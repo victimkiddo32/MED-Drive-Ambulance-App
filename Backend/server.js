@@ -36,34 +36,32 @@ const pool = mysql.createPool({
 // ---------------------------------------------------------
 app.patch('/api/drivers/status', async (req, res) => {
     const { driver_id, status } = req.body;
-    const conn = await pool.getConnection();
     try {
-        await conn.beginTransaction();
         const isOnline = (status === 'Active') ? 1 : 0;
         
-        // Update Driver Status
-        const [result] = await conn.query(
+        // 1. Update the Driver table
+        const [result] = await pool.query(
             'UPDATE Drivers SET status = ?, is_online = ? WHERE driver_id = ?', 
             [status, isOnline, driver_id]
         );
 
         if (result.affectedRows === 0) {
-            await conn.rollback();
             return res.status(404).json({ success: false, message: "Driver ID not found" });
         }
 
-        // Synchronize Ambulance status (If offline, ambulance becomes unavailable)
-        const ambStatus = (status === 'Active') ? 'Available' : 'Inactive';
-        await conn.query('UPDATE Ambulances SET status = ? WHERE driver_id = ?', [ambStatus, driver_id]);
+        // 2. Try to update Ambulance, but don't crash if it fails
+        try {
+            await pool.query('UPDATE Ambulances SET status = ? WHERE driver_id = ?', 
+                [isOnline ? 'Available' : 'Inactive', driver_id]
+            );
+        } catch (ambErr) {
+            console.warn("Ambulance sync failed, but driver updated:", ambErr.message);
+        }
 
-        await conn.commit();
         res.json({ success: true, message: `Status updated to ${status}` });
     } catch (err) {
-        await conn.rollback();
         console.error("PATCH Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
-    } finally {
-        conn.release();
     }
 });
 
