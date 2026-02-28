@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,26 +39,96 @@
             border-right: 1px solid var(--border);
         }
 
-        .logo-area { text-align: center; margin-bottom: 40px; }
-        .logo-area img { width: 80px; border-radius: 50%; border: 2px solid var(--accent-red); padding: 5px; }
-        
-        .sidebar ul { list-style: none; padding: 0; margin-top: 20px; }
-        .sidebar li { padding: 12px 15px; margin-bottom: 8px; border-radius: 8px; transition: 0.3s; display: flex; align-items: center; gap: 12px; }
-        .sidebar li:hover { background: rgba(248, 81, 73, 0.1); }
-        .sidebar a { color: var(--text-gray); text-decoration: none; font-weight: 500; width: 100%; }
-        .sidebar li.active { background: rgba(248, 81, 73, 0.15); border-left: 3px solid var(--accent-red); }
-        .sidebar li.active a { color: var(--white); }
+        .logo-area {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-area img {
+            width: 80px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-red);
+            padding: 5px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        .sidebar li {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar li:hover {
+            background: rgba(248, 81, 73, 0.1);
+        }
+
+        .sidebar a {
+            color: var(--text-gray);
+            text-decoration: none;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        .sidebar li.active {
+            background: rgba(248, 81, 73, 0.15);
+            border-left: 3px solid var(--accent-red);
+        }
+
+        .sidebar li.active a {
+            color: var(--white);
+        }
 
         /* Main Content */
-        .main-content { flex: 1; overflow-y: auto; position: relative; }
-        header { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: rgba(13, 17, 23, 0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
-        
-        .profile-pill { background: var(--card-bg); padding: 5px 15px; border-radius: 30px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); }
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
 
-        #map { height: 350px; width: 92%; margin: 20px auto; border-radius: 15px; border: 1px solid var(--border); z-index: 1; }
-        
+        header {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(13, 17, 23, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .profile-pill {
+            background: var(--card-bg);
+            padding: 5px 15px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border);
+        }
+
+        #map {
+            height: 350px;
+            width: 92%;
+            margin: 20px auto;
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            z-index: 1;
+        }
+
         /* Dark Map Filter */
-        .leaflet-tile-container { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+        .leaflet-tile-container {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
 
         .booking-card {
             background: var(--card-bg);
@@ -72,30 +143,115 @@
             gap: 20px;
         }
 
-        .form-group label { font-size: 11px; color: var(--text-gray); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px; }
-        input, select { background: var(--dark-bg); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; width: 100%; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--accent-red); }
+        .form-group label {
+            font-size: 11px;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 8px;
+        }
 
-        .btn-confirm { grid-column: span 2; background: var(--accent-red); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; margin-top: 10px; }
-        .btn-confirm:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(248, 81, 73, 0.3); }
-        .btn-confirm:disabled { background: var(--border); cursor: not-allowed; }
+        input,
+        select {
+            background: var(--dark-bg);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            outline: none;
+            transition: 0.3s;
+        }
 
-        .history-section { width: 92%; margin: 0 auto 50px; }
-        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-        th { background: #1c2128; padding: 15px; text-align: left; color: var(--text-gray); font-size: 12px; text-transform: uppercase; }
-        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 14px; }
-        
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: capitalize; }
-        .completed { background: rgba(63, 185, 80, 0.15); color: var(--success); }
-        .pending { background: rgba(210, 153, 34, 0.15); color: var(--warning); }
-        .cancelled { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
+        input:focus {
+            border-color: var(--accent-red);
+        }
+
+        .btn-confirm {
+            grid-column: span 2;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(248, 81, 73, 0.3);
+        }
+
+        .btn-confirm:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+        }
+
+        .history-section {
+            width: 92%;
+            margin: 0 auto 50px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th {
+            background: #1c2128;
+            padding: 15px;
+            text-align: left;
+            color: var(--text-gray);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .completed {
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--success);
+        }
+
+        .pending {
+            background: rgba(210, 153, 34, 0.15);
+            color: var(--warning);
+        }
+
+        .cancelled {
+            background: rgba(248, 81, 73, 0.15);
+            color: var(--accent-red);
+        }
     </style>
 </head>
+
 <body>
 
     <nav class="sidebar">
         <div class="logo-area">
-            <img src="../assets/images/logo.png" alt="Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1032/1032989.png'">
+            <img src="../assets/images/logo.png" alt="Logo"
+                onerror="this.src='https://cdn-icons-png.flaticon.com/512/1032/1032989.png'">
             <h3 style="color: var(--accent-red); margin: 10px 0 5px 0;">Med-Drive</h3>
             <p style="color: var(--text-gray); font-size: 10px; letter-spacing: 1px;">PATIENT PORTAL</p>
         </div>
@@ -106,7 +262,8 @@
             <li><a href="#">⚙️ Profile Settings</a></li>
         </ul>
         <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
-            <a href="../index.html" onclick="localStorage.clear()" style="color: var(--text-gray); text-decoration: none; font-size: 14px;">🚪 Logout</a>
+            <a href="../index.html" onclick="localStorage.clear()"
+                style="color: var(--text-gray); text-decoration: none; font-size: 14px;">🚪 Logout</a>
         </div>
     </nav>
 
@@ -114,11 +271,14 @@
         <header>
             <div>
                 <h2 style="margin:0;">Welcome Back, <span id="user-display-name">Guest</span></h2>
-                <p style="color: var(--text-gray); margin: 5px 0 0 0; font-size: 14px;">Need an ambulance? Select one on the map below.</p>
+                <p style="color: var(--text-gray); margin: 5px 0 0 0; font-size: 14px;">Need an ambulance? Select one on
+                    the map below.</p>
             </div>
             <div class="profile-pill">
                 <span id="user-name-text">Guest</span>
-                <div id="profile-circle" style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">G</div>
+                <div id="profile-circle"
+                    style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">
+                    G</div>
             </div>
         </header>
 
@@ -145,9 +305,11 @@
                 <label>Destination Hospital</label>
                 <input type="text" id="hospital" placeholder="e.g. General Hospital">
             </div>
-            <div style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;">
+            <div
+                style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;">
                 <span style="color: var(--text-gray);">Estimated Fare:</span>
-                <span style="font-size: 26px; font-weight: bold; color: var(--accent-red);">৳ <span id="estimated-price">0</span></span>
+                <span style="font-size: 26px; font-weight: bold; color: var(--accent-red);">৳ <span
+                        id="estimated-price">0</span></span>
             </div>
             <button class="btn-confirm" id="confirm-btn" onclick="confirmBooking()">CONFIRM & DISPATCH</button>
         </div>
@@ -165,18 +327,25 @@
                     </tr>
                 </thead>
                 <tbody id="booking-table-body">
-                    <tr><td colspan="5" style="text-align:center; color: var(--text-gray);">Loading history...</td></tr>
+                    <tr>
+                        <td colspan="5" style="text-align:center; color: var(--text-gray);">Loading history...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </main>
 
-    <div id="success-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px);">
-        <div style="background: var(--card-bg); padding: 40px; border-radius: 20px; text-align: center; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+    <div id="success-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px);">
+        <div
+            style="background: var(--card-bg); padding: 40px; border-radius: 20px; text-align: center; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
             <div style="font-size: 60px; color: var(--success); margin-bottom: 15px;">✅</div>
             <h2 style="margin-bottom: 10px;">Booking Confirmed!</h2>
-            <p style="color: var(--text-gray); margin-bottom: 25px;">Your ambulance is on the way. Please stay reachable via phone.</p>
-            <button onclick="location.reload()" style="background: var(--accent-red); color: white; border: none; padding: 12px 40px; border-radius: 8px; cursor: pointer; font-weight: bold;">VIEW DASHBOARD</button>
+            <p style="color: var(--text-gray); margin-bottom: 25px;">Your ambulance is on the way. Please stay reachable
+                via phone.</p>
+            <button onclick="location.reload()"
+                style="background: var(--accent-red); color: white; border: none; padding: 12px 40px; border-radius: 8px; cursor: pointer; font-weight: bold;">VIEW
+                DASHBOARD</button>
         </div>
     </div>
 
@@ -192,7 +361,7 @@
         function selectAmbulance(id, type) {
             // Log for debugging
             console.log("Selecting Ambulance ID:", id);
-            
+
             document.getElementById('selected-display').value = `${type} (ID: ${id})`;
             localStorage.setItem('selectedAmbulanceId', id); // Stores 30001, etc.
             updateFare();
@@ -271,7 +440,7 @@
             try {
                 const res = await fetch(`${API_BASE}/ambulances`);
                 const ambulances = await res.json();
-                
+
                 ambulances.filter(a => a.status === 'Available').forEach(amb => {
                     const marker = L.marker([amb.lat || 22.82, amb.lng || 91.10]).addTo(map);
                     marker.bindPopup(`
@@ -287,12 +456,52 @@
                 });
             } catch (err) { console.error("Map Error:", err); }
         }
+        // Add this to your script to check for active bookings
+        async function checkActiveBooking() {
+            const userId = localStorage.getItem('userId');
+            try {
+                const res = await fetch(`${API_BASE}/bookings/user/${userId}`);
+                const history = await res.json();
+
+                // Find the most recent 'Accepted' booking
+                const active = history.find(b => b.status === 'Accepted');
+
+                if (active) {
+                    showTrackingCard(active.booking_id);
+                }
+            } catch (e) { console.log("No active trip to track."); }
+        }
+
+        async function showTrackingCard(bookingId) {
+            const res = await fetch(`${API_BASE}/bookings/track/${bookingId}`);
+            const result = await res.json();
+
+            if (result.success) {
+                const info = result.data;
+                const trackingHTML = `
+            <div id="tracking-card" class="booking-card" style="border-top: 4px solid var(--success); grid-column: span 2;">
+                <h3 style="color: var(--success); margin-top:0;">🚑 Ambulance is En Route!</h3>
+                <div style="display:flex; justify-content: space-between;">
+                    <div>
+                        <p><b>Driver:</b> ${info.driver_name}</p>
+                        <p><b>Vehicle:</b> ${info.vehicle_number} (${info.ambulance_type})</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <a href="tel:${info.driver_phone}" style="background:var(--success); color:white; padding:10px 20px; border-radius:8px; text-decoration:none; font-weight:bold;">📞 CALL DRIVER</a>
+                    </div>
+                </div>
+            </div>
+        `;
+                // Insert this card above your history table
+                document.querySelector('.history-section').insertAdjacentHTML('beforebegin', trackingHTML);
+            }
+        }
 
         // --- 4. LOAD HISTORY ---
         async function loadHistory() {
             const userId = localStorage.getItem('userId');
             const tbody = document.getElementById('booking-table-body');
-            if(!userId) return;
+            if (!userId) return;
 
             try {
                 const res = await fetch(`${API_BASE}/bookings/user/${userId}`);
@@ -327,7 +536,9 @@
 
             loadMapAmbulances();
             loadHistory();
+            checkActiveBooking();
         };
     </script>
 </body>
+
 </html>

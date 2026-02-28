@@ -198,6 +198,27 @@ app.get('/api/bookings/user/:id', async (req, res) => {
     }
 });
 
+// --- GET ASSIGNED DRIVER DETAILS FOR USER ---
+app.get('/api/bookings/track/:id', async (req, res) => {
+    const bookingId = req.params.id;
+    try {
+        const sql = `
+            SELECT 
+                b.status, b.pickup_location, b.destination_hospital,
+                d.name AS driver_name, d.phone_number AS driver_phone,
+                a.vehicle_number, a.ambulance_type
+            FROM Bookings b
+            JOIN Drivers d ON b.driver_id = d.driver_id
+            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            WHERE b.booking_id = ? AND b.status = 'Accepted'`;
+            
+        const [rows] = await pool.query(sql, [bookingId]);
+        res.json({ success: rows.length > 0, data: rows[0] || null });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // FIXED INCOMING ROUTE: Check for both 'Pending' (Broadcast) and 'Assigned' (Direct)
 app.get('/api/drivers/incoming/:id', async (req, res) => {
     const driverId = req.params.id;
