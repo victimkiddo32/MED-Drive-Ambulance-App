@@ -264,19 +264,9 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
     const userId = req.params.userId;
 
     try {
-        // This query is the "Bridge"
-        const sql = `
-            SELECT b.*, u.full_name AS patient_name 
-            FROM Bookings b
-            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
-            JOIN Users u ON b.user_id = u.user_id
-            WHERE a.driver_id = (
-                SELECT driver_id FROM Drivers WHERE user_id = ?
-            )
-            AND b.status = 'Pending'
-            LIMIT 1
-        `;
-
+        // Now we just query our "Virtual Table" (The View)
+        const sql = `SELECT * FROM active_driver_requests WHERE driver_user_id = ? LIMIT 1`;
+        
         const [rows] = await pool.query(sql, [userId]);
 
         if (rows.length > 0) {
@@ -285,8 +275,8 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
             res.json({ success: true, hasBooking: false });
         }
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: err.message });
+        console.error("SQL View Error:", err.message);
+        res.status(500).json({ success: false, error: "Database error" });
     }
 });
 
