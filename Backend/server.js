@@ -356,26 +356,20 @@ app.get('/api/ambulances/driver/:userId', async (req, res) => {
 
 // 7. DRIVER STATS 
 app.get('/api/drivers/stats/:userId', async (req, res) => {
-    const userId = req.params.userId;
     try {
-        const sql = `
-            SELECT 
-                COUNT(*) AS total_trips,
-                IFNULL(SUM(fare * 0.95), 0) AS earnings
-            FROM Bookings 
-            /* Confirming this matches your 9th column name */
-            WHERE driver_user_id = ? 
-            AND status = 'Completed'`;
-
-        const [rows] = await pool.query(sql, [userId]);
-
-        // Log for debugging to your terminal
-        console.log(`Stats for User ${userId}: ${rows[0].total_trips} trips found.`);
-
+        const [rows] = await pool.query(
+            `SELECT 
+                SUM(fare) as earnings, 
+                COUNT(*) as total_trips 
+             FROM Bookings 
+             WHERE driver_user_id = ? AND status = 'Completed'`, 
+            [req.params.userId]
+        );
+        
         res.json({
             success: true,
-            earnings: parseFloat(rows[0].earnings).toFixed(2),
-            total_trips: rows[0].total_trips
+            earnings: rows[0].earnings || 0,
+            total_trips: rows[0].total_trips || 0
         });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });

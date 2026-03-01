@@ -390,47 +390,58 @@
                 const data = await res.json();
 
                 if (data.success && data.hasBooking) {
-                    const booking = data.booking;
+    const booking = data.booking;
+    const container = document.getElementById('request-container');
 
-                    // 1. THE TRUTH LOG: Look at your browser console for this!
-                    console.log("RAW BOOKING DATA:", booking);
+    // 1. Only act if the popup isn't already visible
+    // This prevents the flickering and the sound from looping annoyingly
+    if (container && container.style.display !== 'block') {
+        console.log("🚨 NEW EMERGENCY DETECTED:", booking.booking_id);
+        
+        // Play alert sound once
+        new Audio('https://assets.mixkit.co/active_storage/sfx/2852/2852-preview.mp3').play().catch(() => { });
 
-                    // 2. CASE-INSENSITIVE SEARCH:
-                    // This looks for any key that contains the word "destination"
-                    let hospitalName = "Hospital Requested";
-                    for (let key in booking) {
-                        if (key.toLowerCase().includes('destination')) {
-                            hospitalName = booking[key];
-                            break;
-                        }
-                    }
+        // Update UI Text
+        let hospitalName = "Hospital Requested";
+        for (let key in booking) {
+            if (key.toLowerCase().includes('destination')) {
+                hospitalName = booking[key];
+                break;
+            }
+        }
 
-                    //Play alert sound
-                    new Audio('https://assets.mixkit.co/active_storage/sfx/2852/2852-preview.mp3').play().catch(() => { });
+        document.getElementById('pickup-loc').innerText = booking.pickup_location || "Location Unknown";
+        document.getElementById('dest-loc').innerText = hospitalName;
+        document.getElementById('fare-amount').innerText = booking.fare || "0.00";
 
+        // Show the container
+        container.style.display = 'block';
 
-                    // 3. Update the UI
-                    document.getElementById('pickup-loc').innerText = booking.pickup_location || "Location Unknown";
-                    document.getElementById('dest-loc').innerText = hospitalName;
-                    document.getElementById('fare-amount').innerText = booking.fare || "0.00";
+        // Update the Button
+        document.getElementById('confirm-accept-btn').onclick = () =>
+            acceptTrip(booking.booking_id, booking.ambulance_id, hospitalName);
+    }
 
-                    const container = document.getElementById('request-container');
-                    if (container) container.style.display = 'block';
-
-                    // 4. Update the Button
-                    document.getElementById('confirm-accept-btn').onclick = () =>
-                        acceptTrip(booking.booking_id, booking.ambulance_id, hospitalName);
-
-                } else {
-                    const container = document.getElementById('request-container');
-                    if (container) container.style.display = 'none';
-                }
+} else {
+    // 2. STICKY LOGIC: 
+    // Only hide the container if we are NOT currently looking at a "Pending" request
+    // or if the trip was actually accepted elsewhere.
+    const activeTrip = document.getElementById('active-trip-card');
+    const container = document.getElementById('request-container');
+    
+    // If we have an active trip card (Accepted), then we can safely hide the request popup
+    if (activeTrip && container) {
+        container.style.display = 'none';
+    }
+}
             } catch (err) {
                 console.error("Polling error:", err);
             }
         }
 
         async function acceptTrip(bookingId, ambId, destinationHospital) {
+            window.isAcceptingTrip = true;
+
             // 1. Session check
             const currentDriverUserId = sessionStorage.getItem('userId');
             const btn = document.getElementById('confirm-accept-btn');
@@ -491,98 +502,144 @@
         }
 
         function showActiveTripUI(bookingId, ambId, destinationHospital) {
-            // 1. Remove any old trip cards to prevent duplicates
-            const existing = document.getElementById('active-trip-card');
-            if (existing) existing.remove();
+    // 1. Cleanup
+    const existing = document.getElementById('active-trip-card');
+    if (existing) existing.remove();
 
-            // 2. Create the Active Trip Card
-            // We use destinationHospital (the argument name) inside the template literal
-            const activeTripHTML = `
+    // 2. ID Validation (Prevents 'undefined' errors in the button)
+    const bId = bookingId || 0;
+    const aId = ambId || 0;
+    const hospital = destinationHospital || "Emergency Hospital";
+
+    // 3. Create Card with CSS Animation for the pulse
+    const activeTripHTML = `
+        <style>
+            @keyframes pulse {
+                0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.7); }
+                70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(63, 185, 80, 0); }
+                100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(63, 185, 80, 0); }
+            }
+        </style>
         <div id="active-trip-card" class="booking-card" 
-             style="display:block; border-top: 4px solid var(--success); background: var(--card-bg); padding: 20px; border-radius: 12px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+             style="display:block; border-top: 4px solid var(--success); background: var(--card-bg); padding: 20px; border-radius: 12px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             
             <h3 style="color: var(--success); margin-top:0; display: flex; align-items: center; gap: 10px;">
-                <span style="width:12px; height:12px; background:var(--success); border-radius:50%; display:inline-block; animation: pulse 1.5s infinite;"></span>
+                <span style="width:12px; height:12px; background:var(--success); border-radius:50%; display:inline-block; animation: pulse 2s infinite;"></span>
                 TRIP IN PROGRESS
             </h3>
             
             <p style="margin: 15px 0;">
-                <b style="color: var(--text-muted);">Destination:</b><br>
-                <span style="font-size: 1.1em; color: var(--text-main);">${destinationHospital}</span>
+                <b style="color: var(--text-gray);">Destination:</b><br>
+                <span style="font-size: 1.2em; color: white;">${hospital}</span>
             </p> 
 
             <button class="btn-complete" 
-                    style="width: 100%; background: var(--success); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;"
-                    onclick="completeTrip(${bookingId}, ${ambId})">
+                    id="finish-trip-btn"
+                    style="width: 100%; background: var(--success); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s;"
+                    onclick="completeTrip(${bId}, ${aId})">
                 MARK AS COMPLETED (FINISH RIDE)
             </button>
         </div>`;
 
-            // 3. Inject into the dashboard
-            const container = document.getElementById('main-dashboard-area');
-            if (container) {
-                container.insertAdjacentHTML('beforeend', activeTripHTML);
-            } else {
-                console.error("Dashboard area not found!");
-            }
-        }
+    // 4. Inject
+    const container = document.getElementById('main-dashboard-area');
+    if (container) {
+        container.insertAdjacentHTML('beforeend', activeTripHTML);
+        // Scroll down to the new card so the driver sees it immediately
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    } else {
+        console.error("Dashboard area not found!");
+    }
+}
 
         async function completeTrip(bookingId, ambId) {
-            // 1. Get the User ID from session (e.g., 3)
-            const currentDriverUserId = sessionStorage.getItem('userId');
+    const currentDriverUserId = sessionStorage.getItem('userId');
+    const btn = document.getElementById('finish-trip-btn'); // Using the ID we added in showActiveTripUI
 
-            // DEBUG: Ensure IDs are correct before sending
-            console.log("FINISHING RIDE:", { bookingId, ambId, currentDriverUserId });
+    // DEBUG: Ensure IDs are correct before sending
+    console.log("🚀 FINISHING RIDE:", { bookingId, ambId, currentDriverUserId });
 
-            // Validation: Prevent sending "undefined" to the server
-            if (!ambId || ambId === "undefined" || ambId === null) {
-                alert("Error: Ambulance ID is missing! Cannot free up vehicle.");
-                console.error("Missing ambId in completeTrip call");
-                return;
+    if (!ambId || ambId === "undefined" || ambId === null) {
+        alert("Error: Ambulance ID is missing! Please refresh and try again.");
+        return;
+    }
+
+    // 1. Visual feedback to prevent multiple clicks
+    if (btn) {
+        btn.innerText = "Processing Completion...";
+        btn.disabled = true;
+        btn.style.opacity = "0.7";
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/bookings/complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                booking_id: bookingId,
+                ambulance_id: ambId, 
+                driver_user_id: currentDriverUserId 
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            // 2. Success Feedback
+            if (typeof showToast === "function") {
+                showToast("Trip Completed! You are now Available.");
+            } else {
+                alert("Ride Completed! Your ambulance is now 'Available'.");
             }
+            
+            // 3. Short delay before reload so the user sees the success state
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
 
-            try {
-                const res = await fetch(`${API_BASE}/bookings/complete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        booking_id: bookingId,
-                        ambulance_id: ambId,
-                        driver_user_id: currentDriverUserId // Consistent with our Accept logic
-                    })
-                });
-
-                const data = await res.json();
-
-                if (data.success) {
-                    // Check if the server actually found and updated the ambulance record
-                    if (data.ambUpdated === false) {
-                        console.warn("Booking marked Completed, but Ambulance status might not have reset.");
-                    }
-
-                    alert("Ride Completed! Your ambulance is now appearing as 'Available' on the map.");
-
-                    // Reload to clear the active trip card and return to the "Available" toggle screen
-                    location.reload();
-                } else {
-                    alert("Server error: " + (data.error || "Unknown error occurred"));
-                }
-            } catch (e) {
-                console.error("Complete Trip Network Error:", e);
-                alert("Failed to connect to the server. Please check your internet.");
+        } else {
+            alert("Server error: " + (data.error || "Unknown error occurred"));
+            if (btn) {
+                btn.innerText = "MARK AS COMPLETED (FINISH RIDE)";
+                btn.disabled = false;
+                btn.style.opacity = "1";
             }
         }
-
+    } catch (e) {
+        console.error("❌ Complete Trip Network Error:", e);
+        alert("Failed to connect to the server. Please check your internet.");
+        if (btn) {
+            btn.innerText = "MARK AS COMPLETED (FINISH RIDE)";
+            btn.disabled = false;
+        }
+    }
+}
         async function loadStats() {
-            if (!driverId) return;
-            try {
-                const res = await fetch(`${API_BASE}/drivers/stats/${driverId}`);
-                const data = await res.json();
-                // Matches the 'total_trips' key sent by your backend API
-document.getElementById('daily-total').innerText = data.earnings || 0;
-document.getElementById('trip-count').innerText = data.total_trips || 0;
-            } catch (e) { console.log("Stats error"); }
+    // driverId is the User ID (e.g., 3) stored globally
+    if (!driverId) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/drivers/stats/${driverId}`);
+        const data = await res.json();
+
+        if (data.success) {
+            // Use Number() to ensure we aren't displaying 'undefined' or 'null'
+            const earnings = Number(data.earnings || 0);
+            const trips = Number(data.total_trips || 0);
+
+            // Update UI with formatted numbers
+            document.getElementById('daily-total').innerText = earnings.toLocaleString();
+            document.getElementById('trip-count').innerText = trips;
+            
+            console.log(`📊 Stats Loaded: ${trips} trips, ৳${earnings} earned.`);
         }
+    } catch (e) { 
+        console.error("❌ Stats fetch error:", e); 
+        // Optional: Show 0 instead of leaving it blank if the fetch fails
+        document.getElementById('daily-total').innerText = "0";
+        document.getElementById('trip-count').innerText = "0";
+    }
+}
 
         function handleLogout() {
             sessionStorage.clear();
