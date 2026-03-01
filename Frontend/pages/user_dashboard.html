@@ -67,7 +67,9 @@
             gap: 12px;
         }
 
-        .sidebar li:hover { background: rgba(248, 81, 73, 0.1); }
+        .sidebar li:hover {
+            background: rgba(248, 81, 73, 0.1);
+        }
 
         .sidebar a {
             color: var(--text-gray);
@@ -81,7 +83,9 @@
             border-left: 3px solid var(--accent-red);
         }
 
-        .sidebar li.active a { color: var(--white); }
+        .sidebar li.active a {
+            color: var(--white);
+        }
 
         /* Main Content */
         .main-content {
@@ -147,7 +151,8 @@
             margin-bottom: 8px;
         }
 
-        input, select {
+        input,
+        select {
             background: var(--dark-bg);
             border: 1px solid var(--border);
             color: white;
@@ -158,7 +163,9 @@
             transition: 0.3s;
         }
 
-        input:focus { border-color: var(--accent-red); }
+        input:focus {
+            border-color: var(--accent-red);
+        }
 
         .btn-confirm {
             grid-column: span 2;
@@ -220,16 +227,41 @@
             font-weight: 600;
         }
 
-        .completed { background: rgba(63, 185, 80, 0.15); color: var(--success); }
-        .pending { background: rgba(210, 153, 34, 0.15); color: var(--warning); }
-        .accepted { background: rgba(63, 185, 80, 0.2); color: #58a6ff; border: 1px solid #58a6ff; }
-        .cancelled { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
+        .completed {
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--success);
+        }
+
+        .pending {
+            background: rgba(210, 153, 34, 0.15);
+            color: var(--warning);
+        }
+
+        .accepted {
+            background: rgba(63, 185, 80, 0.2);
+            color: #58a6ff;
+            border: 1px solid #58a6ff;
+        }
+
+        .cancelled {
+            background: rgba(248, 81, 73, 0.15);
+            color: var(--accent-red);
+        }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
+
         .tracking-active {
             animation: pulse 2s infinite ease-in-out;
             border-top-color: var(--success) !important;
@@ -241,7 +273,8 @@
 
     <nav class="sidebar">
         <div class="logo-area">
-            <img src="../assets/images/logo.png" alt="Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1032/1032989.png'">
+            <img src="../assets/images/logo.png" alt="Logo"
+                onerror="this.src='https://cdn-icons-png.flaticon.com/512/1032/1032989.png'">
             <h3 style="color: var(--accent-red); margin: 10px 0 5px 0;">Med-Drive</h3>
             <p style="color: var(--text-gray); font-size: 10px; letter-spacing: 1px;">PATIENT PORTAL</p>
         </div>
@@ -251,7 +284,8 @@
             <li><a href="#" onclick="loadHistory()">🕒 My Bookings</a></li>
         </ul>
         <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
-            <a href="../index.html" onclick="sessionStorage.clear()" style="color: var(--text-gray); text-decoration: none; font-size: 14px;">🚪 Logout</a>
+            <a href="../index.html" onclick="sessionStorage.clear()"
+                style="color: var(--text-gray); text-decoration: none; font-size: 14px;">🚪 Logout</a>
         </div>
     </nav>
 
@@ -259,11 +293,14 @@
         <header>
             <div>
                 <h2 style="margin:0;">Welcome Back, <span id="user-display-name">Guest</span></h2>
-                <p style="color: var(--text-gray); margin: 5px 0 0 0; font-size: 14px;">Need an ambulance? Select one on the map.</p>
+                <p style="color: var(--text-gray); margin: 5px 0 0 0; font-size: 14px;">Need an ambulance? Select one on
+                    the map.</p>
             </div>
             <div class="profile-pill">
                 <span id="user-name-text">Guest</span>
-                <div id="profile-circle" style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">G</div>
+                <div id="profile-circle"
+                    style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">
+                    G</div>
             </div>
         </header>
 
@@ -290,9 +327,11 @@
                     <label>Destination Hospital</label>
                     <input type="text" id="hospital" placeholder="e.g. General Hospital">
                 </div>
-                <div style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;">
+                <div
+                    style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;">
                     <span style="color: var(--text-gray);">Estimated Fare:</span>
-                    <span style="font-size: 26px; font-weight: bold; color: var(--accent-red);">৳ <span id="estimated-price">0</span></span>
+                    <span style="font-size: 26px; font-weight: bold; color: var(--accent-red);">৳ <span
+                            id="estimated-price">0</span></span>
                 </div>
                 <button class="btn-confirm" id="confirm-btn" onclick="confirmBooking()">CONFIRM & DISPATCH</button>
             </div>
@@ -311,18 +350,23 @@
                     </tr>
                 </thead>
                 <tbody id="booking-table-body">
-                    <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
+                    <tr>
+                        <td colspan="5" style="text-align:center;">Loading...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </main>
 
-    <div id="success-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px);">
-        <div style="background: var(--card-bg); padding: 40px; border-radius: 20px; text-align: center; border: 1px solid var(--border);">
+    <div id="success-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px);">
+        <div
+            style="background: var(--card-bg); padding: 40px; border-radius: 20px; text-align: center; border: 1px solid var(--border);">
             <div style="font-size: 60px; color: var(--success); margin-bottom: 15px;">✅</div>
             <h2>Booking Confirmed!</h2>
             <p style="color: var(--text-gray); margin-bottom: 25px;">Stay reachable via phone.</p>
-            <button onclick="location.reload()" style="background: var(--accent-red); color: white; border: none; padding: 12px 40px; border-radius: 8px; cursor: pointer; font-weight: bold;">OKAY</button>
+            <button onclick="location.reload()"
+                style="background: var(--accent-red); color: white; border: none; padding: 12px 40px; border-radius: 8px; cursor: pointer; font-weight: bold;">OKAY</button>
         </div>
     </div>
 
@@ -333,8 +377,15 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         function selectAmbulance(id, type) {
+            if (!id) {
+                console.error("Selection failed: ID is missing");
+                return;
+            }
+            // Update the UI
             document.getElementById('selected-display').value = `${type} (ID: ${id})`;
+            // Save to session for the Confirm button to use
             sessionStorage.setItem('selectedAmbulanceId', id);
+
             updateFare();
             document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth' });
         }
@@ -344,82 +395,89 @@
             const h = document.getElementById('hospital').value.length;
             document.getElementById('estimated-price').innerText = (p > 2 && h > 2) ? 500 + (p + h) * 8 : "0";
         }
-       
+
         async function confirmBooking() {
-    const userId = sessionStorage.getItem('userId');
-    const ambId = sessionStorage.getItem('selectedAmbulanceId');
-    const btn = document.getElementById('confirm-btn');
+            const userId = sessionStorage.getItem('userId');
+            const ambId = sessionStorage.getItem('selectedAmbulanceId');
+            const btn = document.getElementById('confirm-btn');
 
-    if (!ambId || ambId === "undefined") {
-        return alert("Please click a marker on the map to select an ambulance!");
-    }
+            if (!ambId || ambId === "undefined") {
+                return alert("Please click a marker on the map to select an ambulance!");
+            }
 
-    const pickup = document.getElementById('pickup').value;
-    const hospital = document.getElementById('hospital').value;
+            const pickup = document.getElementById('pickup').value;
+            const hospital = document.getElementById('hospital').value;
 
-    if (!pickup || !hospital) return alert("Please enter pickup and destination!");
+            if (!pickup || !hospital) return alert("Please enter pickup and destination!");
 
-    btn.disabled = true;
-    btn.innerText = "Processing...";
+            btn.disabled = true;
+            btn.innerText = "Processing...";
 
-    try {
-        const res = await fetch(`${API_BASE}/bookings`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: userId,
-                ambulance_id: ambId,
-                pickup_location: pickup,
-                destination_hospital: hospital,
-                base_fare: 500,
-                fare: parseInt(document.getElementById('estimated-price').innerText)
-            })
-        });
-        
-        const result = await res.json();
-        if (result.success) {
-            sessionStorage.removeItem('selectedAmbulanceId');
-            document.getElementById('success-overlay').style.display = 'flex';
-        } else {
-            alert("Booking failed: " + result.message);
-            btn.disabled = false;
+            try {
+                const res = await fetch(`${API_BASE}/bookings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        ambulance_id: ambId,
+                        pickup_location: pickup,
+                        destination_hospital: hospital,
+                        base_fare: 500,
+                        fare: parseInt(document.getElementById('estimated-price').innerText)
+                    })
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    sessionStorage.removeItem('selectedAmbulanceId');
+                    document.getElementById('success-overlay').style.display = 'flex';
+                } else {
+                    alert("Booking failed: " + result.message);
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert("Error connecting to server.");
+                btn.disabled = false;
+                btn.innerText = "CONFIRM & DISPATCH";
+            }
         }
-    } catch (err) { 
-        alert("Error connecting to server."); 
-        btn.disabled = false; 
-        btn.innerText = "CONFIRM & DISPATCH";
-    }
-}
 
         async function loadMapAmbulances() {
-    try {
-        const res = await fetch(`${API_BASE}/ambulances`);
-        const data = await res.json();
-        
-        // Clear existing markers if any
-        data.filter(a => a.status === 'Available').forEach(amb => {
-            // Use amb.ambulance_id specifically
-            const currentID = amb.ambulance_id; 
-            const type = amb.ambulance_type || 'Standard';
+            try {
+                const res = await fetch(`${API_BASE}/ambulances`);
+                const data = await res.json();
 
-            const marker = L.marker([amb.lat || 22.82, amb.lng || 91.10]).addTo(map);
-            
-            // The fix: selectAmbulance now gets the true ambulance_id
-            marker.bindPopup(`
-                <div style="color:black; padding:5px; font-family: sans-serif;">
-                    <b style="font-size:14px;">${type}</b><br>
-                    <span style="color:gray; font-size:11px;">ID: ${currentID}</span><br>
-                    <button onclick="selectAmbulance(${currentID}, '${type}')" 
-                        style="background:#f85149; color:white; border:none; padding:8px; border-radius:5px; margin-top:8px; cursor:pointer; width:100%; font-weight:bold;">
-                        SELECT THIS
+                // Filter only available ambulances
+                const availableAmbus = data.filter(a => a.status === 'Available');
+
+                availableAmbus.forEach(amb => {
+                    // FIX: Explicitly use ambulance_id instead of id
+                    const currentId = amb.ambulance_id;
+                    const type = amb.ambulance_type || 'Standard';
+                    const lat = amb.lat || 22.8246;
+                    const lng = amb.lng || 91.1017;
+
+                    const marker = L.marker([lat, lng]).addTo(map);
+
+                    // Generate the popup content dynamically with the correct ID
+                    const popupContent = `
+                <div style="color:black; padding:5px; font-family: Arial, sans-serif;">
+                    <b style="font-size:14px;">${type} Ambulance</b><br>
+                    <span style="color:#666; font-size:12px;">ID: ${currentId}</span><br>
+                    <button onclick="selectAmbulance(${currentId}, '${type}')" 
+                        style="background:#f85149; color:white; border:none; padding:8px 12px; 
+                        border-radius:5px; margin-top:10px; cursor:pointer; width:100%; font-weight:bold;">
+                        SELECT AMBULANCE
                     </button>
                 </div>
-            `);
-        });
-    } catch (e) {
-        console.error("Map Load Error:", e);
-    }
-}
+            `;
+
+                    marker.bindPopup(popupContent);
+                });
+            } catch (e) {
+                console.error("Error loading markers:", e);
+            }
+        }
 
         async function checkActiveBooking() {
             const userId = sessionStorage.getItem('userId');
@@ -428,21 +486,21 @@
                 const history = await res.json();
                 const active = history.find(b => b.status === 'Accepted');
                 if (active) showTrackingCard(active.booking_id);
-            } catch (e) {}
+            } catch (e) { }
         }
         let ambulanceMarker = null; // Global variable to store the active marker
-let trackingInterval = null; // Global variable to clear the timer later 
+        let trackingInterval = null; // Global variable to clear the timer later 
 
         async function showTrackingCard(bookingId) {
-    const res = await fetch(`${API_BASE}/bookings/track/${bookingId}`);
-    const result = await res.json();
-    
-    if (result.success) {
-        const info = result.data;
-        document.getElementById('booking-form').style.display = 'none';
-        
-        // 1. Create the Card UI
-        const card = `
+            const res = await fetch(`${API_BASE}/bookings/track/${bookingId}`);
+            const result = await res.json();
+
+            if (result.success) {
+                const info = result.data;
+                document.getElementById('booking-form').style.display = 'none';
+
+                // 1. Create the Card UI
+                const card = `
             <div class="booking-card tracking-active">
                 <div style="grid-column: span 2;">
                     <h3 style="color: var(--success); margin:0;">🚑 Driver is on the way!</h3>
@@ -457,49 +515,49 @@ let trackingInterval = null; // Global variable to clear the timer later
                 </div>
             </div>
         `;
-        document.getElementById('dynamic-booking-area').innerHTML = card;
+                document.getElementById('dynamic-booking-area').innerHTML = card;
 
-        // 2. Start Live Tracking on Map
-        trackAmbulanceMovement(info.vehicle_number); 
-    }
-}
-
-
-async function trackAmbulanceMovement(vehicleNumber) {
-    // Clear any existing interval to prevent memory leaks
-    if (trackingInterval) clearInterval(trackingInterval);
-
-    trackingInterval = setInterval(async () => {
-        try {
-            // Fetch all ambulances to find the specific one assigned to us
-            const res = await fetch(`${API_BASE}/ambulances`);
-            const data = await res.json();
-            const myAmbulance = data.find(a => a.vehicle_number === vehicleNumber);
-
-            if (myAmbulance && myAmbulance.lat && myAmbulance.lng) {
-                const newPos = [myAmbulance.lat, myAmbulance.lng];
-
-                if (!ambulanceMarker) {
-                    // Create marker if it doesn't exist
-                    const redIcon = L.icon({
-                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/1032/1032989.png',
-                        iconSize: [40, 40]
-                    });
-                    ambulanceMarker = L.marker(newPos, { icon: redIcon }).addTo(map);
-                    ambulanceMarker.bindPopup("<b>Your Ambulance</b>").openPopup();
-                } else {
-                    // Move the existing marker smoothly
-                    ambulanceMarker.setLatLng(newPos);
-                }
-                
-                // Optional: Auto-center map on the ambulance
-                // map.panTo(newPos); 
+                // 2. Start Live Tracking on Map
+                trackAmbulanceMovement(info.vehicle_number);
             }
-        } catch (e) {
-            console.error("Tracking Error:", e);
         }
-    }, 5000); // Update every 5 seconds
-}
+
+
+        async function trackAmbulanceMovement(vehicleNumber) {
+            // Clear any existing interval to prevent memory leaks
+            if (trackingInterval) clearInterval(trackingInterval);
+
+            trackingInterval = setInterval(async () => {
+                try {
+                    // Fetch all ambulances to find the specific one assigned to us
+                    const res = await fetch(`${API_BASE}/ambulances`);
+                    const data = await res.json();
+                    const myAmbulance = data.find(a => a.vehicle_number === vehicleNumber);
+
+                    if (myAmbulance && myAmbulance.lat && myAmbulance.lng) {
+                        const newPos = [myAmbulance.lat, myAmbulance.lng];
+
+                        if (!ambulanceMarker) {
+                            // Create marker if it doesn't exist
+                            const redIcon = L.icon({
+                                iconUrl: 'https://cdn-icons-png.flaticon.com/512/1032/1032989.png',
+                                iconSize: [40, 40]
+                            });
+                            ambulanceMarker = L.marker(newPos, { icon: redIcon }).addTo(map);
+                            ambulanceMarker.bindPopup("<b>Your Ambulance</b>").openPopup();
+                        } else {
+                            // Move the existing marker smoothly
+                            ambulanceMarker.setLatLng(newPos);
+                        }
+
+                        // Optional: Auto-center map on the ambulance
+                        // map.panTo(newPos); 
+                    }
+                } catch (e) {
+                    console.error("Tracking Error:", e);
+                }
+            }, 5000); // Update every 5 seconds
+        }
 
 
 
@@ -518,7 +576,7 @@ async function trackAmbulanceMovement(vehicleNumber) {
                         <td style="color:var(--text-gray);">${new Date(b.created_at).toLocaleDateString()}</td>
                     </tr>
                 `).join('');
-            } catch (e) {}
+            } catch (e) { }
         }
 
         window.onload = () => {
@@ -526,7 +584,7 @@ async function trackAmbulanceMovement(vehicleNumber) {
             document.getElementById('user-display-name').innerText = name;
             document.getElementById('user-name-text').innerText = name;
             document.getElementById('profile-circle').innerText = name[0].toUpperCase();
-            
+
             document.getElementById('pickup').oninput = updateFare;
             document.getElementById('hospital').oninput = updateFare;
 
@@ -536,4 +594,5 @@ async function trackAmbulanceMovement(vehicleNumber) {
         };
     </script>
 </body>
+
 </html>
