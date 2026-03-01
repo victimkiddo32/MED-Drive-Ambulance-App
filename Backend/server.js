@@ -31,6 +31,57 @@ const pool = mysql.createPool({
     queueLimit: 0
 }).promise();
 
+
+app.post('/api/register', async (req, res) => {
+    const { full_name, email, password, phone_number, role } = req.body;
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        // 1. Create the User Account (Login credentials)
+        const [userResult] = await connection.query(
+            "INSERT INTO Users (full_name, email, password, phone_number, role) VALUES (?, ?, ?, ?, ?)",
+            [full_name, email, password, phone_number, role]
+        );
+
+        const newUserId = userResult.insertId; 
+
+        // 2. Link to the Pre-existing Driver Slot
+        if (role === 'Driver') {
+            /* Instead of INSERT, we UPDATE your existing 30001-30005 records.
+               We match based on the phone number or name to find which 
+               of the 5 slots belongs to this user.
+            */
+            const [updateResult] = await connection.query(
+                `UPDATE Drivers 
+                 SET user_id = ?, 
+                     status = 'Active' 
+                 WHERE phone_number = ? OR name = ?`,
+                [newUserId, phone_number, full_name]
+            );
+
+            // Safety check: If the name/phone didn't match any of your 5 slots
+            if (updateResult.affectedRows === 0) {
+                throw new Error("No pre-configured driver slot found for this name/phone.");
+            }
+            
+            console.log(`User ${newUserId} successfully linked to Driver slot.`);
+        }
+
+        await connection.commit();
+        res.json({ success: true, message: "Registration successful and driver slot linked!" });
+
+    } catch (err) {
+        await connection.rollback();
+        console.error("Registration Error:", err.message);
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        connection.release();
+    }
+});
+
+
 // ---------------------------------------------------------
 // 3. DRIVER STATUS TOGGLE (Matches frontend 3000x IDs)
 // ---------------------------------------------------------
@@ -157,17 +208,53 @@ app.get('/api/bookings/user/:userId', async (req, res) => {
 
 // 6. ROUTES: BOOKINGS
 app.post('/api/bookings/accept', async (req, res) => {
-    const { booking_id, ambulance_id, driver_id } = req.body;
+    // We destructure multiple naming styles to prevent 'undefined' errors
+    const { booking_id, bookingId, ambulance_id, driver_id, userId } = req.body;
+    
+    // Determine which IDs to use
+    const finalBookingId = booking_id || bookingId;
+
+    if (!finalBookingId) {
+        return res.status(400).json({ success: false, error: "Missing booking_id" });
+    }
+
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
-        await conn.query('UPDATE Bookings SET status = "Accepted", driver_id = ? WHERE booking_id = ?', [driver_id, booking_id]);
-        await conn.query('UPDATE Ambulances SET status = "Busy" WHERE ambulance_id = ?', [ambulance_id]);
+
+        // 1. Update the Booking: Set status to Accepted
+        // Note: We use driver_id if provided, otherwise we find it via userId
+        await conn.query(
+            `UPDATE Bookings SET status = 'Accepted', 
+             driver_id = COALESCE(?, (SELECT driver_id FROM Drivers WHERE user_id = ?)) 
+             WHERE booking_id = ?`, 
+            [driver_id || null, userId || null, finalBookingId]
+        );
+
+        // 2. Update the Ambulance: Set status to 'Busy' 
+        // We find the ambulance linked to this driver/user
+        await conn.query(
+            `UPDATE Ambulances a
+             JOIN Drivers d ON a.driver_id = d.driver_id
+             SET a.status = 'Busy'
+             WHERE d.driver_id = ? OR d.user_id = ?`,
+            [driver_id || null, userId || null]
+        );
+
+        // 3. Update the Driver: Set status to 'Busy'
+        await conn.query(
+            `UPDATE Drivers SET status = 'Busy' 
+             WHERE driver_id = ? OR user_id = ?`,
+            [driver_id || null, userId || null]
+        );
+
         await conn.commit();
-        res.json({ success: true });
+        res.json({ success: true, message: "Booking accepted and driver/ambulance marked as Busy." });
+
     } catch (err) {
         await conn.rollback();
-        res.status(500).json({ error: err.message });
+        console.error("Accept Error:", err);
+        res.status(500).json({ success: false, error: err.message });
     } finally {
         conn.release();
     }
@@ -261,22 +348,41 @@ app.get('/api/drivers/stats/:id', async (req, res) => {
 // Add this to your server.js
 // This route now uses your 'pool' and correctly joins tables to find pending trips
 app.get('/api/drivers/incoming/:userId', async (req, res) => {
-    const userId = req.params.userId;
+    const userId = req.params.userId; // This is the ID from the Login (e.g., 3)
 
     try {
-        // Now we just query our "Virtual Table" (The View)
-        const sql = `SELECT * FROM active_driver_requests WHERE driver_user_id = ? LIMIT 1`;
-        
+        // This query "walks" through the links: User -> Driver -> Ambulance -> Booking
+        const sql = `
+            SELECT 
+                b.booking_id, 
+                b.pickup_location, 
+                b.destination, 
+                b.fare, 
+                u.full_name AS patient_name,
+                u.phone_number AS patient_phone
+            FROM Bookings b
+            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            JOIN Drivers d ON a.driver_id = d.driver_id
+            JOIN Users u ON b.user_id = u.user_id
+            WHERE d.user_id = ? 
+              AND b.status = 'Pending'
+            LIMIT 1
+        `;
+
         const [rows] = await pool.query(sql, [userId]);
 
         if (rows.length > 0) {
-            res.json({ success: true, hasBooking: true, booking: rows[0] });
+            res.json({ 
+                success: true, 
+                hasBooking: true, 
+                booking: rows[0] 
+            });
         } else {
             res.json({ success: true, hasBooking: false });
         }
     } catch (err) {
-        console.error("SQL View Error:", err.message);
-        res.status(500).json({ success: false, error: "Database error" });
+        console.error("Database Error:", err);
+        res.status(500).json({ success: false, error: "Internal Server Error" });
     }
 });
 
