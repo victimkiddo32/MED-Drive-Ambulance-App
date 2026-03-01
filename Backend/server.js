@@ -376,30 +376,21 @@ app.get('/api/drivers/stats/:userId', async (req, res) => {
     }
 });
 
-// 7. DRIVER INCOMING BOOKINGS
 app.get('/api/drivers/incoming/:userId', async (req, res) => {
     const userId = req.params.userId;
     try {
+        // Broad search: Any booking that is 'Pending' regardless of who it belongs to
         const sql = `
-            SELECT 
-                b.booking_id, 
-                b.ambulance_id,
-                b.pickup_location, 
-                b.destination_hospital, 
-                b.fare, 
-                u.full_name AS patient_name
-            FROM Bookings b
-            LEFT JOIN Users u ON b.user_id = u.user_id
-            WHERE LOWER(b.status) = 'pending' 
-            AND (b.driver_user_id = ? OR b.driver_user_id IS NULL OR b.driver_user_id = 0)
-            ORDER BY b.created_at DESC 
+            SELECT * FROM Bookings 
+            WHERE status = 'Pending' 
+            AND (driver_user_id IS NULL OR driver_user_id = ? OR driver_user_id = 0)
+            ORDER BY created_at DESC 
             LIMIT 1`;
 
-        // We use Number(userId) to ensure '3' becomes 3 for the database
-        const [rows] = await pool.query(sql, [Number(userId)]);
+        const [rows] = await pool.query(sql, [userId]);
         
-        // CHECK YOUR RENDER LOGS FOR THIS LINE:
-        console.log(`🔎 DB Search for Driver ${userId}: Found ${rows.length} rows`);
+        // Check this in your RENDER logs!
+        console.log(`🔎 DB RAW CHECK: Found ${rows.length} pending bookings for driver ${userId}`);
 
         res.json({ 
             success: true, 
