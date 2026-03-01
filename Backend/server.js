@@ -165,22 +165,41 @@ app.post('/api/bookings', async (req, res) => {
     }
 });
 
-app.get('/api/bookings/incoming/:driverId', async (req, res) => {
-    const { driverId } = req.params;
+app.get('/api/drivers/incoming/:userId', async (req, res) => {
+    const userId = req.params.userId; 
     try {
-        // Find bookings where the assigned ambulance belongs to THIS driver
         const sql = `
-            SELECT b.*, u.full_name as patient_name, u.phone_number as patient_phone
+            SELECT 
+                b.booking_id, 
+                b.pickup_location, 
+                b.destination_hospital, 
+                b.fare, 
+                b.ambulance_id,
+                b.user_id AS patient_id, 
+                u.full_name AS patient_name,
+                u.phone_number AS patient_phone
             FROM Bookings b
             JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
             JOIN Users u ON b.user_id = u.user_id
-            WHERE a.driver_id = ? AND b.status = 'Pending'
-            ORDER BY b.created_at DESC LIMIT 1`;
-            
-        const [rows] = await pool.query(sql, [driverId]);
-        res.json({ success: true, data: rows[0] || null });
+            WHERE a.driver_id = (
+                SELECT driver_id FROM Drivers WHERE user_id = ?
+            )
+            AND b.status = 'Pending'
+            ORDER BY b.created_at DESC 
+            LIMIT 1
+        `;
+
+        const [rows] = await pool.query(sql, [userId]);
+        
+        // Return structured data that matches your frontend expectations
+        res.json({ 
+            success: true, 
+            hasBooking: rows.length > 0, 
+            booking: rows[0] || null 
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("Fetch Incoming Error:", err);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
