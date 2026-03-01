@@ -362,22 +362,13 @@ app.patch('/api/ambulances/move', async (req, res) => {
 // 6. Get Ambulance by Driver's User ID
 app.get('/api/ambulances/driver/:userId', async (req, res) => {
     try {
-        // We link Ambulances -> Drivers -> Users
-        // This allows us to find the ambulance even if we only have the User ID (3)
-        const sql = `
-            SELECT a.* FROM Ambulances a
-            JOIN Drivers d ON a.driver_id = d.driver_id
-            WHERE d.user_id = ?`;
+        // Since driver_id in Ambulances is now the User ID (3, 4, 5...)
+        const sql = `SELECT * FROM Ambulances WHERE driver_id = ?`;
             
         const [rows] = await pool.query(sql, [req.params.userId]);
-        
-        // Return the first row found
-        res.json({ 
-            success: true, 
-            ambulance: rows[0] || null 
-        });
+        res.json({ success: true, ambulance: rows[0] || null });
     } catch (err) {
-        console.error("Driver Dashboard Fetch Error:", err.message);
+        console.error("Ambulance Fetch Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -386,15 +377,16 @@ app.get('/api/ambulances/driver/:userId', async (req, res) => {
 app.get('/api/drivers/stats/:userId', async (req, res) => {
     const userId = req.params.userId;
     try {
-        // Using 'bookings' table and 'user_id' as per your schema
-        // Calculating 95% for driver net and 100% for gross tracking
         const sql = `
             SELECT 
-                IFNULL(SUM(fare * 0.95), 0) AS net_earnings, 
-                IFNULL(SUM(fare), 0) AS gross_bookings_value,
-                COUNT(*) AS total_bookings 
-            FROM bookings 
-            WHERE user_id = ? AND (status = 'Completed' OR status = 'completed')`;
+                IFNULL(SUM(b.fare * 0.95), 0) AS net_earnings, 
+                IFNULL(SUM(b.fare), 0) AS gross_bookings_value,
+                COUNT(b.booking_id) AS total_bookings 
+            FROM bookings b
+            JOIN ambulances a ON b.ambulance_id = a.ambulance_id
+            /* KEY CHANGE: Look for the driver assigned to the ambulance */
+            WHERE a.driver_id = ? 
+            AND (b.status = 'Completed' OR b.status = 'completed')`;
             
         const [rows] = await pool.query(sql, [userId]);
         
