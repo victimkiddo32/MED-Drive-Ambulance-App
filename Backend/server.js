@@ -513,26 +513,22 @@ app.get('/api/admin/organizations', async (req, res) => {
 
 app.get('/api/admin/users', async (req, res) => {
     try {
-        // Removed 'created_at' since it doesn't exist in your DB
         const query = `
-            SELECT id, full_name, email, phone_number, role 
-            FROM users 
-            ORDER BY id DESC
+            SELECT 
+                user_id, 
+                full_name, 
+                email, 
+                phone_number, 
+                role 
+            FROM users
         `;
-        
-        // Note: Check if your table uses 'id' or 'user_id' and update the SELECT accordingly
         const [rows] = await pool.query(query);
-        
-        res.json({
-            success: true,
-            users: rows
-        });
+        res.json({ success: true, users: rows });
     } catch (err) {
-        console.error("Manage Users Error:", err);
+        console.error("User Route Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
-
 
 // Get all providers with ride counts and earnings
 // 1. Service Providers List (For the new Sidebar Section)

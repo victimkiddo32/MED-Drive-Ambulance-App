@@ -348,18 +348,15 @@
         <div id="provider-section" class="admin-section" style="display:none;">
             <div class="table-container">
                 <h3>Ambulance Service Providers</h3>
-                <table>
+                <table id="providers-table">
                     <thead>
                         <tr>
-                            <th>NAME</th>
-                            <th>CONTACT</th>
-                            <th>RIDES</th>
-                            <th>GROSS</th>
-                            <th>DRIVER NET (95%)</th>
-                            <th>STATUS</th>
+                            <th>SERVICE PROVIDER</th>
+                            <th>CONTACT NUMBER</th>
                         </tr>
                     </thead>
-                    <tbody id="provider-table-body"></tbody>
+                    <tbody id="providers-table-body">
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -482,7 +479,12 @@
         }
 
         async function loadProviders() {
+    // 1. Match the ID with the HTML above
     const tableBody = document.getElementById('providers-table-body');
+    
+    // 2. Safety Check: If the element is missing, exit the function instead of crashing
+    if (!tableBody) return; 
+
     try {
         const res = await fetch(`${API_BASE}/admin/providers`);
         const data = await res.json();
@@ -490,7 +492,9 @@
         if (data.success && data.providers) {
             tableBody.innerHTML = data.providers.map(p => `
                 <tr>
-                    <td><strong>${p.company_name}</strong></td>
+                    <td style="padding: 15px;">
+                        <strong style="color: #fff; font-size: 1.1em;">${p.company_name}</strong>
+                    </td>
                     <td style="color: #4ade80; font-weight: bold;">
                         ${p.phone_number || 'N/A'}
                     </td>
@@ -498,7 +502,7 @@
             `).join('');
         }
     } catch (err) {
-        console.error("Error loading providers:", err);
+        console.error("Provider Load Error:", err);
         tableBody.innerHTML = "<tr><td colspan='2'>Error loading providers.</td></tr>";
     }
 }
@@ -522,34 +526,45 @@
         }
 
         async function loadUsers() {
-            const tableBody = document.getElementById('user-table-body');
-            try {
-                const res = await fetch(`${API_BASE}/admin/users`);
-                const data = await res.json();
-                tableBody.innerHTML = data.users.map(u => `
-                    <tr>
-                        <td>${u.full_name}</td>
-                        <td>${u.email}</td>
-                        <td><span class="domain-tag">${u.role}</span></td>
-                        <td>${u.phone_number}</td>
-                        <td><button class="btn-delete" onclick="alert('Action restricted')">Ban</button></td>
-                    </tr>
-                `).join('');
-            } catch (err) { tableBody.innerHTML = "<tr><td colspan='5'>Error loading users.</td></tr>"; }
-        }
+    const tableBody = document.getElementById('user-table-body');
+    if (!tableBody) return;
 
+    try {
+        const res = await fetch(`${API_BASE}/admin/users`);
+        const data = await res.json();
+
+        if (data.success && data.users) {
+            tableBody.innerHTML = data.users.map(u => `
+                <tr>
+                    <td>${u.user_id}</td>
+                    <td><strong>${u.full_name}</strong></td>
+                    <td>${u.email}</td>
+                    <td>${u.phone_number || 'N/A'}</td>
+                    <td>
+                        <span class="role-badge ${u.role.toLowerCase()}">
+                            ${u.role}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (err) {
+        console.error("Error loading users:", err);
+        tableBody.innerHTML = "<tr><td colspan='5'>Error loading users.</td></tr>";
+    }
+}
         async function loadFleet() {
             const tableBody = document.getElementById('fleet-table-body');
             try {
                 const res = await fetch(`${API_BASE}/admin/ambulances`);
                 const data = await res.json();
                 // Inside your loadFleet() function
-tableBody.innerHTML = data.ambulances.map(a => `
+                tableBody.innerHTML = data.ambulances.map(a => `
     <tr>
         <td>
-            ${a.driver_name 
-                ? `<span style="color: #4ade80; font-weight: bold;">${a.driver_name}</span><br><small>ID: ${a.driver_id}</small>` 
-                : '<span style="color: #ff4d4d;">Unassigned</span>'}
+            ${a.driver_name
+                        ? `<span style="color: #4ade80; font-weight: bold;">${a.driver_name}</span><br><small>ID: ${a.driver_id}</small>`
+                        : '<span style="color: #ff4d4d;">Unassigned</span>'}
         </td>
         <td>${a.ambulance_type}</td>
         <td>${a.vehicle_number}</td>
