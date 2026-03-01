@@ -382,82 +382,62 @@
     }
 
     // 4. EMERGENCY REQUEST LOGIC (Polling)
-    async function checkIncomingTrips() {
-        // Prevent logic if busy or already on a trip
-        if (!driverId || window.isAcceptingTrip) return;
-        if (document.getElementById('active-trip-card')) return;
+   async function checkIncomingTrips() {
+    if (!driverId || window.isAcceptingTrip) return;
+    if (document.getElementById('active-trip-card')) return;
 
-        try {
-            const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
-            const data = await res.json();
-            const container = document.getElementById('request-container');
+    try {
+        const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
+        const data = await res.json();
+        const container = document.getElementById('request-container');
 
-            if (data.success && data.hasBooking) {
-                const booking = data.booking;
-                console.log("✅ Booking found!", booking);
+        if (data.success && data.hasBooking) {
+            const booking = data.booking;
+            console.log("🔍 DATA RECEIVED FROM SERVER:", booking);
 
-                // Find destination name
-                let hospitalName = "Hospital Requested";
-                for (let key in booking) {
-                    if (key.toLowerCase().includes('destination')) {
-                        hospitalName = booking[key];
-                        break;
-                    }
-                }
-
-                // Fill UI
-                document.getElementById('pickup-loc').innerText = booking.pickup_location || "Location Unknown";
-                document.getElementById('dest-loc').innerText = hospitalName;
-                document.getElementById('fare-amount').innerText = booking.fare || "0.00";
-
-                // Show Card & Play Sound
-                if (container && container.style.display !== 'block') {
-                    new Audio('https://assets.mixkit.co/active_storage/sfx/2852/2852-preview.mp3').play().catch(() => {});
-                    container.style.display = 'block';
-                }
-
-                // Set Acceptance Action
-                document.getElementById('confirm-accept-btn').onclick = () =>
-                    acceptTrip(booking.booking_id, booking.ambulance_id, hospitalName);
-
-            } else {
-                if (container && !document.getElementById('active-trip-card')) {
-                    container.style.display = 'none';
+            // 1. DATA MAPPING (Finds the right keys automatically)
+            // Look for Pickup
+            const pickupValue = booking.pickup_location || booking.pickup || booking.location || "Location Unknown";
+            
+            // Look for Destination/Hospital
+            let destValue = "Hospital Requested";
+            for (let key in booking) {
+                if (key.toLowerCase().includes('destination') || key.toLowerCase().includes('hospital')) {
+                    destValue = booking[key];
+                    break;
                 }
             }
-        } catch (err) { console.error("❌ Heartbeat error:", err); }
-    }
 
-    // 5. TRIP LIFECYCLE (Accept / Complete)
-    async function acceptTrip(bookingId, ambId, hospitalName) {
-        window.isAcceptingTrip = true;
-        const btn = document.getElementById('confirm-accept-btn');
-        btn.innerText = "Accepting...";
-        btn.disabled = true;
+            // Look for Fare
+            const fareValue = booking.fare || booking.estimated_fare || booking.amount || "0.00";
 
-        try {
-            const res = await fetch(`${API_BASE}/bookings/accept`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    booking_id: bookingId,
-                    ambulance_id: ambId,
-                    driver_user_id: driverId
-                })
-            });
-            const data = await res.json();
+            // 2. UPDATE THE UI
+            const pEl = document.getElementById('pickup-loc');
+            const dEl = document.getElementById('dest-loc');
+            const fEl = document.getElementById('fare-amount');
 
-            if (data.success) {
-                document.getElementById('request-container').style.display = 'none';
-                showActiveTripUI(bookingId, ambId, hospitalName);
-            } else {
-                alert(data.error || "Trip no longer available.");
-                document.getElementById('request-container').style.display = 'none';
+            if (pEl) pEl.innerText = pickupValue;
+            if (dEl) dEl.innerText = destValue;
+            if (fEl) fEl.innerText = fareValue;
+
+            // 3. SHOW CARD
+            if (container) {
+                container.style.display = 'block';
             }
-        } catch (e) { console.error(e); }
-        finally { window.isAcceptingTrip = false; }
-    }
 
+            // 4. ATTACH BUTTON ACTION
+            document.getElementById('confirm-accept-btn').onclick = () =>
+                acceptTrip(booking.booking_id, booking.ambulance_id, destValue);
+
+        } else {
+            if (container && !document.getElementById('active-trip-card')) {
+                container.style.display = 'none';
+            }
+        }
+    } catch (err) {
+        console.error("❌ Heartbeat error:", err);
+    }
+}
     function showActiveTripUI(bookingId, ambId, hospital) {
         const existing = document.getElementById('active-trip-card');
         if (existing) existing.remove();
