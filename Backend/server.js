@@ -380,26 +380,29 @@ app.get('/api/drivers/stats/:userId', async (req, res) => {
 app.get('/api/drivers/incoming/:userId', async (req, res) => {
     const userId = req.params.userId;
     try {
+        // This query finds:
+        // 1. Bookings specifically assigned to this driver's ID
+        // 2. OR Pending bookings that haven't been claimed by anyone yet (driver_user_id IS NULL)
         const sql = `
             SELECT 
-        b.booking_id, 
-        b.ambulance_id,
-        b.pickup_location, 
-        b.destination_hospital, 
-        b.fare, 
-        u.full_name AS patient_name,
-        u.phone_number AS patient_phone
-    FROM Bookings b
-    JOIN Users u ON b.user_id = u.user_id
-    WHERE b.status = 'Pending'
-    AND (b.driver_user_id = ? OR b.driver_user_id IS NULL)
-    ORDER BY b.created_at DESC
-    LIMIT 1`;
+                b.booking_id, 
+                b.ambulance_id,
+                b.pickup_location, 
+                b.destination_hospital, 
+                b.fare, 
+                u.full_name AS patient_name
+            FROM Bookings b
+            JOIN Users u ON b.user_id = u.user_id
+            WHERE b.status = 'Pending' 
+            AND (b.driver_user_id = ? OR b.driver_user_id IS NULL)
+            ORDER BY b.created_at DESC 
+            LIMIT 1`;
 
-        const [rows] = await pool.query(sql); // Remove [userId] if you commented out the WHERE line
+        const [rows] = await pool.query(sql, [userId]);
         
-        console.log(`📦 DB Result for Driver ${userId}:`, rows); // Log this to see what the DB says!
-        
+        // This log will show up in your RENDER DASHBOARD logs
+        console.log(`🔎 Check for Driver ${userId}: Found ${rows.length} bookings`);
+
         res.json({ 
             success: true, 
             hasBooking: rows.length > 0, 
