@@ -379,65 +379,72 @@
         }
 
         async function checkIncomingTrips() {
-            const driverUserId = sessionStorage.getItem('userId');
-            const statusToggle = document.getElementById('status-toggle');
+    const driverUserId = sessionStorage.getItem('userId');
+    const statusToggle = document.getElementById('status-toggle');
 
-            if (!driverUserId || (statusToggle && !statusToggle.checked)) return;
-            if (document.getElementById('active-trip-card')) return;
+    // 1. Guard Clauses
+    if (!driverUserId || (statusToggle && !statusToggle.checked)) return;
+    
+    // Stop polling if we already have an active/ongoing trip card on screen
+    if (document.getElementById('active-trip-card')) return;
 
-            try {
-                const res = await fetch(`${API_BASE}/drivers/incoming/${driverUserId}`);
-                const data = await res.json();
+    // Stop polling if the driver is currently in the middle of clicking "Accept"
+    if (window.isAcceptingTrip) return;
 
-                if (data.success && data.hasBooking) {
-    const booking = data.booking;
-    const container = document.getElementById('request-container');
+    try {
+        const res = await fetch(`${API_BASE}/drivers/incoming/${driverUserId}`);
+        const data = await res.json();
 
-    // 1. Only act if the popup isn't already visible
-    // This prevents the flickering and the sound from looping annoyingly
-    if (container && container.style.display !== 'block') {
-        console.log("🚨 NEW EMERGENCY DETECTED:", booking.booking_id);
-        
-        // Play alert sound once
-        new Audio('https://assets.mixkit.co/active_storage/sfx/2852/2852-preview.mp3').play().catch(() => { });
+        const container = document.getElementById('request-container');
 
-        // Update UI Text
-        let hospitalName = "Hospital Requested";
-        for (let key in booking) {
-            if (key.toLowerCase().includes('destination')) {
-                hospitalName = booking[key];
-                break;
+        if (data.success && data.hasBooking) {
+            const booking = data.booking;
+
+            // 2. Only update and show if it's not already visible
+            if (container && container.style.display !== 'block') {
+                console.log("🚨 NEW EMERGENCY DETECTED:", booking.booking_id);
+                
+                // Play alert sound
+                new Audio('https://assets.mixkit.co/active_storage/sfx/2852/2852-preview.mp3').play().catch(() => { });
+
+                // 3. Robust Data Mapping (Fixes the "Searching..." bug)
+                let hospitalName = "Hospital Requested";
+                for (let key in booking) {
+                    if (key.toLowerCase().includes('destination')) {
+                        hospitalName = booking[key];
+                        break;
+                    }
+                }
+
+                // Update UI Text with data from the 'booking' object
+                document.getElementById('pickup-loc').innerText = booking.pickup_location || "Location Unknown";
+                document.getElementById('dest-loc').innerText = hospitalName;
+                document.getElementById('fare-amount').innerText = booking.fare || "0.00";
+
+                // Show the container
+                container.style.display = 'block';
+
+                // Set the Click Action
+                document.getElementById('confirm-accept-btn').onclick = () =>
+                    acceptTrip(booking.booking_id, booking.ambulance_id, hospitalName);
+            }
+
+        } else {
+            // 4. Smart Cleanup
+            // Only hide the request if we definitely DON'T have a pending booking 
+            // AND we aren't showing the "Active Trip" card.
+            const activeTrip = document.getElementById('active-trip-card');
+            
+            if (!activeTrip && container && container.style.display === 'block') {
+                // Optional: You can keep it visible so it doesn't flicker, 
+                // but if the booking is cancelled by patient, hide it:
+                container.style.display = 'none';
             }
         }
-
-        document.getElementById('pickup-loc').innerText = booking.pickup_location || "Location Unknown";
-        document.getElementById('dest-loc').innerText = hospitalName;
-        document.getElementById('fare-amount').innerText = booking.fare || "0.00";
-
-        // Show the container
-        container.style.display = 'block';
-
-        // Update the Button
-        document.getElementById('confirm-accept-btn').onclick = () =>
-            acceptTrip(booking.booking_id, booking.ambulance_id, hospitalName);
-    }
-
-} else {
-    // 2. STICKY LOGIC: 
-    // Only hide the container if we are NOT currently looking at a "Pending" request
-    // or if the trip was actually accepted elsewhere.
-    const activeTrip = document.getElementById('active-trip-card');
-    const container = document.getElementById('request-container');
-    
-    // If we have an active trip card (Accepted), then we can safely hide the request popup
-    if (activeTrip && container) {
-        container.style.display = 'none';
+    } catch (err) {
+        console.error("❌ Polling error:", err);
     }
 }
-            } catch (err) {
-                console.error("Polling error:", err);
-            }
-        }
 
         async function acceptTrip(bookingId, ambId, destinationHospital) {
             window.isAcceptingTrip = true;
