@@ -454,36 +454,36 @@
                 // Filter for available ambulances
                 const available = data.filter(a => a.status === 'Available');
 
-                available.forEach(amb => {
-                    // FIX: Create local constants inside the loop so they don't change
-                    const currentId = amb.ambulance_id || amb.id;
-                    const currentType = amb.ambulance_type || 'Standard';
-                    const lat = amb.lat || 22.8246;
-                    const lng = amb.lng || 91.1017;
+                available.forEach((amb, index) => {
+    // FIX: Add a tiny "jitter" based on the index so markers don't overlap
+    const jitter = index * 0.001; 
+    const lat = (amb.lat || 22.8246) + jitter; 
+    const lng = (amb.lng || 91.1017) + jitter;
 
-                    const marker = L.marker([lat, lng]).addTo(map);
+    const currentId = amb.ambulance_id || amb.id; 
+    const currentType = amb.ambulance_type || 'Standard';
 
-                    // We create a separate container for each popup
-                    const container = document.createElement('div');
-                    container.innerHTML = `
-                <div style="color:black; padding:5px; font-family: sans-serif;">
-                    <b style="font-size:14px;">${currentType}</b><br>
-                    <span style="color:gray; font-size:11px;">ID: ${currentId}</span><br>
-                    <button class="select-btn" style="background:#f85149; color:white; border:none; padding:8px; border-radius:5px; margin-top:8px; cursor:pointer; width:100%; font-weight:bold;">
-                        SELECT THIS
-                    </button>
-                </div>
-            `;
+    const marker = L.marker([lat, lng]).addTo(map);
+    
+    const container = document.createElement('div');
+    container.innerHTML = `
+        <div style="color:black; padding:5px; min-width:120px;">
+            <b>${currentType}</b><br>
+            <span style="color:gray;">ID: ${currentId}</span><br>
+            <button class="select-btn" style="background:#f85149; color:white; border:none; padding:8px; border-radius:5px; margin-top:8px; cursor:pointer; width:100%;">
+                SELECT THIS
+            </button>
+        </div>
+    `;
 
-                    // ATTACH THE EVENT LISTENER DIRECTLY TO THIS SPECIFIC BUTTON
-                    container.querySelector('.select-btn').onclick = () => {
-                        console.log("Click detected for ID:", currentId);
-                        selectAmbulance(currentId, currentType);
-                        marker.closePopup();
-                    };
+    container.querySelector('.select-btn').onclick = () => {
+        console.log("Clicking ID:", currentId);
+        selectAmbulance(currentId, currentType);
+        marker.closePopup();
+    };
 
-                    marker.bindPopup(container);
-                });
+    marker.bindPopup(container);
+});
             } catch (e) {
                 console.error("Failed to load ambulances:", e);
             }
