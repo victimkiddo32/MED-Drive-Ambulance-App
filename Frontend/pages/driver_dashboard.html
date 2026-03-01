@@ -385,7 +385,7 @@
             // UI Updates using the correct column names
             document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
             
-            // Using destination_hospital (we deleted the 'destination' column)
+            
             document.getElementById('dest-loc').innerText = currentBooking.destination_hospital;
             
             document.getElementById('fare-amount').innerText = currentBooking.fare || "500.00";
@@ -422,7 +422,7 @@
             }
         }
 
-       async function acceptTrip(bookingId, ambId, destination) {
+       async function acceptTrip(bookingId, ambId, destinationHospital) {
     // This is the User ID (e.g., 3) from sessionStorage
     const currentDriverUserId = sessionStorage.getItem('userId'); 
     const btn = document.getElementById('confirm-accept-btn');
@@ -455,7 +455,7 @@
             
             // 2. Load the "Active" navigation UI
             // Ensure this function uses destination_hospital
-            showActiveTripUI(bookingId, ambId, destination);
+            showActiveTripUI(bookingId, ambId, destinationHospital);
             
             // 3. Feedback to driver
             if (typeof showToast === "function") showToast("Ride Accepted! Navigating...");
