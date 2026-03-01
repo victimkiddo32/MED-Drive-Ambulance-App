@@ -225,10 +225,14 @@ app.get('/api/bookings/user/:userId', async (req, res) => {
     }
 });
 
-app.post('/api/bookings/accept', async (req, res) => {
-    // Destructure everything coming from the frontend
-    const { booking_id, bookingId, ambulance_id, driver_id, userId } = req.body;
+aapp.post('/api/bookings/accept', async (req, res) => {
+    // 1. Destructure all possible names from the frontend
+    // Note: We expect the driver's User ID (3) to come in via 'driver_user_id' or 'userId'
+    const { booking_id, bookingId, ambulance_id, driver_user_id, userId, driver_id } = req.body;
     const finalBookingId = booking_id || bookingId;
+    
+    // The driver's User ID (the number 3 from your data)
+    const finalDriverUserId = driver_user_id || userId || driver_id;
 
     if (!finalBookingId) {
         return res.status(400).json({ success: false, error: "Missing booking_id" });
@@ -238,33 +242,37 @@ app.post('/api/bookings/accept', async (req, res) => {
     try {
         await conn.beginTransaction();
 
-        // 1. Update the Booking status and assign the driver
-        // Use driver_id from body, or find it via userId
+        // 2. Update the Booking: Set status to 'Accepted' and store the User ID
+        // We use COALESCE to prioritize the ID passed from the frontend
         await conn.query(
-            `UPDATE Bookings SET status = 'Accepted', 
-             driver_id = COALESCE(?, (SELECT driver_id FROM Drivers WHERE user_id = ?)) 
+            `UPDATE Bookings 
+             SET status = 'Accepted', 
+                 driver_user_id = COALESCE(?, (SELECT user_id FROM Drivers WHERE driver_id = ?)) 
              WHERE booking_id = ?`, 
-            [driver_id || null, userId || null, finalBookingId]
+            [finalDriverUserId || null, finalDriverUserId || null, finalBookingId]
         );
 
-        // 2. THE FIX: Update the Ambulance status directly using the ID from the request
-        // If ambulance_id isn't in the body, we fall back to the subquery safely
+        // 3. Update the Ambulance: Mark as 'Busy'
+        // We use the ambulance_id passed (30001) or find it via the booking record
         await conn.query(
-            `UPDATE Ambulances SET status = 'Busy' 
+            `UPDATE Ambulances 
+             SET status = 'Busy' 
              WHERE ambulance_id = COALESCE(?, (SELECT ambulance_id FROM Bookings WHERE booking_id = ?))`,
             [ambulance_id || null, finalBookingId]
         );
 
-        // 3. Update the Driver status to 'Busy'
-        // This handles both the driver_id (3) and user_id (3) cases
+        // 4. Update the Driver status to 'Busy'
+        // This ensures the driver is also marked busy in the Drivers table
         await conn.query(
-            `UPDATE Drivers SET status = 'Busy' 
-             WHERE driver_id = ? OR user_id = ? OR driver_id = (SELECT driver_id FROM Bookings WHERE booking_id = ?)`,
-            [driver_id || null, userId || null, finalBookingId]
+            `UPDATE Drivers 
+             SET status = 'Busy' 
+             WHERE user_id = ? OR driver_id = ?`,
+            [finalDriverUserId || null, finalDriverUserId || null]
         );
 
         await conn.commit();
-        console.log(`✅ Success! Booking ${finalBookingId} and Ambulance marked Busy.`);
+        console.log(`✅ Success! Booking ${finalBookingId} accepted by User ${finalDriverUserId}.`);
+        
         res.json({ success: true, message: "Booking accepted and statuses updated." });
 
     } catch (err) {
