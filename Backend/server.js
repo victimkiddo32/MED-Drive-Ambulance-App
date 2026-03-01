@@ -151,17 +151,31 @@ app.post('/api/users/login', async (req, res) => {
 
 app.post('/api/bookings', async (req, res) => {
     const { user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare } = req.body;
+
+    // Optional: Quick validation
+    if (!ambulance_id || ambulance_id === 'undefined') {
+        return res.status(400).json({ success: false, error: "No ambulance selected." });
+    }
+
     try {
-        const sql = `INSERT INTO bookings 
+        const sql = `INSERT INTO Bookings 
             (user_id, ambulance_id, pickup_location, destination_hospital, status, base_fare, fare) 
             VALUES (?, ?, ?, ?, 'Pending', ?, ?)`;
         
-        const [result] = await pool.query(sql, [user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare]);
+        const [result] = await pool.query(sql, [
+            user_id, 
+            ambulance_id, 
+            pickup_location, 
+            destination_hospital, 
+            base_fare, 
+            fare
+        ]);
         
+        console.log(`✨ New Booking Created: ID ${result.insertId}`);
         res.json({ success: true, bookingId: result.insertId });
     } catch (err) {
         console.error("Booking Creation Error:", err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -225,59 +239,51 @@ app.get('/api/bookings/user/:userId', async (req, res) => {
     }
 });
 
-aapp.post('/api/bookings/accept', async (req, res) => {
-    // 1. Destructure all possible names from the frontend
-    // Note: We expect the driver's User ID (3) to come in via 'driver_user_id' or 'userId'
-    const { booking_id, bookingId, ambulance_id, driver_user_id, userId} = req.body;
-    const finalBookingId = booking_id || bookingId;
+app.post('/api/bookings/accept', async (req, res) => {
+    const { booking_id, ambulance_id, driver_user_id, userId } = req.body;
     
-    // The driver's User ID (the number 3 from your data)
-    const finalDriverUserId = driver_user_id || userId;
+    const finalBookingId = booking_id;
+    const finalDriverUserId = driver_user_id || userId; // This is '3'
 
-    if (!finalBookingId) {
-        return res.status(400).json({ success: false, error: "Missing booking_id" });
+    if (!finalBookingId || !finalDriverUserId) {
+        return res.status(400).json({ success: false, error: "Missing booking_id or driver_user_id" });
     }
 
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
-        // 2. Update the Booking: Set status to 'Accepted' and store the User ID
-        // We use COALESCE to prioritize the ID passed from the frontend
+        // 1. Update Booking: Use the User ID (3) directly
         await conn.query(
             `UPDATE Bookings 
-             SET status = 'Accepted', 
-                 driver_user_id = COALESCE(?, (SELECT user_id FROM Drivers WHERE driver_id = ?)) 
+             SET status = 'Accepted', driver_user_id = ? 
              WHERE booking_id = ?`, 
-            [finalDriverUserId || null, finalDriverUserId || null, finalBookingId]
+            [finalDriverUserId, finalBookingId]
         );
 
-        // 3. Update the Ambulance: Mark as 'Busy'
-        // We use the ambulance_id passed (30001) or find it via the booking record
+        // 2. Update Ambulance: Use the ambulance_id (30001) directly
         await conn.query(
             `UPDATE Ambulances 
              SET status = 'Busy' 
-             WHERE ambulance_id = COALESCE(?, (SELECT ambulance_id FROM Bookings WHERE booking_id = ?))`,
-            [ambulance_id || null, finalBookingId]
+             WHERE ambulance_id = ?`,
+            [ambulance_id]
         );
 
-        // 4. Update the Driver status to 'Busy'
-        // This ensures the driver is also marked busy in the Drivers table
+        // 3. Update Driver: Mark 'Busy' using the User ID
         await conn.query(
             `UPDATE Drivers 
              SET status = 'Busy' 
-             WHERE user_id = ? OR driver_id = ?`,
-            [finalDriverUserId || null, finalDriverUserId || null]
+             WHERE user_id = ?`,
+            [finalDriverUserId]
         );
 
         await conn.commit();
-        console.log(`✅ Success! Booking ${finalBookingId} accepted by User ${finalDriverUserId}.`);
-        
-        res.json({ success: true, message: "Booking accepted and statuses updated." });
+        console.log(`✅ Success: Booking ${finalBookingId} accepted by User ${finalDriverUserId}`);
+        res.json({ success: true, message: "Booking accepted successfully" });
 
     } catch (err) {
         await conn.rollback();
-        console.error("❌ Accept Error:", err.message);
+        console.error("❌ SQL Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     } finally {
         conn.release();
@@ -351,27 +357,45 @@ app.patch('/api/ambulances/move', async (req, res) => {
     }
 }); 
 
-app.get('/api/ambulances/driver/:driverId', async (req, res) => {
+// 6. Get Ambulance by Driver's User ID
+app.get('/api/ambulances/driver/:userId', async (req, res) => {
     try {
-        const [rows] = await pool.query("SELECT * FROM Ambulances WHERE driver_id = ?", [req.params.driverId]);
-        res.json({ success: true, ambulance: rows[0] });
+        // We join with the Drivers table so we can search by User ID (3)
+        // rather than the internal driver_id (30001)
+        const sql = `
+            SELECT a.* FROM Ambulances a
+            JOIN Drivers d ON a.driver_id = d.driver_id
+            WHERE d.user_id = ?`;
+            
+        const [rows] = await pool.query(sql, [req.params.userId]);
+        res.json({ success: true, ambulance: rows[0] || null });
     } catch (err) {
+        console.error("Ambulance Fetch Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// 7. DRIVER INCOMING & STATS
-app.get('/api/drivers/stats/:id', async (req, res) => {
-    const driverId = req.params.id;
+// 7. DRIVER STATS (Earnings & Trips)
+app.get('/api/drivers/stats/:userId', async (req, res) => {
+    const userId = req.params.userId;
     try {
+        // UPDATED: Changed driver_id to driver_user_id to match your new schema
         const sql = `
-            SELECT IFNULL(SUM(fare), 0) AS earnings, COUNT(*) AS trips 
+            SELECT 
+                IFNULL(SUM(fare), 0) AS earnings, 
+                COUNT(*) AS trips 
             FROM Bookings 
-            WHERE driver_id = ? AND status = 'Completed'`;
-        const [rows] = await pool.query(sql, [driverId]);
-        res.json({ success: true, earnings: rows[0].earnings, trips: rows[0].trips });
+            WHERE driver_user_id = ? AND status = 'Completed'`;
+            
+        const [rows] = await pool.query(sql, [userId]);
+        res.json({ 
+            success: true, 
+            earnings: rows[0].earnings, 
+            trips: rows[0].trips 
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("Stats Error:", err.message);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
