@@ -381,22 +381,27 @@
 }
 
         async function loadProviders() {
-            const tableBody = document.getElementById('provider-table-body');
-            try {
-                const res = await fetch(`${API_BASE}/admin/providers`);
-                const data = await res.json();
-                tableBody.innerHTML = data.providers.map(p => `
-                    <tr>
-                        <td>${p.full_name}</td>
-                        <td>${p.phone_number}</td>
-                        <td>${p.ride_count || 0}</td>
-                        <td>৳ ${p.total_earned || 0}</td>
-                        <td style="color: var(--success); font-weight: bold;">৳ ${(p.total_earned * 0.95).toFixed(2)}</td>
-                        <td><span class="status-badge ${p.status || 'Online'}">${p.status || 'Online'}</span></td>
-                    </tr>
-                `).join('');
-            } catch (err) { tableBody.innerHTML = "<tr><td colspan='6'>Error loading providers.</td></tr>"; }
-        }
+    const tableBody = document.getElementById('provider-table-body');
+    try {
+        const res = await fetch(`${API_BASE}/admin/providers`);
+        const data = await res.json();
+        
+        tableBody.innerHTML = data.providers.map(p => `
+            <tr>
+                <td><strong>${p.company_name}</strong><br><small>${p.owner_name}</small></td>
+                <td>${p.phone_number}</td>
+                <td>${p.total_rides}</td>
+                <td>৳ ${p.gross_revenue}</td>
+                <td style="color: var(--success); font-weight: bold;">
+                    ৳ ${(p.gross_revenue * 0.95).toFixed(2)}
+                </td>
+                <td><span class="domain-tag">${p.trade_license || 'N/A'}</span></td>
+            </tr>
+        `).join('');
+    } catch (err) { 
+        tableBody.innerHTML = "<tr><td colspan='6'>Error loading providers.</td></tr>"; 
+    }
+}
 
         async function loadOrganizations() {
             const tableBody = document.getElementById('org-table-body');

@@ -455,31 +455,35 @@ app.post('/api/users/register', async (req, res) => {
 
 app.get('/api/admin/stats', async (req, res) => {
     try {
+        // Updated to use your 'bookings' table and correct field names
         const statsQuery = `
             SELECT 
                 COUNT(*) AS total_bookings,
-                COALESCE(SUM(fare), 0) AS total_revenue,
-                COALESCE(SUM(fare * 0.05), 0) AS system_commission
-            FROM trips 
-            WHERE status = 'completed'
+                COALESCE(SUM(fare), 0) AS total_revenue
+            FROM bookings 
+            WHERE status = 'Completed' OR status = 'completed'
         `;
         
-        const activeDriversQuery = `SELECT COUNT(*) FROM users WHERE role = 'driver' AND status = 'Online'`;
-        const totalUsersQuery = `SELECT COUNT(*) FROM users`;
+        const [statsRows] = await pool.query(statsQuery);
+        
+        // Math for the 5% platform fee
+        const grossRevenue = parseFloat(statsRows[0].total_revenue);
+        const systemCommission = (grossRevenue * 0.05).toFixed(2);
 
-        const stats = await pool.query(statsQuery);
-        const activeDrivers = await pool.query(activeDriversQuery);
-        const totalUsers = await pool.query(totalUsersQuery);
+        // Standard counts for the other dashboard cards
+        const [driverRows] = await pool.query("SELECT COUNT(*) AS count FROM users WHERE role = 'driver'");
+        const [userRows] = await pool.query("SELECT COUNT(*) AS count FROM users");
 
         res.json({
             success: true,
-            totalRevenue: parseFloat(stats.rows[0].total_revenue),
-            systemCommission: parseFloat(stats.rows[0].system_commission).toFixed(2),
-            totalAmbulances: stats.rows[0].total_bookings,
-            activeTrips: activeDrivers.rows[0].count,
-            totalUsers: totalUsers.rows[0].count
+            totalRevenue: grossRevenue,
+            systemCommission: systemCommission, // This goes to your new dashboard card
+            totalAmbulances: statsRows[0].total_bookings,
+            activeTrips: driverRows[0].count,
+            totalUsers: userRows[0].count
         });
     } catch (err) {
+        console.error("ADMIN STATS ERROR:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -527,24 +531,50 @@ app.get('/api/admin/users', async (req, res) => {
 
 
 // Get all providers with ride counts and earnings
+// 1. Service Providers List (For the new Sidebar Section)
 app.get('/api/admin/providers', async (req, res) => {
     try {
         const query = `
-            SELECT u.full_name, u.phone_number, u.status,
-            COUNT(t.id) AS ride_count,
-            COALESCE(SUM(t.fare), 0) AS total_earned
-            FROM users u
-            LEFT JOIN trips t ON u.id = t.driver_id
-            WHERE u.role = 'driver'
-            GROUP BY u.id
+            SELECT 
+                p.company_name, 
+                u.full_name AS owner_name,
+                u.phone_number,
+                p.trade_license,
+                COUNT(b.booking_id) AS total_rides,
+                COALESCE(SUM(b.fare), 0) AS gross_revenue,
+                COALESCE(SUM(b.fare * 0.05), 0) AS platform_fee_earned
+            FROM providers p
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN bookings b ON b.user_id = u.id AND b.status = 'completed'
+            GROUP BY p.provider_id, u.id
         `;
-        const result = await pool.query(query);
-        res.json({ success: true, providers: result.rows });
+        const [rows] = await pool.query(query);
+        res.json({ success: true, providers: rows });
     } catch (err) {
+        console.error("PROVIDERS ERROR:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
+app.get('/api/admin/ambulances', async (req, res) => {
+    try {
+        // mysql2 returns [rows, fields], so we destructure the first element
+        const [rows] = await pool.query("SELECT * FROM ambulances"); 
+        
+        console.log("Fetched ambulances:", rows); // This will show in Render logs
+        
+        res.json({ 
+            success: true, 
+            ambulances: rows || [] // Return empty array if null
+        });
+    } catch (err) {
+        console.error("Ambulance Route Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 3. Static Files & Catch-all (Put these LAST)
+app.use(express.static('public'));
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
