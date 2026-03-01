@@ -383,25 +383,40 @@
         async function completeTrip(bookingId, ambId) {
     const currentDriverId = localStorage.getItem('userId');
 
+    // DEBUG: Check what IDs are actually being sent
+    console.log("SENDING TO SERVER:", { bookingId, ambId, currentDriverId });
+
+    if (!ambId || ambId === "undefined") {
+        alert("Error: Ambulance ID is missing! Cannot free up vehicle.");
+        return;
+    }
+
     try {
         const res = await fetch(`${API_BASE}/bookings/complete`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 booking_id: bookingId,
-                ambulance_id: ambId,
+                ambulance_id: ambId, // Ensure this is the numeric ID (e.g., 30001)
                 driver_id: currentDriverId
             })
         });
 
         const data = await res.json();
+        
+        // Check if the server actually updated the ambulance
         if (data.success) {
-            alert("Ride Completed!");
-            location.reload(); // Resets UI and triggers fresh polling
+            if (data.ambUpdated === false) {
+                console.warn("Booking completed, but Ambulance ID was not found in DB.");
+            }
+            alert("Ride Completed! Ambulance is now Available.");
+            location.reload(); 
+        } else {
+            alert("Server error: " + data.error);
         }
     } catch (e) {
         console.error("Complete Error:", e);
-        alert("Failed to complete trip.");
+        alert("Failed to connect to server.");
     }
 }
 

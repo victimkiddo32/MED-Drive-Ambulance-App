@@ -67,9 +67,7 @@
             gap: 12px;
         }
 
-        .sidebar li:hover {
-            background: rgba(248, 81, 73, 0.1);
-        }
+        .sidebar li:hover { background: rgba(248, 81, 73, 0.1); }
 
         .sidebar a {
             color: var(--text-gray);
@@ -83,9 +81,7 @@
             border-left: 3px solid var(--accent-red);
         }
 
-        .sidebar li.active a {
-            color: var(--white);
-        }
+        .sidebar li.active a { color: var(--white); }
 
         /* Main Content */
         .main-content {
@@ -125,7 +121,6 @@
             z-index: 1;
         }
 
-        /* Dark Map Filter */
         .leaflet-tile-container {
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
         }
@@ -152,8 +147,7 @@
             margin-bottom: 8px;
         }
 
-        input,
-        select {
+        input, select {
             background: var(--dark-bg);
             border: 1px solid var(--border);
             color: white;
@@ -164,9 +158,7 @@
             transition: 0.3s;
         }
 
-        input:focus {
-            border-color: var(--accent-red);
-        }
+        input:focus { border-color: var(--accent-red); }
 
         .btn-confirm {
             grid-column: span 2;
@@ -226,22 +218,21 @@
             border-radius: 20px;
             font-size: 11px;
             font-weight: 600;
-            text-transform: capitalize;
         }
 
-        .completed {
-            background: rgba(63, 185, 80, 0.15);
-            color: var(--success);
-        }
+        .completed { background: rgba(63, 185, 80, 0.15); color: var(--success); }
+        .pending { background: rgba(210, 153, 34, 0.15); color: var(--warning); }
+        .accepted { background: rgba(63, 185, 80, 0.2); color: #58a6ff; border: 1px solid #58a6ff; }
+        .cancelled { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
 
-        .pending {
-            background: rgba(210, 153, 34, 0.15);
-            color: var(--warning);
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
         }
-
-        .cancelled {
-            background: rgba(248, 81, 73, 0.15);
-            color: var(--accent-red);
+        .tracking-active {
+            animation: pulse 2s infinite ease-in-out;
+            border-top-color: var(--success) !important;
         }
     </style>
 </head>
@@ -250,20 +241,17 @@
 
     <nav class="sidebar">
         <div class="logo-area">
-            <img src="../assets/images/logo.png" alt="Logo"
-                onerror="this.src='https://cdn-icons-png.flaticon.com/512/1032/1032989.png'">
+            <img src="../assets/images/logo.png" alt="Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1032/1032989.png'">
             <h3 style="color: var(--accent-red); margin: 10px 0 5px 0;">Med-Drive</h3>
             <p style="color: var(--text-gray); font-size: 10px; letter-spacing: 1px;">PATIENT PORTAL</p>
         </div>
         <ul>
             <li class="active"><a href="#">🏠 Dashboard</a></li>
             <li><a href="ambulance.html">🚑 Ambulances</a></li>
-            <li><a href="#">🕒 My Bookings</a></li>
-            <li><a href="#">⚙️ Profile Settings</a></li>
+            <li><a href="#" onclick="loadHistory()">🕒 My Bookings</a></li>
         </ul>
         <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
-            <a href="../index.html" onclick="localStorage.clear()"
-                style="color: var(--text-gray); text-decoration: none; font-size: 14px;">🚪 Logout</a>
+            <a href="../index.html" onclick="localStorage.clear()" style="color: var(--text-gray); text-decoration: none; font-size: 14px;">🚪 Logout</a>
         </div>
     </nav>
 
@@ -271,47 +259,43 @@
         <header>
             <div>
                 <h2 style="margin:0;">Welcome Back, <span id="user-display-name">Guest</span></h2>
-                <p style="color: var(--text-gray); margin: 5px 0 0 0; font-size: 14px;">Need an ambulance? Select one on
-                    the map below.</p>
+                <p style="color: var(--text-gray); margin: 5px 0 0 0; font-size: 14px;">Need an ambulance? Select one on the map.</p>
             </div>
             <div class="profile-pill">
                 <span id="user-name-text">Guest</span>
-                <div id="profile-circle"
-                    style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">
-                    G</div>
+                <div id="profile-circle" style="width: 30px; height: 30px; background: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">G</div>
             </div>
         </header>
 
         <div id="map"></div>
 
-        <div class="booking-card">
-            <div class="form-group">
-                <label>Selected Ambulance</label>
-                <input type="text" id="selected-display" readonly placeholder="Click a red marker on map">
+        <div id="dynamic-booking-area">
+            <div class="booking-card" id="booking-form">
+                <div class="form-group">
+                    <label>Selected Ambulance</label>
+                    <input type="text" id="selected-display" readonly placeholder="Click a marker on map">
+                </div>
+                <div class="form-group">
+                    <label>Payment Method</label>
+                    <select id="payment-method">
+                        <option value="Cash">Cash on Delivery</option>
+                        <option value="bKash">bKash</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Pickup Point</label>
+                    <input type="text" id="pickup" placeholder="e.g. Maijdee Court">
+                </div>
+                <div class="form-group">
+                    <label>Destination Hospital</label>
+                    <input type="text" id="hospital" placeholder="e.g. General Hospital">
+                </div>
+                <div style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;">
+                    <span style="color: var(--text-gray);">Estimated Fare:</span>
+                    <span style="font-size: 26px; font-weight: bold; color: var(--accent-red);">৳ <span id="estimated-price">0</span></span>
+                </div>
+                <button class="btn-confirm" id="confirm-btn" onclick="confirmBooking()">CONFIRM & DISPATCH</button>
             </div>
-            <div class="form-group">
-                <label>Payment Method</label>
-                <select id="payment-method">
-                    <option value="Cash">Cash on Delivery</option>
-                    <option value="bKash">bKash</option>
-                    <option value="Card">Debit / Credit Card</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Pickup Point</label>
-                <input type="text" id="pickup" placeholder="e.g. House 12, Road 5, Noakhali">
-            </div>
-            <div class="form-group">
-                <label>Destination Hospital</label>
-                <input type="text" id="hospital" placeholder="e.g. General Hospital">
-            </div>
-            <div
-                style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;">
-                <span style="color: var(--text-gray);">Estimated Fare:</span>
-                <span style="font-size: 26px; font-weight: bold; color: var(--accent-red);">৳ <span
-                        id="estimated-price">0</span></span>
-            </div>
-            <button class="btn-confirm" id="confirm-btn" onclick="confirmBooking()">CONFIRM & DISPATCH</button>
         </div>
 
         <div class="history-section">
@@ -327,202 +311,183 @@
                     </tr>
                 </thead>
                 <tbody id="booking-table-body">
-                    <tr>
-                        <td colspan="5" style="text-align:center; color: var(--text-gray);">Loading history...</td>
-                    </tr>
+                    <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
     </main>
 
-    <div id="success-overlay"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px);">
-        <div
-            style="background: var(--card-bg); padding: 40px; border-radius: 20px; text-align: center; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+    <div id="success-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px);">
+        <div style="background: var(--card-bg); padding: 40px; border-radius: 20px; text-align: center; border: 1px solid var(--border);">
             <div style="font-size: 60px; color: var(--success); margin-bottom: 15px;">✅</div>
-            <h2 style="margin-bottom: 10px;">Booking Confirmed!</h2>
-            <p style="color: var(--text-gray); margin-bottom: 25px;">Your ambulance is on the way. Please stay reachable
-                via phone.</p>
-            <button onclick="location.reload()"
-                style="background: var(--accent-red); color: white; border: none; padding: 12px 40px; border-radius: 8px; cursor: pointer; font-weight: bold;">VIEW
-                DASHBOARD</button>
+            <h2>Booking Confirmed!</h2>
+            <p style="color: var(--text-gray); margin-bottom: 25px;">Stay reachable via phone.</p>
+            <button onclick="location.reload()" style="background: var(--accent-red); color: white; border: none; padding: 12px 40px; border-radius: 8px; cursor: pointer; font-weight: bold;">OKAY</button>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
-
-        // Initialize Map
         const map = L.map('map', { zoomControl: false }).setView([22.8246, 91.1017], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // --- 1. FIXED SELECT LOGIC ---
         function selectAmbulance(id, type) {
-            // Log for debugging
-            console.log("Selecting Ambulance ID:", id);
-
             document.getElementById('selected-display').value = `${type} (ID: ${id})`;
-            localStorage.setItem('selectedAmbulanceId', id); // Stores 30001, etc.
+            localStorage.setItem('selectedAmbulanceId', id);
             updateFare();
-            document.querySelector('.booking-card').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth' });
         }
 
         function updateFare() {
-            const pickup = document.getElementById('pickup').value;
-            const hospital = document.getElementById('hospital').value;
-            const priceDisplay = document.getElementById('estimated-price');
-
-            if (pickup.length > 3 && hospital.length > 3) {
-                const base = 500;
-                const dynamic = (pickup.length + hospital.length) * 8;
-                priceDisplay.innerText = base + dynamic;
-            } else {
-                priceDisplay.innerText = "0";
-            }
+            const p = document.getElementById('pickup').value.length;
+            const h = document.getElementById('hospital').value.length;
+            document.getElementById('estimated-price').innerText = (p > 2 && h > 2) ? 500 + (p + h) * 8 : "0";
         }
-
-        // --- 2. UPDATED CONFIRM LOGIC ---
+       
         async function confirmBooking() {
             const userId = localStorage.getItem('userId');
             const ambId = localStorage.getItem('selectedAmbulanceId');
-            const pickup = document.getElementById('pickup').value;
-            const hospital = document.getElementById('hospital').value;
-            const totalFare = parseInt(document.getElementById('estimated-price').innerText);
             const btn = document.getElementById('confirm-btn');
 
-            if (!userId) {
-                alert("Session expired. Please login again.");
-                window.location.href = 'login.html';
-                return;
-            }
-
-            if (!ambId || totalFare < 500 || !pickup || !hospital) {
-                alert("Please select an ambulance and enter valid locations.");
-                return;
-            }
+            if (!ambId) return alert("Select an ambulance first!");
 
             btn.disabled = true;
-            btn.innerText = "PROCESSING...";
-
             try {
-                const userId = localStorage.getItem('userId');
-                const response = await fetch(`${API_BASE}/bookings`, {
+                const res = await fetch(`${API_BASE}/bookings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         user_id: userId,
                         ambulance_id: ambId,
-                        pickup_location: pickup,
-                        destination_hospital: hospital,
-                        base_fare: 500.00,
-                        fare: totalFare
+                        pickup_location: document.getElementById('pickup').value,
+                        destination_hospital: document.getElementById('hospital').value,
+                        base_fare: 500,
+                        fare: parseInt(document.getElementById('estimated-price').innerText)
                     })
                 });
-
-                const result = await response.json();
+                const result = await res.json();
                 if (result.success) {
                     localStorage.removeItem('selectedAmbulanceId');
                     document.getElementById('success-overlay').style.display = 'flex';
-                } else {
-                    alert("Booking Failed: " + result.error);
-                    btn.disabled = false;
-                    btn.innerText = "CONFIRM & DISPATCH";
                 }
-            } catch (err) {
-                alert("Server error. Please try again.");
-                btn.disabled = false;
-                btn.innerText = "CONFIRM & DISPATCH";
-            }
+            } catch (err) { alert("Error connecting to server."); btn.disabled = false; }
         }
 
-        // --- 3. FETCH AVAILABLE AMBULANCES ---
         async function loadMapAmbulances() {
             try {
                 const res = await fetch(`${API_BASE}/ambulances`);
-                const ambulances = await res.json();
-
-                ambulances.filter(a => a.status === 'Available').forEach(amb => {
+                const data = await res.json();
+                data.filter(a => a.status === 'Available').forEach(amb => {
                     const marker = L.marker([amb.lat || 22.82, amb.lng || 91.10]).addTo(map);
                     marker.bindPopup(`
-                        <div style="color:black; font-family: sans-serif; min-width:150px;">
-                            <b style="color:var(--accent-red); font-size:14px;">${amb.ambulance_type}</b><br>
-                            <small>Vehicle: ${amb.vehicle_number}</small><br>
-                            <button onclick="selectAmbulance(${amb.ambulance_id}, '${amb.ambulance_type}')" 
-                                style="background:#f85149; color:white; border:none; padding:8px; width:100%; border-radius:5px; cursor:pointer; margin-top:10px; font-weight:bold;">
-                                SELECT THIS
-                            </button>
+                        <div style="color:black; padding:5px;">
+                            <b>${amb.ambulance_type}</b><br>
+                            <button onclick="selectAmbulance(${amb.id}, '${amb.ambulance_type}')" style="background:red; color:white; border:none; padding:5px; margin-top:5px; cursor:pointer; width:100%;">SELECT</button>
                         </div>
                     `);
                 });
-            } catch (err) { console.error("Map Error:", err); }
+            } catch (e) {}
         }
-        // Add this to your script to check for active bookings
+
         async function checkActiveBooking() {
             const userId = localStorage.getItem('userId');
             try {
                 const res = await fetch(`${API_BASE}/bookings/user/${userId}`);
                 const history = await res.json();
-
-                // Find the most recent 'Accepted' booking
                 const active = history.find(b => b.status === 'Accepted');
-
-                if (active) {
-                    showTrackingCard(active.booking_id);
-                }
-            } catch (e) { console.log("No active trip to track."); }
+                if (active) showTrackingCard(active.booking_id);
+            } catch (e) {}
         }
+        let ambulanceMarker = null; // Global variable to store the active marker
+let trackingInterval = null; // Global variable to clear the timer later 
 
         async function showTrackingCard(bookingId) {
     const res = await fetch(`${API_BASE}/bookings/track/${bookingId}`);
     const result = await res.json();
-
+    
     if (result.success) {
         const info = result.data;
-        const trackingHTML = `
-            <div id="tracking-card" class="booking-card" style="border-top: 4px solid var(--success); grid-column: span 2;">
-                <h3 style="color: var(--success); margin-top:0;">🚑 Ambulance is on the way!</h3>
-                <div style="display:flex; justify-content: space-between;">
-                    <div>
-                        <p><b>Driver:</b> ${info.driver_name}</p>
-                        <p><b>Vehicle:</b> ${info.vehicle_number} (${info.ambulance_type})</p>
-                    </div>
-                    <div style="text-align:right;">
-                        <a href="tel:${info.phone_number}" style="background:var(--success); color:white; padding:10px 20px; border-radius:8px; text-decoration:none; font-weight:bold;">📞 CALL DRIVER</a>
-                    </div>
+        document.getElementById('booking-form').style.display = 'none';
+        
+        // 1. Create the Card UI
+        const card = `
+            <div class="booking-card tracking-active">
+                <div style="grid-column: span 2;">
+                    <h3 style="color: var(--success); margin:0;">🚑 Driver is on the way!</h3>
+                    <p style="color: var(--text-gray); font-size:13px;">Tracking Live Location...</p>
+                </div>
+                <div>
+                    <p><b>Driver:</b> ${info.driver_name}</p>
+                    <p><b>Vehicle:</b> ${info.vehicle_number}</p>
+                </div>
+                <div style="text-align:right;">
+                    <a href="tel:${info.phone_number}" style="background:var(--success); color:white; padding:12px; border-radius:8px; text-decoration:none; display:inline-block; font-weight:bold;">📞 CALL</a>
                 </div>
             </div>
         `;
-        document.querySelector('.history-section').insertAdjacentHTML('beforebegin', trackingHTML);
+        document.getElementById('dynamic-booking-area').innerHTML = card;
+
+        // 2. Start Live Tracking on Map
+        trackAmbulanceMovement(info.vehicle_number); 
     }
 }
 
-        // --- 4. LOAD HISTORY ---
+
+async function trackAmbulanceMovement(vehicleNumber) {
+    // Clear any existing interval to prevent memory leaks
+    if (trackingInterval) clearInterval(trackingInterval);
+
+    trackingInterval = setInterval(async () => {
+        try {
+            // Fetch all ambulances to find the specific one assigned to us
+            const res = await fetch(`${API_BASE}/ambulances`);
+            const data = await res.json();
+            const myAmbulance = data.find(a => a.vehicle_number === vehicleNumber);
+
+            if (myAmbulance && myAmbulance.lat && myAmbulance.lng) {
+                const newPos = [myAmbulance.lat, myAmbulance.lng];
+
+                if (!ambulanceMarker) {
+                    // Create marker if it doesn't exist
+                    const redIcon = L.icon({
+                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/1032/1032989.png',
+                        iconSize: [40, 40]
+                    });
+                    ambulanceMarker = L.marker(newPos, { icon: redIcon }).addTo(map);
+                    ambulanceMarker.bindPopup("<b>Your Ambulance</b>").openPopup();
+                } else {
+                    // Move the existing marker smoothly
+                    ambulanceMarker.setLatLng(newPos);
+                }
+                
+                // Optional: Auto-center map on the ambulance
+                // map.panTo(newPos); 
+            }
+        } catch (e) {
+            console.error("Tracking Error:", e);
+        }
+    }, 5000); // Update every 5 seconds
+}
+
+
+
+
         async function loadHistory() {
             const userId = localStorage.getItem('userId');
-            const tbody = document.getElementById('booking-table-body');
-            if (!userId) return;
-
             try {
                 const res = await fetch(`${API_BASE}/bookings/user/${userId}`);
                 const data = await res.json();
-
-                if (data.length > 0) {
-                    tbody.innerHTML = data.map(b => `
-                        <tr>
-                            <td style="color:var(--accent-red); font-weight:bold;">#${b.booking_id}</td>
-                            <td>${b.destination_hospital || '---'}</td>
-                            <td><span class="status-badge ${b.status.toLowerCase()}">${b.status}</span></td>
-                            <td>৳ ${b.fare}</td>
-                            <td style="color:var(--text-gray); font-size:12px;">${new Date(b.created_at).toLocaleDateString()}</td>
-                        </tr>
-                    `).join('');
-                } else {
-                    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No history found.</td></tr>";
-                }
-            } catch (err) {
-                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Error loading data.</td></tr>";
-            }
+                document.getElementById('booking-table-body').innerHTML = data.map(b => `
+                    <tr>
+                        <td style="color:var(--accent-red); font-weight:bold;">#${b.booking_id}</td>
+                        <td>${b.destination_hospital || '---'}</td>
+                        <td><span class="status-badge ${b.status.toLowerCase()}">${b.status}</span></td>
+                        <td>৳ ${b.fare}</td>
+                        <td style="color:var(--text-gray);">${new Date(b.created_at).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+            } catch (e) {}
         }
 
         window.onload = () => {
@@ -530,9 +495,9 @@
             document.getElementById('user-display-name').innerText = name;
             document.getElementById('user-name-text').innerText = name;
             document.getElementById('profile-circle').innerText = name[0].toUpperCase();
-
-            document.getElementById('pickup').addEventListener('input', updateFare);
-            document.getElementById('hospital').addEventListener('input', updateFare);
+            
+            document.getElementById('pickup').oninput = updateFare;
+            document.getElementById('hospital').oninput = updateFare;
 
             loadMapAmbulances();
             loadHistory();
@@ -540,5 +505,4 @@
         };
     </script>
 </body>
-
 </html>
