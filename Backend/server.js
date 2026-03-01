@@ -380,9 +380,6 @@ app.get('/api/drivers/stats/:userId', async (req, res) => {
 app.get('/api/drivers/incoming/:userId', async (req, res) => {
     const userId = req.params.userId;
     try {
-        // This query finds:
-        // 1. Bookings specifically assigned to this driver's ID
-        // 2. OR Pending bookings that haven't been claimed by anyone yet (driver_user_id IS NULL)
         const sql = `
             SELECT 
                 b.booking_id, 
@@ -394,25 +391,18 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
             FROM Bookings b
             JOIN Users u ON b.user_id = u.user_id
             WHERE b.status = 'Pending' 
+            /* This line is the fix: It shows bookings assigned to ID 3 OR unassigned ones */
             AND (b.driver_user_id = ? OR b.driver_user_id IS NULL)
             ORDER BY b.created_at DESC 
             LIMIT 1`;
 
         const [rows] = await pool.query(sql, [userId]);
-        
-        // This log will show up in your RENDER DASHBOARD logs
-        console.log(`🔎 Check for Driver ${userId}: Found ${rows.length} bookings`);
-
-        res.json({ 
-            success: true, 
-            hasBooking: rows.length > 0, 
-            booking: rows[0] || null 
-        });
+        res.json({ success: true, hasBooking: rows.length > 0, booking: rows[0] || null });
     } catch (err) {
-        console.error("❌ SQL Error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
+
 
 // 8. ROUTES: REGISTRATION
 app.post('/api/users/register', async (req, res) => {
