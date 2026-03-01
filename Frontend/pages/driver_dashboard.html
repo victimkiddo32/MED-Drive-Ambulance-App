@@ -417,23 +417,27 @@
         if (data.success && data.hasBooking) {
             const booking = data.booking;
 
-            // Fill UI (Using flexible keys)
-            document.getElementById('pickup-loc').innerText = booking.pickup_location || booking.pickup || "Unknown";
-            
-            // Check for destination/hospital
-            let dest = "Hospital Requested";
-            for(let k in booking) {
-                if(k.toLowerCase().includes('dest')) dest = booking[k];
+            // Explicitly grab your column names
+    const pickup = booking.pickup_location || "Unknown Location";
+    const destination = booking.destination_hospital || "General Hospital";
+    const fare = booking.fare || "0.00";
+
+    document.getElementById('pickup-loc').innerText = pickup;
+    document.getElementById('dest-loc').innerText = destination;
+    document.getElementById('fare-amount').innerText = fare;
+
+          if (container && container.style.display !== 'block') {
+                new Audio('https://assets.mixkit.co/active_storage/sfx/2852/2852-preview.mp3').play().catch(() => {});
+                container.style.display = 'block';
             }
-            document.getElementById('dest-loc').innerText = dest;
-            document.getElementById('fare-amount').innerText = booking.fare || "0.00";
 
-            if (container) container.style.display = 'block';
-
+            // 3. ATTACH THE BUTTON ACTION
+            // We pass 'destination' here so the "Trip in Progress" card knows where to go
             document.getElementById('confirm-accept-btn').onclick = () =>
-                acceptTrip(booking.booking_id, booking.ambulance_id, dest);
+                acceptTrip(booking.booking_id, booking.ambulance_id, destination);
 
         } else {
+            // No booking found: Hide the request card UNLESS a trip is already in progress
             if (container && !document.getElementById('active-trip-card')) {
                 container.style.display = 'none';
             }
@@ -441,7 +445,56 @@
     } catch (err) {
         console.error("❌ Network/Fetch Error:", err);
     }
-} function showActiveTripUI(bookingId, ambId, hospital) {
+}
+
+
+async function acceptTrip(bookingId, ambId, hospitalName) {
+        window.isAcceptingTrip = true;
+        const btn = document.getElementById('confirm-accept-btn');
+        
+        // 1. Visual Loading State
+        btn.innerText = "Accepting...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API_BASE}/bookings/accept`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    booking_id: bookingId,
+                    ambulance_id: ambId,
+                    driver_user_id: driverId // Current logged-in driver
+                })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // 2. Show Success Toast
+                const toast = document.getElementById('success-toast');
+                toast.classList.add('show');
+                
+                // 3. Update UI
+                document.getElementById('request-container').style.display = 'none';
+                showActiveTripUI(bookingId, ambId, hospitalName);
+                
+                // Hide toast after 3 seconds
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            } else {
+                alert(data.error || "Trip no longer available.");
+                document.getElementById('request-container').style.display = 'none';
+            }
+        } catch (e) {
+            console.error("❌ Accept Trip Error:", e);
+            alert("Connection error. Please try again.");
+            btn.disabled = false;
+            btn.innerText = "ACCEPT REQUEST";
+        } finally {
+            window.isAcceptingTrip = false;
+        }
+    }
+
+
+function showActiveTripUI(bookingId, ambId, hospital) {
         const existing = document.getElementById('active-trip-card');
         if (existing) existing.remove();
 

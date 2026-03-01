@@ -382,23 +382,31 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
     try {
         const sql = `
             SELECT 
-                b.booking_id, 
-                b.pickup_location, 
-                b.destination_hospital, 
-                b.fare, 
-                u.full_name AS patient_name,
-                u.phone_number AS patient_phone
-            FROM Bookings b
-            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
-            JOIN Users u ON b.user_id = u.user_id
-            /* Uses the driver_id (3,4,5) from the Ambulances table */
-            WHERE a.driver_id = ? 
-            AND b.status = 'Pending'
-            LIMIT 1`;
+        b.booking_id, 
+        b.ambulance_id,
+        b.pickup_location, 
+        b.destination_hospital, 
+        b.fare, 
+        u.full_name AS patient_name,
+        u.phone_number AS patient_phone
+    FROM Bookings b
+    JOIN Users u ON b.user_id = u.user_id
+    WHERE b.status = 'Pending'
+    AND (b.driver_user_id = ? OR b.driver_user_id IS NULL)
+    ORDER BY b.created_at DESC
+    LIMIT 1`;
 
-        const [rows] = await pool.query(sql, [userId]);
-        res.json({ success: true, hasBooking: rows.length > 0, booking: rows[0] || null });
+        const [rows] = await pool.query(sql); // Remove [userId] if you commented out the WHERE line
+        
+        console.log(`📦 DB Result for Driver ${userId}:`, rows); // Log this to see what the DB says!
+        
+        res.json({ 
+            success: true, 
+            hasBooking: rows.length > 0, 
+            booking: rows[0] || null 
+        });
     } catch (err) {
+        console.error("❌ SQL Error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
