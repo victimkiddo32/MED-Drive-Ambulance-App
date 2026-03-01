@@ -262,21 +262,35 @@ app.get('/api/drivers/stats/:id', async (req, res) => {
 // This route now uses your 'pool' and correctly joins tables to find pending trips
 app.get('/api/drivers/incoming/:driverId', async (req, res) => {
     const { driverId } = req.params;
+
     try {
+        // We link Jashim (driver_id) -> Ambulance (30004) -> Booking (Pending)
         const sql = `
-            SELECT b.* FROM Bookings b
-            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            SELECT b.*, u.full_name AS patient_name 
+            FROM Bookings b
+            INNER JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            INNER JOIN Users u ON b.user_id = u.user_id
             WHERE a.driver_id = ? AND b.status = 'Pending'
-            LIMIT 1`;
-            
+            LIMIT 1
+        `;
+
         const [rows] = await pool.query(sql, [driverId]);
-        
+
         if (rows.length > 0) {
-            res.json({ success: true, booking: rows[0] });
+            // This is what your frontend is looking for
+            res.json({ 
+                success: true, 
+                hasBooking: true, 
+                booking: rows[0] 
+            });
         } else {
-            res.json({ success: true, booking: null });
+            res.json({ 
+                success: true, 
+                hasBooking: false 
+            });
         }
     } catch (err) {
+        console.error("Backend Error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
