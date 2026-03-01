@@ -104,14 +104,23 @@ app.get('/api/ambulances', async (req, res) => {
     try {
         const sql = `
             SELECT 
-                a.ambulance_id AS id, a.vehicle_number, a.ambulance_type, a.status, a.image_url, 
-                d.name AS driver_name, d.rating AS driver_rating, p.company_name AS provider
+                a.ambulance_id AS id, 
+                a.vehicle_number, 
+                a.ambulance_type, 
+                a.status, 
+                a.image_url, 
+                d.name AS driver_name, 
+                d.rating AS driver_rating, 
+                p.company_name AS provider
             FROM Ambulances a
-            LEFT JOIN Drivers d ON a.driver_id = d.driver_id
+            /* KEY CHANGE: Join using user_id because your driver_id is now 3, 4, 5... */
+            LEFT JOIN Drivers d ON a.driver_id = d.user_id
             LEFT JOIN Providers p ON a.provider_id = p.provider_id`;
+            
         const [results] = await pool.query(sql);
         res.json(results);
     } catch (err) {
+        console.error("Fleet Fetch Error:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -409,20 +418,21 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
     try {
         const sql = `
             SELECT 
-        b.booking_id, 
-        b.pickup_location, 
-        b.destination_hospital, 
-        b.fare, 
-        b.ambulance_id,
-        u.full_name AS patient_name,
-        u.phone_number AS patient_phone
-    FROM Bookings b
-    JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
-    JOIN Drivers d ON a.driver_id = d.driver_id
-    JOIN Users u ON b.user_id = u.user_id
-    WHERE d.user_id = ? 
-    AND b.status = 'Pending'
-    LIMIT 1
+    b.booking_id, 
+    b.pickup_location, 
+    b.destination_hospital, 
+    b.fare, 
+    b.ambulance_id,
+    u.full_name AS patient_name,
+    u.phone_number AS patient_phone
+FROM Bookings b
+JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+/* CHANGE: Match Ambulance driver_id (3) to Driver user_id (3) */
+JOIN Drivers d ON a.driver_id = d.user_id 
+JOIN Users u ON b.user_id = u.user_id
+WHERE d.user_id = ? 
+AND b.status = 'Pending'
+LIMIT 1
         `;
 
         const [rows] = await pool.query(sql, [userId]);
@@ -566,8 +576,7 @@ app.get('/api/admin/ambulances', async (req, res) => {
                 a.ambulance_type, 
                 a.vehicle_number, 
                 a.status,
-                u.full_name AS driver_name,
-                u.user_id AS driver_id
+                u.full_name AS driver_name
             FROM ambulances a
             LEFT JOIN users u ON a.driver_id = u.user_id
         `;

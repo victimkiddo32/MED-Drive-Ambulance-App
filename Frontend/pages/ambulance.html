@@ -169,98 +169,107 @@
 
     <script>
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
-        let allAmbulances = [];
+let allAmbulances = [];
 
-        async function loadFleet() {
-            const container = document.getElementById('fleet-container');
-            container.innerHTML = "<p>Scanning for available units...</p>";
-            
-            try {
-                const response = await fetch(`${API_BASE}/ambulances`);
-                const data = await response.json();
+async function loadFleet() {
+    const container = document.getElementById('fleet-container');
+    container.innerHTML = "<p style='text-align:center; padding:20px;'>Scanning for available units...</p>";
+    
+    try {
+        const response = await fetch(`${API_BASE}/ambulances`);
+        const data = await response.json();
 
-                if (Array.isArray(data)) {
-                    allAmbulances = data;
-                    renderAmbulances(allAmbulances);
-                }
-            } catch (error) {
-                container.innerHTML = "<p style='color:var(--accent-red);'>Unable to reach fleet server.</p>";
-            }
+        // The backend returns a raw array based on your server.js line 334
+        if (Array.isArray(data)) {
+            allAmbulances = data;
+            renderAmbulances(allAmbulances);
         }
+    } catch (error) {
+        console.error("Fleet Load Error:", error);
+        container.innerHTML = "<p style='color:var(--accent-red); text-align:center;'>Unable to reach fleet server.</p>";
+    }
+}
 
-        function renderAmbulances(data) {
-            const container = document.getElementById('fleet-container');
-            if (data.length === 0) {
-                container.innerHTML = "<p>No matching ambulances found.</p>";
-                return;
-            }
+function renderAmbulances(data) {
+    const container = document.getElementById('fleet-container');
+    if (data.length === 0) {
+        container.innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>No matching ambulances found.</p>";
+        return;
+    }
 
-            container.innerHTML = data.map(amb => {
-                const isAvailable = amb.status === 'Available';
+    container.innerHTML = data.map(amb => {
+        // Match the status exactly as defined in your database
+        const isAvailable = amb.status === 'Available' || amb.status === 'available';
+        
+        return `
+        <div class="amb-card">
+            <img src="${amb.image_url || 'https://via.placeholder.com/300x180/161b22/f85149?text=Med-Drive+Unit'}" 
+                 onerror="this.src='https://via.placeholder.com/300x180/161b22/f85149?text=Ambulance';">
+            <div class="amb-info">
+                <span style="color: var(--accent-red); font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">
+                    ${amb.provider || 'Independent'}
+                </span>
+                <h3 class="amb-type">${amb.ambulance_type}</h3>
                 
-                return `
-                <div class="amb-card">
-                    <img src="${amb.image_url || 'https://via.placeholder.com/300x180/161b22/f85149?text=Med-Drive+Unit'}" 
-                         onerror="this.src='https://via.placeholder.com/300x180/161b22/f85149?text=Ambulance';">
-                    <div class="amb-info">
-                        <span style="color: var(--accent-red); font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">
-                            ${amb.provider || 'Independent'}
-                        </span>
-                        <h3 class="amb-type">${amb.ambulance_type}</h3>
-                        
-                        <div class="driver-box">
-                            <span style="display:block; margin-bottom:5px;">👨‍✈️ <b>${amb.driver_name || 'Dispatch Pending'}</b></span>
-                            <span style="color: var(--text-gray); font-size: 0.8rem;">🆔 Plate: ${amb.vehicle_number || 'N/A'}</span>
-                        </div>
+                <div class="driver-box">
+                    <span style="display:block; margin-bottom:5px;">👨‍✈️ <b>${amb.driver_name || 'Dispatch Pending'}</b></span>
+                    <span style="color: var(--text-gray); font-size: 0.8rem;">🆔 Plate: ${amb.vehicle_number || 'N/A'}</span>
+                </div>
 
-                        <div style="margin-bottom: 20px; font-size: 0.9rem;">
-                            <span class="status-dot" style="background: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}"></span>
-                            <span style="color: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}">
-                                ${isAvailable ? 'Ready for Dispatch' : 'Currently Busy'}
-                            </span>
-                        </div>
+                <div style="margin-bottom: 20px; font-size: 0.9rem;">
+                    <span class="status-dot" style="background: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}"></span>
+                    <span style="color: ${isAvailable ? 'var(--accent-green)' : 'var(--accent-red)'}">
+                        ${isAvailable ? 'Ready for Dispatch' : 'Currently Busy'}
+                    </span>
+                </div>
 
-                        <button class="btn-select" 
-                                onclick="selectAndRedirect(${amb.id})" 
-                                ${!isAvailable ? 'disabled' : ''}>
-                            ${isAvailable ? 'BOOK THIS UNIT' : 'UNAVAILABLE'}
-                        </button>
-                    </div>
-                </div>`;
-            }).join('');
-        }
+                <button class="btn-select" 
+                        onclick="selectAndRedirect(${amb.id})" 
+                        ${!isAvailable ? 'disabled' : ''}>
+                    ${isAvailable ? 'BOOK THIS UNIT' : 'UNAVAILABLE'}
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
 
-        function applyFilters() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const typeTerm = document.getElementById('typeFilter').value;
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const typeTerm = document.getElementById('typeFilter').value;
 
-            const filtered = allAmbulances.filter(amb => {
-                const matchesSearch = (amb.provider || '').toLowerCase().includes(searchTerm) || 
-                                     (amb.ambulance_type || '').toLowerCase().includes(searchTerm);
-                const matchesType = typeTerm === 'all' || amb.ambulance_type.includes(typeTerm);
-                return matchesSearch && matchesType;
-            });
-            renderAmbulances(filtered);
-        }
+    const filtered = allAmbulances.filter(amb => {
+        const providerName = (amb.provider || '').toLowerCase();
+        const ambType = (amb.ambulance_type || '').toLowerCase();
+        const vehicleNo = (amb.vehicle_number || '').toLowerCase();
 
-        // THE KEY FUNCTION: Matches the Dashboard's checkStoredBooking()
-        function selectAndRedirect(id) {
-            const selectedAmb = allAmbulances.find(a => a.id == id);
-            if (selectedAmb) {
-                // We save it as 'selectedAmbulance' which dashboard.html parses
-                sessionStorage.setItem('selectedAmbulance', JSON.stringify(selectedAmb));
-                // We also save the raw ID for the booking POST request
-                sessionStorage.setItem('selectedAmbulanceId', selectedAmb.id);
-                
-                window.location.href = 'user_dashboard.html';
-            }
-        }
+        const matchesSearch = providerName.includes(searchTerm) || 
+                             ambType.includes(searchTerm) ||
+                             vehicleNo.includes(searchTerm);
+                             
+        const matchesType = typeTerm === 'all' || ambType.includes(typeTerm.toLowerCase());
+        
+        return matchesSearch && matchesType;
+    });
+    renderAmbulances(filtered);
+}
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadFleet();
-            document.getElementById('searchInput').addEventListener('input', applyFilters);
-            document.getElementById('typeFilter').addEventListener('change', applyFilters);
-        });
+function selectAndRedirect(id) {
+    const selectedAmb = allAmbulances.find(a => a.id == id);
+    if (selectedAmb) {
+        // Match the naming convention your user_dashboard.html expects
+        sessionStorage.setItem('selectedAmbulance', JSON.stringify(selectedAmb));
+        sessionStorage.setItem('selectedAmbulanceId', selectedAmb.id);
+        
+        window.location.href = 'user_dashboard.html';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadFleet();
+    // Use 'input' event for real-time filtering as the user types
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('typeFilter').addEventListener('change', applyFilters);
+});
     </script>
 </body>
 </html>
