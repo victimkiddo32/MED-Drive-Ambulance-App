@@ -196,19 +196,13 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
 
     try {
         const sql = `
-            SELECT 
-                b.booking_id, 
-                b.ambulance_id,
-                b.pickup_location, 
-                b.destination_hospital, 
-                b.fare, 
-                u.full_name AS patient_name
-            FROM Bookings b
-            JOIN Users u ON b.user_id = u.user_id
-            WHERE LOWER(b.status) = 'pending' 
-            AND (b.driver_user_id = ? OR b.driver_user_id IS NULL OR b.driver_user_id = 0)
-            ORDER BY b.created_at DESC 
-            LIMIT 1`;
+            SELECT b.*, u.full_name AS patient_name
+    FROM Bookings b
+    JOIN Users u ON b.user_id = u.user_id
+    WHERE LOWER(b.status) = 'pending' 
+    AND b.driver_user_id = ?  /* 👈 Removed the IS NULL part */
+    ORDER BY b.created_at DESC 
+    LIMIT 1`;
 
         const [rows] = await pool.query(sql, [userId]);
         
