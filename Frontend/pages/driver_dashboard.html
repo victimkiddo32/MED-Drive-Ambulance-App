@@ -359,10 +359,11 @@
             }
         }
 
-       async function checkIncomingTrips() {
+      async function checkIncomingTrips() {
     const driverUserId = sessionStorage.getItem('userId');
     const statusToggle = document.getElementById('status-toggle');
     
+    // Don't poll if not logged in, toggle is OFF, or already on a trip
     if (!driverUserId || (statusToggle && !statusToggle.checked)) return;
     if (document.getElementById('active-trip-card')) return;
 
@@ -374,25 +375,23 @@
             currentBooking = data.booking;
             
             // --- FIX START ---
-            // 1. Map the database snake_case to your preferred camelCase
-            // NOTE: Changed 'destination_Hospital' to 'destination_hospital'
-            const destinationHospital = currentBooking.destination_hospital || 
-                                currentBooking.destination_Hospital || 
-                                "Hospital Requested";
+            // 1. Map name safely (checking lowercase first as per your DB)
+            const hospitalName = currentBooking.destination_hospital || 
+                                 currentBooking.destination_Hospital || 
+                                 "Hospital Requested";
             
-            // 2. Update the UI using the variable
-            document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
-            document.getElementById('dest-loc').innerText = currentBooking.destination_hospital || "Hospital Requested";
+            // 2. Update the UI
+            document.getElementById('pickup-loc').innerText = currentBooking.pickup_location || "Unknown";
+            document.getElementById('dest-loc').innerText = hospitalName;
             document.getElementById('fare-amount').innerText = currentBooking.fare || "500.00";
             
             const container = document.getElementById('request-container');
             if (container) container.style.display = 'block';
 
+            // Play alert sound
             new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3').play().catch(() => {});
-
-            const hospitalName = currentBooking.destination_hospital || "Hospital Requested";
             
-            // 3. Pass the mapped variable to acceptTrip
+            // 3. Update the Button (Note: removed duplicate hospitalName declaration)
             document.getElementById('confirm-accept-btn').onclick = () =>
                 acceptTrip(
                     currentBooking.booking_id, 
@@ -408,14 +407,6 @@
         console.error("Polling error:", err);
     }
 }
-
-        function showToast() {
-            const toast = document.getElementById('success-toast');
-            if (toast) {
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 4000);
-            }
-        }
 
        async function acceptTrip(bookingId, ambId, destinationHospital) {
     // 1. Session check
