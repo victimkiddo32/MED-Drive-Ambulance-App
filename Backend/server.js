@@ -368,26 +368,30 @@ app.get('/api/ambulances/driver/:userId', async (req, res) => {
     }
 });
 
-// 7. DRIVER STATS (Earnings & Trips)
+// 7. DRIVER STATS 
 app.get('/api/drivers/stats/:userId', async (req, res) => {
     const userId = req.params.userId;
     try {
-        // UPDATED: Changed driver_id to driver_user_id to match your new schema
+        // Using 'bookings' table and 'user_id' as per your schema
+        // Calculating 95% for driver net and 100% for gross tracking
         const sql = `
             SELECT 
-                IFNULL(SUM(fare), 0) AS earnings, 
-                COUNT(*) AS trips 
-            FROM Bookings 
-            WHERE driver_user_id = ? AND status = 'Completed'`;
+                IFNULL(SUM(fare * 0.95), 0) AS net_earnings, 
+                IFNULL(SUM(fare), 0) AS gross_bookings_value,
+                COUNT(*) AS total_bookings 
+            FROM bookings 
+            WHERE user_id = ? AND (status = 'Completed' OR status = 'completed')`;
             
         const [rows] = await pool.query(sql, [userId]);
+        
         res.json({ 
             success: true, 
-            earnings: rows[0].earnings, 
-            trips: rows[0].trips 
+            earnings: parseFloat(rows[0].net_earnings).toFixed(2), 
+            gross: parseFloat(rows[0].gross_bookings_value).toFixed(2),
+            total_bookings: rows[0].total_bookings 
         });
     } catch (err) {
-        console.error("Stats Error:", err.message);
+        console.error("Driver Stats Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -539,36 +543,37 @@ app.get('/api/admin/providers', async (req, res) => {
                 p.company_name, 
                 u.full_name AS owner_name,
                 u.phone_number,
-                p.trade_license,
-                COUNT(b.booking_id) AS total_rides,
-                COALESCE(SUM(b.fare), 0) AS gross_revenue,
-                COALESCE(SUM(b.fare * 0.05), 0) AS platform_fee_earned
+                COUNT(b.booking_id) AS ride_count,
+                COALESCE(SUM(b.fare), 0) AS total_earned
             FROM providers p
-            JOIN users u ON p.user_id = u.id
-            LEFT JOIN bookings b ON b.user_id = u.id AND b.status = 'completed'
-            GROUP BY p.provider_id, u.id
+            JOIN users u ON p.user_id = u.user_id
+            LEFT JOIN bookings b ON b.user_id = u.user_id AND b.status = 'completed'
+            GROUP BY p.provider_id, u.user_id, u.full_name, u.phone_number
         `;
         const [rows] = await pool.query(query);
         res.json({ success: true, providers: rows });
     } catch (err) {
-        console.error("PROVIDERS ERROR:", err.message);
+        // This will log the specific error to Render console if it fails again
+        console.error("PROVIDERS FETCH ERROR:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
 app.get('/api/admin/ambulances', async (req, res) => {
     try {
-        // mysql2 returns [rows, fields], so we destructure the first element
-        const [rows] = await pool.query("SELECT * FROM ambulances"); 
-        
-        console.log("Fetched ambulances:", rows); // This will show in Render logs
-        
-        res.json({ 
-            success: true, 
-            ambulances: rows || [] // Return empty array if null
-        });
+        const query = `
+            SELECT 
+                a.ambulance_type, 
+                a.vehicle_number, 
+                a.status,
+                u.full_name AS driver_name,
+                u.user_id AS driver_id
+            FROM ambulances a
+            LEFT JOIN users u ON a.driver_id = u.user_id
+        `;
+        const [rows] = await pool.query(query);
+        res.json({ success: true, ambulances: rows });
     } catch (err) {
-        console.error("Ambulance Route Error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });

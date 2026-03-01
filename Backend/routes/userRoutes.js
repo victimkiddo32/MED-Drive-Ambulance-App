@@ -5,7 +5,7 @@ const pool = require('../config/db');
 // 1. REGISTER: With Auto-Subscription & Role Support
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password, phone, role } = req.body;
+        const { name, email, password, phone_number, role } = req.body;
         const domain = email.split('@')[1]; // e.g., 'g.bracu.ac.bd'
 
         // Step A: Check if this domain belongs to an Organization (Subscription Logic)
@@ -23,6 +23,7 @@ router.post('/register', async (req, res) => {
             name, 
             email, 
             password, 
+            phone_number,
             role || 'User', 
             assignedOrgId
         ]);
