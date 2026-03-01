@@ -376,6 +376,9 @@
         const res = await fetch(`${API_BASE}/drivers/incoming/${driverUserId}`);
         const data = await res.json();
 
+        // TYPE THIS OR ADD THIS LINE:
+console.log("🔍 DEBUG: Full Booking Object:", data.booking); 
+
         console.log("Server Response:", data);
 
         // Matches our server logic: { success: true, hasBooking: true, booking: {...} }
