@@ -263,78 +263,77 @@
     </div>
 
     <script>
-        
+    // 1. Check if user is already logged in (using sessionStorage now)
+    if (sessionStorage.getItem('userId')) {
+        const role = sessionStorage.getItem('userRole');
+        const dashboards = {
+            'Admin': 'pages/admin_dashboard.html',
+            'Provider': 'pages/provider_dashboard.html',
+            'Driver': 'pages/driver_dashboard.html',
+            'User': 'pages/user_dashboard.html'
+        };
+        // If you want auto-redirect, uncomment the line below:
+        // window.location.href = dashboards[role] || 'user_dashboard.html';
+    }
 
-        // 1. REMOVED the redirect loop. 
-        // Only redirect AWAY from login if the user is ALREADY logged in.
-        if (localStorage.getItem('userId')) {
-            const role = localStorage.getItem('userRole');
-            const dashboards = {
-                'Admin': 'pages/admin_dashboard.html',
-                'Provider': 'pages/provider_dashboard.html',
-                'Driver': 'pages/driver_dashboard.html',
-                'User': 'pages/user_dashboard.html'
-            };
-            // window.location.href = dashboards[role] || 'user_dashboard.html';
+    async function handleLogin() {
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('pass').value;
+        const btn = document.getElementById('loginBtn');
+
+        if (!email || !pass) {
+            alert("Please enter both email and password.");
+            return;
         }
 
-        async function handleLogin() {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('pass').value;
-            const btn = document.getElementById('loginBtn');
+        btn.innerText = "Authenticating...";
+        btn.disabled = true;
 
-            if (!email || !pass) {
-                alert("Please enter both email and password.");
-                return;
-            }
+        try {
+            const res = await fetch('https://med-drive-ambulance-app.onrender.com/api/users/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password: pass })
+            });
 
-            btn.innerText = "Authenticating...";
-            btn.disabled = true;
+            const data = await res.json();
 
-            try {
-                const res = await fetch('https://med-drive-ambulance-app.onrender.com/api/users/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password: pass })
-                });
+            if (res.ok && data.success) {
+                // Use the correct ID and Name from the backend
+                const idToSave = data.user.driver_id || data.user.user_id;
+                const nameToSave = data.user.full_name || data.user.name;
 
-                const data = await res.json();
+                // CRITICAL UPDATE: Switch from localStorage to sessionStorage
+                // This prevents one tab from overwriting another
+                sessionStorage.setItem('userId', idToSave);
+                sessionStorage.setItem('userName', nameToSave);
+                sessionStorage.setItem('userRole', data.user.role);
 
-                if (res.ok && data.success) {
-                    // FIXED MAPPING: Use driver_id if user_id is missing (for Drivers)
-                    const idToSave = data.user.driver_id || data.user.user_id;
-                    const nameToSave = data.user.full_name || data.user.name;
+                console.log("Login Success. Saved to session:", nameToSave);
 
-                    localStorage.setItem('userId', idToSave);
-                    localStorage.setItem('userName', nameToSave);
-                    localStorage.setItem('userRole', data.user.role);
+                // Multi-Role Redirection
+                const role = data.user.role;
+                const dashboards = {
+                    'Admin': 'pages/admin_dashboard.html',
+                    'Provider': 'pages/provider_dashboard.html',
+                    'Driver': 'pages/driver_dashboard.html',
+                    'User': 'pages/user_dashboard.html'
+                };
 
-                    console.log("Login Success. Saved ID:", idToSave);
-
-                    // Multi-Role Redirection
-                    const role = data.user.role;
-                    const dashboards = {
-                        'Admin': 'pages/admin_dashboard.html',
-                        'Provider': 'pages/provider_dashboard.html',
-                        'Driver': 'pages/driver_dashboard.html',
-                        'User': 'pages/user_dashboard.html'
-                    };
-
-                    window.location.href = dashboards[role] || 'pages/user_dashboard.html';
-                } else {
-                    alert("Login Failed: " + (data.error || "Invalid credentials"));
-                    btn.innerText = "Sign In";
-                    btn.disabled = false;
-                }
-            } catch (err) {
-                console.error("Login Error:", err);
-                alert("Could not connect to the server.");
+                window.location.href = dashboards[role] || 'user_dashboard.html';
+            } else {
+                alert("Login Failed: " + (data.error || "Invalid credentials"));
                 btn.innerText = "Sign In";
-                btn.disabled = false; 
+                btn.disabled = false;
             }
+        } catch (err) {
+            console.error("Login Error:", err);
+            alert("Could not connect to the server.");
+            btn.innerText = "Sign In";
+            btn.disabled = false;
         }
-
-    </script>
+    }
+</script>
 </body>
 
 </html>
