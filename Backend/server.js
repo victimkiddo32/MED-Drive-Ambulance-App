@@ -260,37 +260,32 @@ app.get('/api/drivers/stats/:id', async (req, res) => {
 // 7. DRIVER INCOMING BOOKINGS
 // Add this to your server.js
 // This route now uses your 'pool' and correctly joins tables to find pending trips
-app.get('/api/drivers/incoming/:driverId', async (req, res) => {
-    const driverId = Number(req.params.driverId);
+app.get('/api/drivers/incoming/:userId', async (req, res) => {
+    const userId = req.params.userId;
 
     try {
-        // We link Jashim (driver_id) -> Ambulance (30004) -> Booking (Pending)
+        // This query is the "Bridge"
         const sql = `
             SELECT b.*, u.full_name AS patient_name 
             FROM Bookings b
-            INNER JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
-            INNER JOIN Users u ON b.user_id = u.user_id
-            WHERE a.driver_id = ? AND b.status = 'Pending'
+            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            JOIN Users u ON b.user_id = u.user_id
+            WHERE a.driver_id = (
+                SELECT driver_id FROM Drivers WHERE user_id = ?
+            )
+            AND b.status = 'Pending'
             LIMIT 1
         `;
 
-        const [rows] = await pool.query(sql, [driverId]);
+        const [rows] = await pool.query(sql, [userId]);
 
         if (rows.length > 0) {
-            // This is what your frontend is looking for
-            res.json({ 
-                success: true, 
-                hasBooking: true, 
-                booking: rows[0] 
-            });
+            res.json({ success: true, hasBooking: true, booking: rows[0] });
         } else {
-            res.json({ 
-                success: true, 
-                hasBooking: false 
-            });
+            res.json({ success: true, hasBooking: false });
         }
     } catch (err) {
-        console.error("Backend Error:", err);
+        console.error(err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
