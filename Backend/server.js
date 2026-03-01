@@ -226,6 +226,7 @@ app.get('/api/bookings/user/:userId', async (req, res) => {
 });
 
 app.post('/api/bookings/accept', async (req, res) => {
+    // Destructure everything coming from the frontend
     const { booking_id, bookingId, ambulance_id, driver_id, userId } = req.body;
     const finalBookingId = booking_id || bookingId;
 
@@ -238,7 +239,7 @@ app.post('/api/bookings/accept', async (req, res) => {
         await conn.beginTransaction();
 
         // 1. Update the Booking status and assign the driver
-        // We use COALESCE to try driver_id first, then userId lookup
+        // Use driver_id from body, or find it via userId
         await conn.query(
             `UPDATE Bookings SET status = 'Accepted', 
              driver_id = COALESCE(?, (SELECT driver_id FROM Drivers WHERE user_id = ?)) 
@@ -246,23 +247,24 @@ app.post('/api/bookings/accept', async (req, res) => {
             [driver_id || null, userId || null, finalBookingId]
         );
 
-        // 2. Update the Ambulance linked to this SPECIFIC booking
-        // This is safer than relying on a Join which might fail if the ID is 0 or null
+        // 2. THE FIX: Update the Ambulance status directly using the ID from the request
+        // If ambulance_id isn't in the body, we fall back to the subquery safely
         await conn.query(
             `UPDATE Ambulances SET status = 'Busy' 
-             WHERE ambulance_id = (SELECT ambulance_id FROM Bookings WHERE booking_id = ?)`,
-            [finalBookingId]
+             WHERE ambulance_id = COALESCE(?, (SELECT ambulance_id FROM Bookings WHERE booking_id = ?))`,
+            [ambulance_id || null, finalBookingId]
         );
 
         // 3. Update the Driver status to 'Busy'
+        // This handles both the driver_id (3) and user_id (3) cases
         await conn.query(
             `UPDATE Drivers SET status = 'Busy' 
-             WHERE driver_id = ? OR user_id = ?`,
-            [driver_id || null, userId || null]
+             WHERE driver_id = ? OR user_id = ? OR driver_id = (SELECT driver_id FROM Bookings WHERE booking_id = ?)`,
+            [driver_id || null, userId || null, finalBookingId]
         );
 
         await conn.commit();
-        console.log(`✅ Booking ${finalBookingId} accepted. Ambulance & Driver marked Busy.`);
+        console.log(`✅ Success! Booking ${finalBookingId} and Ambulance marked Busy.`);
         res.json({ success: true, message: "Booking accepted and statuses updated." });
 
     } catch (err) {
