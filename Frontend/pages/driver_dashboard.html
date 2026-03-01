@@ -376,7 +376,9 @@
             // --- FIX START ---
             // 1. Map the database snake_case to your preferred camelCase
             // NOTE: Changed 'destination_Hospital' to 'destination_hospital'
-            const destinationHospital = currentBooking.destination_hospital || "Not Specified";
+            const destinationHospital = currentBooking.destination_hospital || 
+                                currentBooking.destination_Hospital || 
+                                "Hospital Requested";
             
             // 2. Update the UI using the variable
             document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
