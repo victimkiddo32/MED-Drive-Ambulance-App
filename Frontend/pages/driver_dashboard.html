@@ -423,7 +423,7 @@
         }
 
        async function acceptTrip(bookingId, ambId, destinationHospital) {
-    // This is the User ID (e.g., 3) from sessionStorage
+    // 1. Session check
     const currentDriverUserId = sessionStorage.getItem('userId'); 
     const btn = document.getElementById('confirm-accept-btn');
 
@@ -432,44 +432,53 @@
         return;
     }
 
+    // 2. SAFETY FIX: If destinationHospital is missing or is an object/number, 
+    // grab it directly from the UI element we know is correct.
+    const finalDestination = (typeof destinationHospital === 'string' && destinationHospital.length > 1) 
+        ? destinationHospital 
+        : document.getElementById('dest-loc').innerText;
+
     try {
         btn.innerText = "Processing...";
         btn.disabled = true;
 
+        // 3. Backend Update
         const res = await fetch(`${API_BASE}/bookings/accept`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 booking_id: bookingId,
                 ambulance_id: ambId,
-                // UPDATED: Use the new name we defined for the database column
-                driver_user_id: currentDriverUserId 
+                driver_user_id: currentDriverUserId // Matches your DB column
             })
         });
 
         const data = await res.json();
         
         if (data.success) {
-            // 1. Hide the "Incoming" request card
-            document.getElementById('request-container').style.display = 'none';
+            // 4. UI Transition
+            const requestContainer = document.getElementById('request-container');
+            if (requestContainer) requestContainer.style.display = 'none';
             
-            // 2. Load the "Active" navigation UI
-            // Ensure this function uses destination_hospital
-            showActiveTripUI(bookingId, ambId, destinationHospital);
+            // Pass the verified hospital name to the active UI
+            showActiveTripUI(bookingId, ambId, finalDestination);
             
-            // 3. Feedback to driver
-            if (typeof showToast === "function") showToast("Ride Accepted! Navigating...");
+            if (typeof showToast === "function") {
+                showToast("Ride Accepted! Drive Safely.");
+            }
             
         } else {
-            alert(data.error || "This trip was cancelled or assigned to someone else.");
+            alert(data.error || "This trip is no longer available.");
             document.getElementById('request-container').style.display = 'none';
         }
     } catch (e) {
         console.error("Accept Trip Error:", e);
-        alert("Connection error. Please try again.");
+        alert("Connection error. Please check your internet.");
     } finally {
-        btn.innerText = "ACCEPT REQUEST";
-        btn.disabled = false;
+        if (btn) {
+            btn.innerText = "ACCEPT REQUEST";
+            btn.disabled = false;
+        }
     }
 }
 
