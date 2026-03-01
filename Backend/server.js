@@ -452,5 +452,91 @@ app.post('/api/users/register', async (req, res) => {
     }
 });
 
+
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const statsQuery = `
+            SELECT 
+                COUNT(*) AS total_bookings,
+                COALESCE(SUM(fare), 0) AS total_revenue,
+                COALESCE(SUM(fare * 0.05), 0) AS system_commission
+            FROM trips 
+            WHERE status = 'completed'
+        `;
+        
+        const activeDriversQuery = `SELECT COUNT(*) FROM users WHERE role = 'driver' AND status = 'Online'`;
+        const totalUsersQuery = `SELECT COUNT(*) FROM users`;
+
+        const stats = await pool.query(statsQuery);
+        const activeDrivers = await pool.query(activeDriversQuery);
+        const totalUsers = await pool.query(totalUsersQuery);
+
+        res.json({
+            success: true,
+            totalRevenue: parseFloat(stats.rows[0].total_revenue),
+            systemCommission: parseFloat(stats.rows[0].system_commission).toFixed(2),
+            totalAmbulances: stats.rows[0].total_bookings,
+            activeTrips: activeDrivers.rows[0].count,
+            totalUsers: totalUsers.rows[0].count
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.get('/api/admin/organizations', async (req, res) => {
+    try {
+        // Fetching with the exact column names from your screenshot
+        const [orgs] = await pool.query(`
+            SELECT org_id, org_name, email_domain, discount_rate 
+            FROM Organizations 
+            ORDER BY org_id ASC
+        `);
+        
+        res.json({ 
+            success: true, 
+            organizations: orgs 
+        });
+    } catch (err) {
+        console.error("Org Load Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        const [users] = await pool.query(`
+            SELECT user_id, full_name, email, phone_number, role, created_at 
+            FROM Users 
+            ORDER BY created_at DESC
+        `);
+        res.json({ success: true, users });
+    } catch (err) {
+        console.error("Manage Users Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+
+// Get all providers with ride counts and earnings
+app.get('/api/admin/providers', async (req, res) => {
+    try {
+        const query = `
+            SELECT u.full_name, u.phone_number, u.status,
+            COUNT(t.id) AS ride_count,
+            COALESCE(SUM(t.fare), 0) AS total_earned
+            FROM users u
+            LEFT JOIN trips t ON u.id = t.driver_id
+            WHERE u.role = 'driver'
+            GROUP BY u.id
+        `;
+        const result = await pool.query(query);
+        res.json({ success: true, providers: result.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
