@@ -261,7 +261,7 @@ app.get('/api/drivers/stats/:id', async (req, res) => {
 // Add this to your server.js
 // This route now uses your 'pool' and correctly joins tables to find pending trips
 app.get('/api/drivers/incoming/:driverId', async (req, res) => {
-    const { driverId } = req.params;
+    const driverId = Number(req.params.driverId);
 
     try {
         // We link Jashim (driver_id) -> Ambulance (30004) -> Booking (Pending)

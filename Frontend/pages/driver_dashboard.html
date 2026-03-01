@@ -360,37 +360,40 @@
         }
 
         async function checkIncomingTrips() {
-    // 1. Check if Offline
+    // 1. Check ID and Status
+    const driverId = sessionStorage.getItem('userId');
     const statusToggle = document.getElementById('status-toggle');
-    if (!driverId || !statusToggle.checked) return;
     
-    // 2. Don't show new popups if one is already active
+    console.log("Checking for Driver ID:", driverId); // MUST be 30004
+
+    if (!driverId || !statusToggle.checked) return;
     if (document.getElementById('active-trip-card')) return;
 
     try {
         const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
         const data = await res.json();
 
-        // LOG EVERYTHING: Open your console (F12) to see this!
-        console.log("Polling Result:", data);
+        console.log("Server Response:", data);
 
-        // Logic check: Adjust this based on what your server actually returns
-        if (data.success && data.booking) { 
+        // UPDATE THIS LINE: Use data.hasBooking to match your server's logic
+        if (data.success && data.hasBooking === true) { 
             currentBooking = data.booking;
             
-            // Populate the card
             document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
             document.getElementById('dest-loc').innerText = currentBooking.destination_hospital;
             document.getElementById('fare-amount').innerText = currentBooking.fare || "500.00";
             
-            // Show the card
-            document.getElementById('request-container').style.display = 'block';
+            // Force the card to show
+            const container = document.getElementById('request-container');
+            container.style.display = 'block';
 
-            // Play Alert
             new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3').play().catch(() => {});
             
             document.getElementById('confirm-accept-btn').onclick = () =>
                 acceptTrip(currentBooking.booking_id, currentBooking.ambulance_id, currentBooking.destination_hospital);
+        } else {
+            // Hide if no booking found
+            document.getElementById('request-container').style.display = 'none';
         }
     } catch (err) {
         console.error("Polling error:", err);
