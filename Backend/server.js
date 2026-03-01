@@ -190,23 +190,33 @@ app.post('/api/bookings', async (req, res) => {
 
 app.get('/api/drivers/incoming/:userId', async (req, res) => {
     const userId = req.params.userId;
-    
-    // Log every attempt so you can see it in Render Logs
-    console.log(`📡 Heartbeat received for Driver ID: ${userId}`);
+    console.log(`📡 Heartbeat: Driver ${userId} checking...`);
 
     try {
         const sql = `
-            SELECT b.*, u.full_name AS patient_name
-    FROM Bookings b
-    JOIN Users u ON b.user_id = u.user_id
-    WHERE LOWER(b.status) = 'pending' 
-    AND b.driver_user_id = ?  /* 👈 Removed the IS NULL part */
-    ORDER BY b.created_at DESC 
-    LIMIT 1`;
+            SELECT 
+                b.booking_id, 
+                b.ambulance_id,
+                b.pickup_location, 
+                b.destination_hospital, 
+                b.fare, 
+                u.full_name AS patient_name
+            FROM Bookings b
+            JOIN Users u ON b.user_id = u.user_id
+            /* Link to the Ambulance table to see who the owner is */
+            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            WHERE LOWER(b.status) = 'pending' 
+            AND (
+                b.driver_user_id = ? 
+                OR (b.driver_user_id IS NULL AND a.driver_id = ?)
+            )
+            ORDER BY b.created_at DESC 
+            LIMIT 1`;
 
-        const [rows] = await pool.query(sql, [userId]);
+        // We pass the userId twice: once for the direct assignment, once for the ambulance ownership
+        const [rows] = await pool.query(sql, [userId, userId]);
         
-        console.log(`🔎 DB Search Result: Found ${rows.length} pending bookings.`);
+        console.log(`🔎 DB Result for Driver ${userId}: Found ${rows.length}`);
 
         res.json({ 
             success: true, 
@@ -218,6 +228,7 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
         res.status(500).json({ success: false, error: "Database error" });
     }
 });
+
 
 // Ensure this is exactly as written here
 app.get('/api/bookings/user/:userId', async (req, res) => {
