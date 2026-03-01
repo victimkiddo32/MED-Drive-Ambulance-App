@@ -370,12 +370,11 @@ app.get('/api/drivers/stats/:userId', async (req, res) => {
     try {
         const sql = `
             SELECT 
-                IFNULL(SUM(b.fare * 0.95), 0) AS net_earnings, 
-                IFNULL(SUM(b.fare), 0) AS gross_bookings_value,
-                COUNT(b.booking_id) AS total_bookings 
-            FROM bookings b
-            JOIN ambulances a ON b.ambulance_id = a.ambulance_id
-            /* KEY CHANGE: Look for the driver assigned to the ambulance */
+                COUNT(b.booking_id) AS total_trips,
+                IFNULL(SUM(b.fare * 0.95), 0) AS net_earnings
+            FROM Bookings b
+            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+            /* Check the driver_id in the Ambulances table (3, 4, 5) */
             WHERE a.driver_id = ? 
             AND (b.status = 'Completed' OR b.status = 'completed')`;
             
@@ -384,11 +383,9 @@ app.get('/api/drivers/stats/:userId', async (req, res) => {
         res.json({ 
             success: true, 
             earnings: parseFloat(rows[0].net_earnings).toFixed(2), 
-            gross: parseFloat(rows[0].gross_bookings_value).toFixed(2),
-            total_bookings: rows[0].total_bookings 
+            total_bookings: rows[0].total_trips // This sends the number to the "Total Trips" box
         });
     } catch (err) {
-        console.error("Driver Stats Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -400,26 +397,24 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
     const userId = req.params.userId; 
     try {
         const sql = `
-           SELECT 
-    b.booking_id, 
-    b.pickup_location, 
-    b.destination_hospital, 
-    b.fare, 
-    b.ambulance_id,
-    u.full_name AS patient_name,
-    u.phone_number AS patient_phone
-FROM Bookings b
-JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
-JOIN Users u ON b.user_id = u.user_id
-/* DIRECT MATCH: No need to join the Drivers table */
-WHERE a.driver_id = ? 
-AND b.status = 'Pending'
-LIMIT 1
-        `;
+            SELECT b.*, u.full_name AS patient_name 
+        FROM Bookings b
+        JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+        JOIN Users u ON b.user_id = u.user_id
+        WHERE a.driver_id = ? 
+        AND b.status = 'Pending'
+        LIMIT 1`;
 
         const [rows] = await pool.query(sql, [userId]);
-        res.json({ success: true, hasBooking: rows.length > 0, booking: rows[0] || null });
+        
+        // Return structured JSON for the frontend to trigger the popup
+        res.json({ 
+            success: true, 
+            hasBooking: rows.length > 0, 
+            booking: rows[0] || null 
+        });
     } catch (err) {
+        console.error("Incoming Request Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
