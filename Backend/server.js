@@ -260,26 +260,24 @@ app.get('/api/drivers/stats/:id', async (req, res) => {
 // 7. DRIVER INCOMING BOOKINGS
 // Add this to your server.js
 // This route now uses your 'pool' and correctly joins tables to find pending trips
-app.get('/api/drivers/incoming/:id', async (req, res) => {
-    const driverId = req.params.id;
+app.get('/api/drivers/incoming/:driverId', async (req, res) => {
+    const { driverId } = req.params;
     try {
         const sql = `
-            SELECT b.* FROM bookings b
-            JOIN ambulances a ON b.ambulance_id = a.ambulance_id
+            SELECT b.* FROM Bookings b
+            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
             WHERE a.driver_id = ? AND b.status = 'Pending'
-            LIMIT 1
-        `;
-
-        const [results] = await pool.query(sql, [driverId]);
+            LIMIT 1`;
+            
+        const [rows] = await pool.query(sql, [driverId]);
         
-        if (results.length > 0) {
-            res.json({ hasBooking: true, booking: results[0] });
+        if (rows.length > 0) {
+            res.json({ success: true, booking: rows[0] });
         } else {
-            res.json({ hasBooking: false });
+            res.json({ success: true, booking: null });
         }
     } catch (err) {
-        console.error("Incoming Booking Error:", err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 

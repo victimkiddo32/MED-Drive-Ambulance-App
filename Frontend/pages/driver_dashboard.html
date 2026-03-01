@@ -360,40 +360,42 @@
         }
 
         async function checkIncomingTrips() {
-            // 1. Don't check if offline OR if a trip card is already on screen
-            if (!driverId || !document.getElementById('status-toggle').checked) return;
-            if (document.getElementById('active-trip-card')) return;
+    // 1. Check if Offline
+    const statusToggle = document.getElementById('status-toggle');
+    if (!driverId || !statusToggle.checked) return;
+    
+    // 2. Don't show new popups if one is already active
+    if (document.getElementById('active-trip-card')) return;
 
-            try {
-                const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
-                if (!res.ok) return;
+    try {
+        const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
+        const data = await res.json();
 
-                const data = await res.json();
+        // LOG EVERYTHING: Open your console (F12) to see this!
+        console.log("Polling Result:", data);
 
-                // Ensure data exists and is "Pending"
-                if (data && data.hasBooking && data.booking.status === 'Pending') {
-                    currentBooking = data.booking;
-                    document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
-                    document.getElementById('dest-loc').innerText = currentBooking.destination_hospital;
-                    document.getElementById('fare-amount').innerText = currentBooking.fare;
+        // Logic check: Adjust this based on what your server actually returns
+        if (data.success && data.booking) { 
+            currentBooking = data.booking;
+            
+            // Populate the card
+            document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
+            document.getElementById('dest-loc').innerText = currentBooking.destination_hospital;
+            document.getElementById('fare-amount').innerText = currentBooking.fare || "500.00";
+            
+            // Show the card
+            document.getElementById('request-container').style.display = 'block';
 
-                    // Show the container
-                    const reqContainer = document.getElementById('request-container');
-                    reqContainer.style.display = 'block';
-
-                    // Play a sound to alert the driver
-                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
-                    audio.play().catch(e => console.log("Audio play blocked"));
-
-                    document.getElementById('confirm-accept-btn').onclick = () =>
-                        acceptTrip(currentBooking.booking_id, currentBooking.ambulance_id, currentBooking.destination_hospital);
-                } else {
-                    document.getElementById('request-container').style.display = 'none';
-                }
-            } catch (err) {
-                console.log("Polling for emergencies...");
-            }
+            // Play Alert
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3').play().catch(() => {});
+            
+            document.getElementById('confirm-accept-btn').onclick = () =>
+                acceptTrip(currentBooking.booking_id, currentBooking.ambulance_id, currentBooking.destination_hospital);
         }
+    } catch (err) {
+        console.error("Polling error:", err);
+    }
+}
 
         function showToast() {
             const toast = document.getElementById('success-toast');
