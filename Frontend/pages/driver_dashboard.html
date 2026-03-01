@@ -289,36 +289,55 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Pull the name saved during login
-            const fullName = sessionStorage.getItem('userName') || 'Driver Name';
+    console.log("🚀 Driver Dashboard Initializing...");
 
-            // Update the large Welcome text
-            document.getElementById('driver-display-name').innerText = fullName;
+    // 1. Identity Logic
+    const fullName = sessionStorage.getItem('userName') || 'Driver Name';
+    document.getElementById('driver-display-name').innerText = fullName;
+    document.getElementById('driver-pill-name').innerText = fullName;
+    document.getElementById('driver-circle').innerText = fullName.charAt(0).toUpperCase();
 
-            // Update the small Pill text
-            document.getElementById('driver-pill-name').innerText = fullName;
+    // 2. Initial Data Fetch
+    checkCurrentStatus();
+    loadStats();
 
-            // Update the circle icon with the first letter
-            document.getElementById('driver-circle').innerText = fullName.charAt(0).toUpperCase();
+    // 3. START THE POLLING ENGINE (The "Heartbeat")
+    // Check for trips immediately, then every 5 seconds
+    checkIncomingTrips(); 
+    
+    setInterval(() => {
+        const toggle = document.getElementById('status-toggle');
+        if (toggle && toggle.checked) {
+            console.log("💓 Heartbeat: Checking for emergency calls...");
+            checkIncomingTrips();
+        } else {
+            console.log("💤 Sleeping: Driver is Offline.");
+        }
+    }, 5000);
 
-            // Inside document.addEventListener('DOMContentLoaded', ...)
-            async function checkCurrentStatus() {
-                try {
-                    const res = await fetch(`${API_BASE}/ambulances/driver/${driverId}`);
-                    const data = await res.json();
-                    if (data.success && data.ambulance) {
-                        const isOnline = data.ambulance.status !== 'Inactive';
-                        const toggle = document.getElementById('status-toggle');
-                        const statusText = document.getElementById('status-text');
+    // --- Internal Status Function ---
+    async function checkCurrentStatus() {
+        try {
+            // driverId is defined globally outside this block
+            const res = await fetch(`${API_BASE}/ambulances/driver/${driverId}`);
+            const data = await res.json();
+            if (data.success && data.ambulance) {
+                const isOnline = data.ambulance.status !== 'Inactive' && data.ambulance.status !== 'Available' === false; 
+                // Note: Simplified logic to match your 'Available' vs 'Inactive' DB status
+                const toggle = document.getElementById('status-toggle');
+                const statusText = document.getElementById('status-text');
 
-                        toggle.checked = isOnline;
-                        statusText.innerText = isOnline ? 'Online' : 'Offline';
-                        statusText.style.color = isOnline ? 'var(--success)' : 'var(--text-gray)';
-                    }
-                } catch (e) { console.log("Initial status fetch failed"); }
+                const activeStatus = (data.ambulance.status === 'Available' || data.ambulance.status === 'Active');
+                toggle.checked = activeStatus;
+                statusText.innerText = activeStatus ? 'Online' : 'Offline';
+                statusText.style.color = activeStatus ? 'var(--success)' : 'var(--text-gray)';
             }
-            checkCurrentStatus();
-        });
+        } catch (e) { 
+            console.error("❌ Initial status fetch failed:", e); 
+        }
+    }
+});
+
         const API_BASE = "https://med-drive-ambulance-app.onrender.com/api";
         const driverId = sessionStorage.getItem('userId');
         let currentBooking = null;
