@@ -142,8 +142,15 @@
         }
 
         @keyframes blink {
-            0%, 100% { border-color: var(--accent-red); }
-            50% { border-color: transparent; }
+
+            0%,
+            100% {
+                border-color: var(--accent-red);
+            }
+
+            50% {
+                border-color: transparent;
+            }
         }
 
         .btn-accept,
@@ -159,8 +166,14 @@
             transition: 0.2s;
         }
 
-        .btn-accept { background: var(--success); }
-        .btn-complete { background: #2188ff; margin-top: 15px; }
+        .btn-accept {
+            background: var(--success);
+        }
+
+        .btn-complete {
+            background: #2188ff;
+            margin-top: 15px;
+        }
 
         .btn-logout {
             position: fixed;
@@ -215,7 +228,8 @@
             <li style="padding: 15px; background: rgba(248,81,73,0.1); border-radius: 8px;">
                 <a href="#" style="color: var(--accent-red); text-decoration: none; font-weight: bold;">🚨 Requests</a>
             </li>
-            <li style="padding: 15px;"><a href="#" style="color: var(--text-gray); text-decoration: none;">💰 My Earnings</a></li>
+            <li style="padding: 15px;"><a href="#" style="color: var(--text-gray); text-decoration: none;">💰 My
+                    Earnings</a></li>
             <li style="padding: 15px; margin-top: auto; border-top: 1px solid var(--border);">
                 <a href="#" onclick="handleLogout()" style="color: var(--text-gray); text-decoration: none;">Logout</a>
             </li>
@@ -223,6 +237,21 @@
     </nav>
 
     <main class="main-content" id="main-dashboard-area">
+        <header style="display: flex; justify-content: space-between; align-items: center; padding: 20px;">
+            <div>
+                <h1 style="margin: 0; font-size: 24px;">Welcome Back, <span id="driver-display-name">Driver</span></h1>
+                <p style="color: #888; margin-top: 5px;">Here's what happening today</p>
+            </div>
+
+            <div class="profile-pill"
+                style="display: flex; align-items: center; background: #1a1a1a; padding: 5px 15px; border-radius: 20px; border: 1px solid #333;">
+                <span id="driver-pill-name" style="margin-right: 10px; font-size: 14px;">Driver</span>
+                <div id="driver-circle"
+                    style="width: 30px; height: 30px; background: #ff4d4d; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">
+                    D
+                </div>
+            </div>
+        </header>
         <div class="status-header">
             <div>
                 <h2 id="status-text" style="margin: 0; color: var(--text-gray);">Offline</h2>
@@ -245,11 +274,13 @@
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
-            <div style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+            <div
+                style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
                 <h4 style="color: var(--text-gray); margin: 0;">Today's Earnings</h4>
                 <h2 style="color: var(--success);">৳ <span id="daily-total">0</span></h2>
             </div>
-            <div style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+            <div
+                style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
                 <h4 style="color: var(--text-gray); margin: 0;">Total Trips</h4>
                 <h2><span id="trip-count">0</span></h2>
             </div>
@@ -257,6 +288,37 @@
     </main>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Pull the name saved during login
+            const fullName = localStorage.getItem('userName') || 'Driver Name';
+
+            // Update the large Welcome text
+            document.getElementById('driver-display-name').innerText = fullName;
+
+            // Update the small Pill text
+            document.getElementById('driver-pill-name').innerText = fullName;
+
+            // Update the circle icon with the first letter
+            document.getElementById('driver-circle').innerText = fullName.charAt(0).toUpperCase();
+
+            // Inside document.addEventListener('DOMContentLoaded', ...)
+            async function checkCurrentStatus() {
+                try {
+                    const res = await fetch(`${API_BASE}/ambulances/driver/${driverId}`);
+                    const data = await res.json();
+                    if (data.success && data.ambulance) {
+                        const isOnline = data.ambulance.status !== 'Inactive';
+                        const toggle = document.getElementById('status-toggle');
+                        const statusText = document.getElementById('status-text');
+
+                        toggle.checked = isOnline;
+                        statusText.innerText = isOnline ? 'Online' : 'Offline';
+                        statusText.style.color = isOnline ? 'var(--success)' : 'var(--text-gray)';
+                    }
+                } catch (e) { console.log("Initial status fetch failed"); }
+            }
+            checkCurrentStatus();
+        });
         const API_BASE = "https://med-drive-ambulance-app.onrender.com/api";
         const driverId = localStorage.getItem('userId');
         let currentBooking = null;
@@ -269,15 +331,15 @@
             const toggle = document.getElementById('status-toggle');
             const isOnline = toggle.checked;
             const statusText = document.getElementById('status-text');
-            const targetUrl = `${API_BASE}/drivers/status`; 
+            const targetUrl = `${API_BASE}/drivers/status`;
 
             try {
                 const response = await fetch(targetUrl, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        driver_id: driverId, 
-                        status: isOnline ? 'Active' : 'Inactive' 
+                    body: JSON.stringify({
+                        driver_id: driverId,
+                        status: isOnline ? 'Active' : 'Inactive'
                     }),
                 });
 
@@ -298,19 +360,30 @@
         }
 
         async function checkIncomingTrips() {
+            // 1. Don't check if offline OR if a trip card is already on screen
             if (!driverId || !document.getElementById('status-toggle').checked) return;
+            if (document.getElementById('active-trip-card')) return;
 
             try {
                 const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
                 if (!res.ok) return;
 
                 const data = await res.json();
-                if (data && data.hasBooking) {
+
+                // Ensure data exists and is "Pending"
+                if (data && data.hasBooking && data.booking.status === 'Pending') {
                     currentBooking = data.booking;
                     document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
                     document.getElementById('dest-loc').innerText = currentBooking.destination_hospital;
                     document.getElementById('fare-amount').innerText = currentBooking.fare;
-                    document.getElementById('request-container').style.display = 'block';
+
+                    // Show the container
+                    const reqContainer = document.getElementById('request-container');
+                    reqContainer.style.display = 'block';
+
+                    // Play a sound to alert the driver
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+                    audio.play().catch(e => console.log("Audio play blocked"));
 
                     document.getElementById('confirm-accept-btn').onclick = () =>
                         acceptTrip(currentBooking.booking_id, currentBooking.ambulance_id, currentBooking.destination_hospital);
@@ -318,7 +391,7 @@
                     document.getElementById('request-container').style.display = 'none';
                 }
             } catch (err) {
-                console.log("Polling...");
+                console.log("Polling for emergencies...");
             }
         }
 
@@ -331,39 +404,39 @@
         }
 
         async function acceptTrip(bookingId, ambId, destination) {
-    // 1. Ensure driverId is grabbed from localStorage if not global
-    const currentDriverId = localStorage.getItem('userId'); 
+            const currentDriverId = localStorage.getItem('userId');
+            const btn = document.getElementById('confirm-accept-btn');
 
-    if (!currentDriverId) {
-        alert("Session expired. Please login again.");
-        return;
-    }
+            try {
+                btn.innerText = "Processing...";
+                btn.disabled = true;
 
-    try {
-        const res = await fetch(`${API_BASE}/bookings/accept`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                booking_id: bookingId,
-                ambulance_id: ambId,
-                driver_id: currentDriverId // Use the verified ID
-            })
-        });
+                const res = await fetch(`${API_BASE}/bookings/accept`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        booking_id: bookingId,
+                        ambulance_id: ambId,
+                        driver_id: currentDriverId
+                    })
+                });
 
-        const data = await res.json();
-        if (data.success) {
-            document.getElementById('request-container').style.display = 'none';
-            // Ensure this function exists to update your UI state
-            showActiveTripUI(bookingId, ambId, destination); 
-            showToast("Trip Accepted!");
-        } else {
-            alert("Trip already taken or unavailable.");
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('request-container').style.display = 'none';
+                    showActiveTripUI(bookingId, ambId, destination);
+                    showToast(); // Call your existing toast function
+                } else {
+                    alert("This trip was cancelled or assigned to someone else.");
+                    document.getElementById('request-container').style.display = 'none';
+                }
+            } catch (e) {
+                alert("Connection error.");
+            } finally {
+                btn.innerText = "ACCEPT REQUEST";
+                btn.disabled = false;
+            }
         }
-    } catch (e) {
-        console.error("Accept Error:", e);
-        alert("Error connecting to server.");
-    }
-}
 
         function showActiveTripUI(bookingId, ambId, destination) {
             const existing = document.getElementById('active-trip-card');
@@ -381,44 +454,44 @@
         }
 
         async function completeTrip(bookingId, ambId) {
-    const currentDriverId = localStorage.getItem('userId');
+            const currentDriverId = localStorage.getItem('userId');
 
-    // DEBUG: Check what IDs are actually being sent
-    console.log("SENDING TO SERVER:", { bookingId, ambId, currentDriverId });
+            // DEBUG: Check what IDs are actually being sent
+            console.log("SENDING TO SERVER:", { bookingId, ambId, currentDriverId });
 
-    if (!ambId || ambId === "undefined") {
-        alert("Error: Ambulance ID is missing! Cannot free up vehicle.");
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/bookings/complete`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                booking_id: bookingId,
-                ambulance_id: ambId, // Ensure this is the numeric ID (e.g., 30001)
-                driver_id: currentDriverId
-            })
-        });
-
-        const data = await res.json();
-        
-        // Check if the server actually updated the ambulance
-        if (data.success) {
-            if (data.ambUpdated === false) {
-                console.warn("Booking completed, but Ambulance ID was not found in DB.");
+            if (!ambId || ambId === "undefined") {
+                alert("Error: Ambulance ID is missing! Cannot free up vehicle.");
+                return;
             }
-            alert("Ride Completed! Ambulance is now Available.");
-            location.reload(); 
-        } else {
-            alert("Server error: " + data.error);
+
+            try {
+                const res = await fetch(`${API_BASE}/bookings/complete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        booking_id: bookingId,
+                        ambulance_id: ambId, // Ensure this is the numeric ID (e.g., 30001)
+                        driver_id: currentDriverId
+                    })
+                });
+
+                const data = await res.json();
+
+                // Check if the server actually updated the ambulance
+                if (data.success) {
+                    if (data.ambUpdated === false) {
+                        console.warn("Booking completed, but Ambulance ID was not found in DB.");
+                    }
+                    alert("Ride Completed! Ambulance is now Available.");
+                    location.reload();
+                } else {
+                    alert("Server error: " + data.error);
+                }
+            } catch (e) {
+                console.error("Complete Error:", e);
+                alert("Failed to connect to server.");
+            }
         }
-    } catch (e) {
-        console.error("Complete Error:", e);
-        alert("Failed to connect to server.");
-    }
-}
 
         async function loadStats() {
             if (!driverId) return;
@@ -439,4 +512,5 @@
         loadStats();
     </script>
 </body>
+
 </html>
