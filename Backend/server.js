@@ -190,39 +190,38 @@ app.post('/api/bookings', async (req, res) => {
 
 app.get('/api/drivers/incoming/:userId', async (req, res) => {
     const userId = req.params.userId;
+    
+    // Log every attempt so you can see it in Render Logs
+    console.log(`📡 Heartbeat received for Driver ID: ${userId}`);
+
     try {
         const sql = `
             SELECT 
                 b.booking_id, 
-                b.pickup_location, 
-                b.destination_hospital AS destination, 
-                b.fare, 
                 b.ambulance_id,
-                b.user_id AS patient_id, 
-                u.full_name AS patient_name,
-                u.phone_number AS patient_phone
+                b.pickup_location, 
+                b.destination_hospital, 
+                b.fare, 
+                u.full_name AS patient_name
             FROM Bookings b
-            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
             JOIN Users u ON b.user_id = u.user_id
-            WHERE a.driver_id = (
-                SELECT driver_id FROM Drivers WHERE user_id = ?
-            )
-            AND b.status = 'Pending'
+            WHERE LOWER(b.status) = 'pending' 
+            AND (b.driver_user_id = ? OR b.driver_user_id IS NULL OR b.driver_user_id = 0)
             ORDER BY b.created_at DESC 
-            LIMIT 1
-        `;
+            LIMIT 1`;
 
         const [rows] = await pool.query(sql, [userId]);
+        
+        console.log(`🔎 DB Search Result: Found ${rows.length} pending bookings.`);
 
-        // Return structured data that matches your frontend expectations
-        res.json({
-            success: true,
-            hasBooking: rows.length > 0,
-            booking: rows[0] || null
+        res.json({ 
+            success: true, 
+            hasBooking: rows.length > 0, 
+            booking: rows[0] || null 
         });
     } catch (err) {
-        console.error("Fetch Incoming Error:", err);
-        res.status(500).json({ success: false, error: err.message });
+        console.error("❌ SQL Error:", err.message);
+        res.status(500).json({ success: false, error: "Database error" });
     }
 });
 
@@ -389,6 +388,7 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
         } 
     });
 });
+
 
 // 8. ROUTES: REGISTRATION
 app.post('/api/users/register', async (req, res) => {
