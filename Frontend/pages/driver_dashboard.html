@@ -383,51 +383,55 @@
 
     // 4. EMERGENCY REQUEST LOGIC (Polling)
    async function checkIncomingTrips() {
-    if (!driverId || window.isAcceptingTrip) return;
-    if (document.getElementById('active-trip-card')) return;
+    // DEBUG LOG 1: Is the function even running?
+    console.log("🕵️ Heartbeat Attempting... ID:", driverId);
+
+    const toggle = document.getElementById('status-toggle');
+    if (!driverId) {
+        console.error("❌ Heartbeat stopped: No driverId found in session!");
+        return;
+    }
+    
+    if (toggle && !toggle.checked) {
+        console.warn("⚠️ Heartbeat skipped: Toggle is OFFLINE");
+        return;
+    }
+
+    if (window.isAcceptingTrip || document.getElementById('active-trip-card')) {
+        return; // Don't poll if busy
+    }
 
     try {
         const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
+        
+        // DEBUG LOG 2: Did the server respond at all?
+        console.log("📡 Server Response Status:", res.status);
+        
         const data = await res.json();
+        
+        // DEBUG LOG 3: This is the one we are looking for!
+        console.log("🔍 DATA RECEIVED FROM SERVER:", data);
+
         const container = document.getElementById('request-container');
 
         if (data.success && data.hasBooking) {
             const booking = data.booking;
-            console.log("🔍 DATA RECEIVED FROM SERVER:", booking);
 
-            // 1. DATA MAPPING (Finds the right keys automatically)
-            // Look for Pickup
-            const pickupValue = booking.pickup_location || booking.pickup || booking.location || "Location Unknown";
+            // Fill UI (Using flexible keys)
+            document.getElementById('pickup-loc').innerText = booking.pickup_location || booking.pickup || "Unknown";
             
-            // Look for Destination/Hospital
-            let destValue = "Hospital Requested";
-            for (let key in booking) {
-                if (key.toLowerCase().includes('destination') || key.toLowerCase().includes('hospital')) {
-                    destValue = booking[key];
-                    break;
-                }
+            // Check for destination/hospital
+            let dest = "Hospital Requested";
+            for(let k in booking) {
+                if(k.toLowerCase().includes('dest')) dest = booking[k];
             }
+            document.getElementById('dest-loc').innerText = dest;
+            document.getElementById('fare-amount').innerText = booking.fare || "0.00";
 
-            // Look for Fare
-            const fareValue = booking.fare || booking.estimated_fare || booking.amount || "0.00";
+            if (container) container.style.display = 'block';
 
-            // 2. UPDATE THE UI
-            const pEl = document.getElementById('pickup-loc');
-            const dEl = document.getElementById('dest-loc');
-            const fEl = document.getElementById('fare-amount');
-
-            if (pEl) pEl.innerText = pickupValue;
-            if (dEl) dEl.innerText = destValue;
-            if (fEl) fEl.innerText = fareValue;
-
-            // 3. SHOW CARD
-            if (container) {
-                container.style.display = 'block';
-            }
-
-            // 4. ATTACH BUTTON ACTION
             document.getElementById('confirm-accept-btn').onclick = () =>
-                acceptTrip(booking.booking_id, booking.ambulance_id, destValue);
+                acceptTrip(booking.booking_id, booking.ambulance_id, dest);
 
         } else {
             if (container && !document.getElementById('active-trip-card')) {
@@ -435,10 +439,9 @@
             }
         }
     } catch (err) {
-        console.error("❌ Heartbeat error:", err);
+        console.error("❌ Network/Fetch Error:", err);
     }
-}
-    function showActiveTripUI(bookingId, ambId, hospital) {
+} function showActiveTripUI(bookingId, ambId, hospital) {
         const existing = document.getElementById('active-trip-card');
         if (existing) existing.remove();
 
