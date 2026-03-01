@@ -251,7 +251,7 @@
             <li><a href="#" onclick="loadHistory()">🕒 My Bookings</a></li>
         </ul>
         <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
-            <a href="../index.html" onclick="localStorage.clear()" style="color: var(--text-gray); text-decoration: none; font-size: 14px;">🚪 Logout</a>
+            <a href="../index.html" onclick="sessionStorage.clear()" style="color: var(--text-gray); text-decoration: none; font-size: 14px;">🚪 Logout</a>
         </div>
     </nav>
 
@@ -334,7 +334,7 @@
 
         function selectAmbulance(id, type) {
             document.getElementById('selected-display').value = `${type} (ID: ${id})`;
-            localStorage.setItem('selectedAmbulanceId', id);
+            sessionStorage.setItem('selectedAmbulanceId', id);
             updateFare();
             document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth' });
         }
@@ -346,8 +346,8 @@
         }
        
         async function confirmBooking() {
-            const userId = localStorage.getItem('userId');
-            const ambId = localStorage.getItem('selectedAmbulanceId');
+            const userId = sessionStorage.getItem('userId');
+            const ambId = sessionStorage.getItem('selectedAmbulanceId');
             const btn = document.getElementById('confirm-btn');
 
             if (!ambId) return alert("Select an ambulance first!");
@@ -368,7 +368,7 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    localStorage.removeItem('selectedAmbulanceId');
+                    sessionStorage.removeItem('selectedAmbulanceId');
                     document.getElementById('success-overlay').style.display = 'flex';
                 }
             } catch (err) { alert("Error connecting to server."); btn.disabled = false; }
@@ -391,7 +391,7 @@
         }
 
         async function checkActiveBooking() {
-            const userId = localStorage.getItem('userId');
+            const userId = sessionStorage.getItem('userId');
             try {
                 const res = await fetch(`${API_BASE}/bookings/user/${userId}`);
                 const history = await res.json();
@@ -474,7 +474,7 @@ async function trackAmbulanceMovement(vehicleNumber) {
 
 
         async function loadHistory() {
-            const userId = localStorage.getItem('userId');
+            const userId = sessionStorage.getItem('userId');
             try {
                 const res = await fetch(`${API_BASE}/bookings/user/${userId}`);
                 const data = await res.json();
@@ -491,7 +491,7 @@ async function trackAmbulanceMovement(vehicleNumber) {
         }
 
         window.onload = () => {
-            const name = localStorage.getItem('userName') || 'User';
+            const name = sessionStorage.getItem('userName') || 'User';
             document.getElementById('user-display-name').innerText = name;
             document.getElementById('user-name-text').innerText = name;
             document.getElementById('profile-circle').innerText = name[0].toUpperCase();

@@ -143,7 +143,7 @@
             <li><a href="#">🕒 History</a></li>
         </ul>
         <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 20px;">
-            <a href="../index.html" onclick="localStorage.clear()" style="color: var(--text-gray); text-decoration: none;">🚪 Logout</a>
+            <a href="../index.html" onclick="sessionStorage.clear()" style="color: var(--text-gray); text-decoration: none;">🚪 Logout</a>
         </div>
     </nav>
 
@@ -248,9 +248,9 @@
             const selectedAmb = allAmbulances.find(a => a.id == id);
             if (selectedAmb) {
                 // We save it as 'selectedAmbulance' which dashboard.html parses
-                localStorage.setItem('selectedAmbulance', JSON.stringify(selectedAmb));
+                sessionStorage.setItem('selectedAmbulance', JSON.stringify(selectedAmb));
                 // We also save the raw ID for the booking POST request
-                localStorage.setItem('selectedAmbulanceId', selectedAmb.id);
+                sessionStorage.setItem('selectedAmbulanceId', selectedAmb.id);
                 
                 window.location.href = 'user_dashboard.html';
             }

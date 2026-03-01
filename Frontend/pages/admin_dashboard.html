@@ -316,7 +316,7 @@
             <li><span>👥</span> <a href="#">Manage Users</a></li>
             <li><span>🚑</span> <a href="#">Fleet Status</a></li>
             <li style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 20px;">
-                <span>🚪</span> <a href="../index.html" onclick="localStorage.clear()">Logout</a>
+                <span>🚪</span> <a href="../index.html" onclick="sessionStorage.clear()">Logout</a>
             </li>
         </ul>
     </nav>
@@ -402,7 +402,7 @@
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
 
         window.onload = function () {
-            const userName = localStorage.getItem('userName') || 'Admin';
+            const userName = sessionStorage.getItem('userName') || 'Admin';
             document.getElementById('admin-name-text').innerText = userName;
             document.getElementById('admin-circle').innerText = userName.charAt(0).toUpperCase();
 

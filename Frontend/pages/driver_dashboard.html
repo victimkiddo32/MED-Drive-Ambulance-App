@@ -290,7 +290,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Pull the name saved during login
-            const fullName = localStorage.getItem('userName') || 'Driver Name';
+            const fullName = sessionStorage.getItem('userName') || 'Driver Name';
 
             // Update the large Welcome text
             document.getElementById('driver-display-name').innerText = fullName;
@@ -320,7 +320,7 @@
             checkCurrentStatus();
         });
         const API_BASE = "https://med-drive-ambulance-app.onrender.com/api";
-        const driverId = localStorage.getItem('userId');
+        const driverId = sessionStorag.getItem('userId');
         let currentBooking = null;
 
         if (!driverId) {
@@ -404,7 +404,7 @@
         }
 
         async function acceptTrip(bookingId, ambId, destination) {
-            const currentDriverId = localStorage.getItem('userId');
+            const currentDriverId = sessionStorage.getItem('userId');
             const btn = document.getElementById('confirm-accept-btn');
 
             try {
@@ -454,7 +454,7 @@
         }
 
         async function completeTrip(bookingId, ambId) {
-            const currentDriverId = localStorage.getItem('userId');
+            const currentDriverId = sessionStorage.getItem('userId');
 
             // DEBUG: Check what IDs are actually being sent
             console.log("SENDING TO SERVER:", { bookingId, ambId, currentDriverId });
@@ -504,7 +504,7 @@
         }
 
         function handleLogout() {
-            localStorage.clear();
+            sessionStorage.clear();
             window.location.href = 'login.html';
         }
 

@@ -274,7 +274,7 @@
         
         // Security Check: Only allow Providers
         window.onload = () => {
-            const role = localStorage.getItem('userRole');
+            const role = sessionStorage.getItem('userRole');
             if (role !== 'Provider') {
                 alert("Access Denied: Provider login required.");
                 window.location.href = 'login.html';
@@ -287,7 +287,7 @@
             btn.innerText = "Processing...";
             
             const data = {
-                provider_id: localStorage.getItem('userId'), // Logged in Provider ID
+                provider_id: sessionStorage.getItem('userId'), // Logged in Provider ID
                 vehicle_number: document.getElementById('vehicle-number').value,
                 ambulance_type: document.getElementById('amb-type').value,
                 driver_name: document.getElementById('driver-name').value,
@@ -322,7 +322,7 @@
 
         async function loadProviderFleet() {
             const fleetList = document.getElementById('fleet-list');
-            const providerId = localStorage.getItem('userId');
+            const providerId = sessionStorage.getItem('userId');
 
             try {
                 // Modified query to fetch ONLY this provider's fleet
@@ -360,7 +360,7 @@
         }
 
         function logout() {
-            localStorage.clear();
+            sessionStorage.clear();
             window.location.href = 'login.html';
         }
         
