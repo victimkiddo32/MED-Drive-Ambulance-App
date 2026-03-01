@@ -385,6 +385,10 @@
                     break; 
                 }
             }
+
+            //Play alert sound
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2852/2852-preview.mp3').play().catch(() => {});
+
             
             // 3. Update the UI
             document.getElementById('pickup-loc').innerText = booking.pickup_location || "Location Unknown";
