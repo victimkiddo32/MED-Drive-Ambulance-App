@@ -406,7 +406,8 @@
             btn.innerText = "PROCESSING...";
 
             try {
-                const response = await fetch(`${API_BASE}/bookings`, {
+                const userId = localStorage.getItem('userId');
+                const response = await fetch(`${API_BASE}/bookings/user/${userId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
