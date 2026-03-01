@@ -447,32 +447,36 @@
         const res = await fetch(`${API_BASE}/ambulances`);
         const data = await res.json();
         
-        // Clear existing markers if you're refreshing
-        data.filter(a => a.status === 'Available').forEach(amb => {
-            // Ensure we are using the correct column name from your DB
-            const ambId = amb.ambulance_id; 
-            const ambType = amb.ambulance_type || 'Standard';
-            const lat = amb.lat || 22.8246;
-            const lng = amb.lng || 91.1017;
+        console.log("Raw Data from API:", data); // Check this in your F12 console!
 
-            const marker = L.marker([lat, lng]).addTo(map);
+        data.filter(a => a.status === 'Available').forEach(amb => {
+            // FIX: Try every possible ID name your DB might be using
+            const ambId = amb.ambulance_id || amb.id || amb.ID; 
+            const ambType = amb.ambulance_type || 'Standard';
+
+            if (!ambId) {
+                console.warn("Skipping an ambulance because it has no ID:", amb);
+                return; // Don't create a broken marker
+            }
+
+            const marker = L.marker([amb.lat || 22.82, amb.lng || 91.10]).addTo(map);
             
-            // Create the HTML content for the popup
             const popupContent = document.createElement('div');
             popupContent.innerHTML = `
                 <div style="color:black; padding:5px; font-family: sans-serif; min-width:150px;">
                     <b style="font-size:14px;">${ambType} Ambulance</b><br>
-                    <span style="color:#666; font-size:12px;">ID: ${ambId}</span><br>
-                    <button id="btn-${ambId}" style="background:#f85149; color:white; border:none; padding:10px; border-radius:5px; margin-top:10px; cursor:pointer; width:100%; font-weight:bold;">
+                    <span style="color:#666; font-size:11px;">ID: ${ambId}</span><br>
+                    <button style="background:#f85149; color:white; border:none; padding:10px; border-radius:5px; margin-top:10px; cursor:pointer; width:100%; font-weight:bold;">
                         SELECT THIS
                     </button>
                 </div>
             `;
 
-            // Attach the click event directly to the button inside the popup
+            // Attach listener directly to the button
             popupContent.querySelector('button').addEventListener('click', () => {
+                console.log("Clicking button for ID:", ambId); // Double check here
                 selectAmbulance(ambId, ambType);
-                marker.closePopup(); // Close popup after selection
+                marker.closePopup();
             });
 
             marker.bindPopup(popupContent);
