@@ -505,12 +505,20 @@ app.get('/api/admin/organizations', async (req, res) => {
 
 app.get('/api/admin/users', async (req, res) => {
     try {
-        const [users] = await pool.query(`
-            SELECT user_id, full_name, email, phone_number, role, created_at 
-            FROM Users 
-            ORDER BY created_at DESC
-        `);
-        res.json({ success: true, users });
+        // Removed 'created_at' since it doesn't exist in your DB
+        const query = `
+            SELECT id, full_name, email, phone_number, role 
+            FROM users 
+            ORDER BY id DESC
+        `;
+        
+        // Note: Check if your table uses 'id' or 'user_id' and update the SELECT accordingly
+        const [rows] = await pool.query(query);
+        
+        res.json({
+            success: true,
+            users: rows
+        });
     } catch (err) {
         console.error("Manage Users Error:", err);
         res.status(500).json({ success: false, error: err.message });
