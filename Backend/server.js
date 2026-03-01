@@ -254,5 +254,34 @@ app.get('/api/drivers/incoming/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// 8. ROUTES: REGISTRATION
+app.post('/api/users/register', async (req, res) => {
+    // 1. Destructure using 'phone_number' to match your DB field exactly
+    const { full_name, email, password, phone_number, role, address } = req.body;
+    
+    try {
+        // 2. Use 'phone_number' in the SQL column list
+        const sql = `INSERT INTO Users (full_name, email, password, phone_number, role, address) 
+                     VALUES (?, ?, ?, ?, ?, ?)`;
+        
+        // 3. Pass the variables in the correct order
+        const [result] = await pool.query(sql, [
+            full_name, 
+            email, 
+            password, 
+            phone_number, 
+            role || 'User', 
+            address || null
+        ]);
+        
+        res.json({ success: true, userId: result.insertId });
+    } catch (err) {
+        console.error("Registration Error:", err);
+        // If there's a duplicate email or phone, this will catch it
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
