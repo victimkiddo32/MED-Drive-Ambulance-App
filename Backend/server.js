@@ -228,11 +228,11 @@ app.get('/api/bookings/user/:userId', async (req, res) => {
 aapp.post('/api/bookings/accept', async (req, res) => {
     // 1. Destructure all possible names from the frontend
     // Note: We expect the driver's User ID (3) to come in via 'driver_user_id' or 'userId'
-    const { booking_id, bookingId, ambulance_id, driver_user_id, userId, driver_id } = req.body;
+    const { booking_id, bookingId, ambulance_id, driver_user_id, userId} = req.body;
     const finalBookingId = booking_id || bookingId;
     
     // The driver's User ID (the number 3 from your data)
-    const finalDriverUserId = driver_user_id || userId || driver_id;
+    const finalDriverUserId = driver_user_id || userId;
 
     if (!finalBookingId) {
         return res.status(400).json({ success: false, error: "Missing booking_id" });
