@@ -353,17 +353,22 @@ app.patch('/api/ambulances/move', async (req, res) => {
 // 6. Get Ambulance by Driver's User ID
 app.get('/api/ambulances/driver/:userId', async (req, res) => {
     try {
-        // We join with the Drivers table so we can search by User ID (3)
-        // rather than the internal driver_id (30001)
+        // We link Ambulances -> Drivers -> Users
+        // This allows us to find the ambulance even if we only have the User ID (3)
         const sql = `
             SELECT a.* FROM Ambulances a
             JOIN Drivers d ON a.driver_id = d.driver_id
             WHERE d.user_id = ?`;
             
         const [rows] = await pool.query(sql, [req.params.userId]);
-        res.json({ success: true, ambulance: rows[0] || null });
+        
+        // Return the first row found
+        res.json({ 
+            success: true, 
+            ambulance: rows[0] || null 
+        });
     } catch (err) {
-        console.error("Ambulance Fetch Error:", err.message);
+        console.error("Driver Dashboard Fetch Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -404,21 +409,20 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
     try {
         const sql = `
             SELECT 
-                b.booking_id, 
-                b.pickup_location, 
-                b.destination_hospital, -- Specifically selecting the correct column
-                b.fare, 
-                b.ambulance_id,
-                u.full_name AS patient_name,
-                u.phone_number AS patient_phone
-            FROM Bookings b
-            JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
-            JOIN Users u ON b.user_id = u.user_id
-            WHERE a.driver_id = (
-                SELECT driver_id FROM Drivers WHERE user_id = ?
-            )
-            AND b.status = 'Pending'
-            LIMIT 1
+        b.booking_id, 
+        b.pickup_location, 
+        b.destination_hospital, 
+        b.fare, 
+        b.ambulance_id,
+        u.full_name AS patient_name,
+        u.phone_number AS patient_phone
+    FROM Bookings b
+    JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
+    JOIN Drivers d ON a.driver_id = d.driver_id
+    JOIN Users u ON b.user_id = u.user_id
+    WHERE d.user_id = ? 
+    AND b.status = 'Pending'
+    LIMIT 1
         `;
 
         const [rows] = await pool.query(sql, [userId]);
