@@ -85,6 +85,22 @@ app.post('/api/users/login', async (req, res) => {
     }
 });
 
+app.post('/api/bookings', async (req, res) => {
+    const { user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare } = req.body;
+    try {
+        const sql = `INSERT INTO bookings 
+            (user_id, ambulance_id, pickup_location, destination_hospital, status, base_fare, fare) 
+            VALUES (?, ?, ?, ?, 'Pending', ?, ?)`;
+        
+        const [result] = await pool.query(sql, [user_id, ambulance_id, pickup_location, destination_hospital, base_fare, fare]);
+        
+        res.json({ success: true, bookingId: result.insertId });
+    } catch (err) {
+        console.error("Booking Creation Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Ensure this is exactly as written here
 app.get('/api/bookings/user/:userId', async (req, res) => {
     const userId = req.params.userId;

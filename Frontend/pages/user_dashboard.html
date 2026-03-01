@@ -407,7 +407,7 @@
 
             try {
                 const userId = localStorage.getItem('userId');
-                const response = await fetch(`${API_BASE}/bookings/user/${userId}`, {
+                const response = await fetch(`${API_BASE}/bookings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
