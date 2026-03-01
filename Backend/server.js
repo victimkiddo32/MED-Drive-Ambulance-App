@@ -229,7 +229,6 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
 // Ensure this is exactly as written here
 app.get('/api/bookings/user/:userId', async (req, res) => {
     const userId = req.params.userId;
-    console.log(`Fetching bookings for user: ${userId}`); // Add this for debugging
     try {
         const sql = `
             SELECT b.*, a.vehicle_number, a.ambulance_type 
@@ -239,53 +238,45 @@ app.get('/api/bookings/user/:userId', async (req, res) => {
             ORDER BY b.created_at DESC`;
 
         const [rows] = await pool.query(sql, [userId]);
-        
-        // Return an empty array [] instead of a 404 if no bookings exist
-        res.json(rows); 
+        res.json(rows); // Returns [] if no history, which is correct
     } catch (err) {
-        console.error("User Booking Error:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.post('/api/bookings/accept', async (req, res) => {
-    // Destructure using the exact names from your frontend fetch
     const { booking_id, ambulance_id, driver_user_id } = req.body;
     
-    // Safety check: ensure we aren't passing 'undefined' strings
-    if (!booking_id || !driver_user_id || driver_user_id === 'undefined') {
-        return res.status(400).json({ success: false, error: "Missing Booking ID or Driver User ID" });
+    if (!booking_id || !driver_user_id || !ambulance_id || driver_user_id === 'undefined') {
+        return res.status(400).json({ success: false, error: "Missing required booking data." });
     }
 
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
-        // 1. Update Booking status and assign the driver
+        // Assign the trip to the driver's User ID
         await conn.query(
             "UPDATE Bookings SET status = 'Accepted', driver_user_id = ? WHERE booking_id = ?", 
             [driver_user_id, booking_id]
         );
 
-        // 2. Mark the Ambulance as Busy
+        // Lock the ambulance
         await conn.query(
             "UPDATE Ambulances SET status = 'Busy' WHERE ambulance_id = ?", 
             [ambulance_id]
         );
 
-        // 3. Mark the Driver as Busy (using their User ID)
+        // Lock the driver using their User ID (3, 4, 5...)
         await conn.query(
             "UPDATE Drivers SET status = 'Busy' WHERE user_id = ?", 
             [driver_user_id]
         );
 
         await conn.commit();
-        console.log(`✅ Trip Accepted: Booking ${booking_id} assigned to User ${driver_user_id}`);
-        res.json({ success: true, message: "Trip successfully accepted." });
-
+        res.json({ success: true, message: "Trip accepted." });
     } catch (err) {
         await conn.rollback();
-        console.error("❌ Accept Route SQL Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     } finally {
         conn.release();
@@ -293,57 +284,34 @@ app.post('/api/bookings/accept', async (req, res) => {
 });
 
 app.post('/api/bookings/complete', async (req, res) => {
-    // 1. Updated destructuring to use driver_user_id
     const { booking_id, ambulance_id, driver_user_id } = req.body;
     
-    console.log(`Completing Trip: Booking ${booking_id}, Amb ${ambulance_id}, User ${driver_user_id}`);
-
-    if (!booking_id || !ambulance_id) {
-        return res.status(400).json({ success: false, error: "Missing booking_id or ambulance_id" });
+    // Safety check to ensure the driver is freed up for new calls
+    if (!booking_id || !ambulance_id || !driver_user_id) {
+        return res.status(400).json({ success: false, error: "Missing IDs to complete trip." });
     }
 
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
-        // 2. Update Booking Status
-        await conn.query(
-            "UPDATE Bookings SET status = 'Completed' WHERE booking_id = ?", 
-            [booking_id]
-        );
+        await conn.query("UPDATE Bookings SET status = 'Completed' WHERE booking_id = ?", [booking_id]);
 
-        // 3. Update Ambulance Status back to 'Available'
-        // This makes it reappear on the patient's map immediately
-        const [ambResult] = await conn.query(
-            "UPDATE Ambulances SET status = 'Available' WHERE ambulance_id = ?", 
-            [ambulance_id]
-        );
+        // Release the ambulance back to the fleet
+        await conn.query("UPDATE Ambulances SET status = 'Available' WHERE ambulance_id = ?", [ambulance_id]);
 
-        // 4. Update Driver Status back to 'Available' or 'Active'
-        // We use user_id because that is the ID we have from the frontend session
-        await conn.query(
-            "UPDATE Drivers SET status = 'Available' WHERE user_id = ?", 
-            [driver_user_id]
-        );
+        // Release the driver back to the pool using user_id
+        await conn.query("UPDATE Drivers SET status = 'Available' WHERE user_id = ?", [driver_user_id]);
 
         await conn.commit();
-
-        console.log(`✅ Ambulance ${ambulance_id} is now Available.`);
-
-        res.json({ 
-            success: true, 
-            message: "Ride completed successfully!", 
-            ambUpdated: ambResult.affectedRows > 0 
-        });
+        res.json({ success: true, message: "Ride completed successfully!" });
     } catch (err) {
         await conn.rollback();
-        console.error("❌ Completion Error:", err);
         res.status(500).json({ success: false, error: err.message });
     } finally {
         conn.release();
     }
 });
-
 
 // SIMULATION ROUTE: Use this to move the ambulance via Postman or another tab
 app.patch('/api/ambulances/move', async (req, res) => {
