@@ -300,7 +300,7 @@
 
             if (res.ok && data.success) {
                 // Use the correct ID and Name from the backend
-                const idToSave = data.user.driver_id || data.user.user_id;
+                const idToSave = data.user.user_id;
                 const nameToSave = data.user.full_name || data.user.name;
 
                 // CRITICAL UPDATE: Switch from localStorage to sessionStorage
