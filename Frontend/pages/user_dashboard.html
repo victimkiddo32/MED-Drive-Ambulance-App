@@ -346,49 +346,80 @@
         }
        
         async function confirmBooking() {
-            const userId = sessionStorage.getItem('userId');
-            const ambId = sessionStorage.getItem('selectedAmbulanceId');
-            const btn = document.getElementById('confirm-btn');
+    const userId = sessionStorage.getItem('userId');
+    const ambId = sessionStorage.getItem('selectedAmbulanceId');
+    const btn = document.getElementById('confirm-btn');
 
-            if (!ambId) return alert("Select an ambulance first!");
+    if (!ambId || ambId === "undefined") {
+        return alert("Please click a marker on the map to select an ambulance!");
+    }
 
-            btn.disabled = true;
-            try {
-                const res = await fetch(`${API_BASE}/bookings`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        ambulance_id: ambId,
-                        pickup_location: document.getElementById('pickup').value,
-                        destination_hospital: document.getElementById('hospital').value,
-                        base_fare: 500,
-                        fare: parseInt(document.getElementById('estimated-price').innerText)
-                    })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    sessionStorage.removeItem('selectedAmbulanceId');
-                    document.getElementById('success-overlay').style.display = 'flex';
-                }
-            } catch (err) { alert("Error connecting to server."); btn.disabled = false; }
+    const pickup = document.getElementById('pickup').value;
+    const hospital = document.getElementById('hospital').value;
+
+    if (!pickup || !hospital) return alert("Please enter pickup and destination!");
+
+    btn.disabled = true;
+    btn.innerText = "Processing...";
+
+    try {
+        const res = await fetch(`${API_BASE}/bookings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                ambulance_id: ambId,
+                pickup_location: pickup,
+                destination_hospital: hospital,
+                base_fare: 500,
+                fare: parseInt(document.getElementById('estimated-price').innerText)
+            })
+        });
+        
+        const result = await res.json();
+        if (result.success) {
+            sessionStorage.removeItem('selectedAmbulanceId');
+            document.getElementById('success-overlay').style.display = 'flex';
+        } else {
+            alert("Booking failed: " + result.message);
+            btn.disabled = false;
         }
+    } catch (err) { 
+        alert("Error connecting to server."); 
+        btn.disabled = false; 
+        btn.innerText = "CONFIRM & DISPATCH";
+    }
+}
 
         async function loadMapAmbulances() {
-            try {
-                const res = await fetch(`${API_BASE}/ambulances`);
-                const data = await res.json();
-                data.filter(a => a.status === 'Available').forEach(amb => {
-                    const marker = L.marker([amb.lat || 22.82, amb.lng || 91.10]).addTo(map);
-                    marker.bindPopup(`
-                        <div style="color:black; padding:5px;">
-                            <b>${amb.ambulance_type}</b><br>
-                            <button onclick="selectAmbulance(${amb.id}, '${amb.ambulance_type}')" style="background:red; color:white; border:none; padding:5px; margin-top:5px; cursor:pointer; width:100%;">SELECT</button>
-                        </div>
-                    `);
-                });
-            } catch (e) {}
-        }
+    try {
+        const res = await fetch(`${API_BASE}/ambulances`);
+        const data = await res.json();
+        
+        // Clear existing markers if any
+        data.filter(a => a.status === 'Available').forEach(amb => {
+            // Use amb.ambulance_id specifically
+            const currentID = amb.ambulance_id; 
+            const type = amb.ambulance_type || 'Standard';
+
+            const marker = L.marker([amb.lat || 22.82, amb.lng || 91.10]).addTo(map);
+            
+            // The fix: selectAmbulance now gets the true ambulance_id
+            marker.bindPopup(`
+                <div style="color:black; padding:5px; font-family: sans-serif;">
+                    <b style="font-size:14px;">${type}</b><br>
+                    <span style="color:gray; font-size:11px;">ID: ${currentID}</span><br>
+                    <button onclick="selectAmbulance(${currentID}, '${type}')" 
+                        style="background:#f85149; color:white; border:none; padding:8px; border-radius:5px; margin-top:8px; cursor:pointer; width:100%; font-weight:bold;">
+                        SELECT THIS
+                    </button>
+                </div>
+            `);
+        });
+    } catch (e) {
+        console.error("Map Load Error:", e);
+    }
+}
 
         async function checkActiveBooking() {
             const userId = sessionStorage.getItem('userId');
