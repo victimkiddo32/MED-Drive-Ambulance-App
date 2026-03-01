@@ -377,7 +377,7 @@
         const data = await res.json();
 
         // TYPE THIS OR ADD THIS LINE:
-console.log("🔍 DEBUG: Full Booking Object:", data.booking); 
+        console.log("🔍 DEBUG: Full Booking Object:", data.booking); 
 
         console.log("Server Response:", data);
 
@@ -389,7 +389,7 @@ console.log("🔍 DEBUG: Full Booking Object:", data.booking);
             document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
             
             
-            document.getElementById('dest-loc').innerText = currentBooking.destination_hospital;
+            document.getElementById('dest-loc').innerText = currentBooking.destinationHospital;
             
             document.getElementById('fare-amount').innerText = currentBooking.fare || "500.00";
             
