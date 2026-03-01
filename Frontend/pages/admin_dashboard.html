@@ -482,27 +482,26 @@
         }
 
         async function loadProviders() {
-            const tableBody = document.getElementById('provider-table-body');
-            try {
-                const res = await fetch(`${API_BASE}/admin/providers`);
-                const data = await res.json();
+    const tableBody = document.getElementById('providers-table-body');
+    try {
+        const res = await fetch(`${API_BASE}/admin/providers`);
+        const data = await res.json();
 
-                tableBody.innerHTML = data.providers.map(p => `
-            <tr>
-                <td><strong>${p.company_name}</strong><br><small>${p.owner_name}</small></td>
-                <td>${p.phone_number}</td>
-                <td>${p.total_rides}</td>
-                <td>৳ ${p.gross_revenue}</td>
-                <td style="color: var(--success); font-weight: bold;">
-                    ৳ ${(p.gross_revenue * 0.95).toFixed(2)}
-                </td>
-                <td><span class="domain-tag">${p.trade_license || 'N/A'}</span></td>
-            </tr>
-        `).join('');
-            } catch (err) {
-                tableBody.innerHTML = "<tr><td colspan='6'>Error loading providers.</td></tr>";
-            }
+        if (data.success && data.providers) {
+            tableBody.innerHTML = data.providers.map(p => `
+                <tr>
+                    <td><strong>${p.company_name}</strong></td>
+                    <td style="color: #4ade80; font-weight: bold;">
+                        ${p.phone_number || 'N/A'}
+                    </td>
+                </tr>
+            `).join('');
         }
+    } catch (err) {
+        console.error("Error loading providers:", err);
+        tableBody.innerHTML = "<tr><td colspan='2'>Error loading providers.</td></tr>";
+    }
+}
 
         async function loadOrganizations() {
             const tableBody = document.getElementById('org-table-body');
