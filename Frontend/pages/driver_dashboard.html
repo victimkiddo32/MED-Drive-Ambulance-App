@@ -382,20 +382,22 @@
             
             // 2. Update the UI using the variable
             document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
-            document.getElementById('dest-loc').innerText = destinationHospital;
+            document.getElementById('dest-loc').innerText = currentBooking.destination_hospital || "Hospital Requested";
             document.getElementById('fare-amount').innerText = currentBooking.fare || "500.00";
             
             const container = document.getElementById('request-container');
             if (container) container.style.display = 'block';
 
             new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3').play().catch(() => {});
+
+            const hospitalName = currentBooking.destination_hospital || "Hospital Requested";
             
             // 3. Pass the mapped variable to acceptTrip
             document.getElementById('confirm-accept-btn').onclick = () =>
                 acceptTrip(
                     currentBooking.booking_id, 
                     currentBooking.ambulance_id, 
-                    destinationHospital
+                    hospitalName
                 );
             // --- FIX END ---
         } else {
