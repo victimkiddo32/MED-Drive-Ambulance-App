@@ -277,45 +277,52 @@ app.post('/api/bookings/accept', async (req, res) => {
 });
 
 app.post('/api/bookings/complete', async (req, res) => {
-    // 1. Destructure with default values to prevent undefined errors
-    const { booking_id, ambulance_id, driver_id } = req.body;
+    // 1. Updated destructuring to use driver_user_id
+    const { booking_id, ambulance_id, driver_user_id } = req.body;
     
-    // Debug log to see what the frontend is actually sending
-    console.log(`Completing Trip: Booking ${booking_id}, Amb ${ambulance_id}, Driver ${driver_id}`);
+    console.log(`Completing Trip: Booking ${booking_id}, Amb ${ambulance_id}, User ${driver_user_id}`);
 
     if (!booking_id || !ambulance_id) {
-        return res.status(400).json({ success: false, error: "Missing IDs" });
+        return res.status(400).json({ success: false, error: "Missing booking_id or ambulance_id" });
     }
 
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
-        // 2. Update Booking
-        await conn.query('UPDATE Bookings SET status = "Completed" WHERE booking_id = ?', [booking_id]);
+        // 2. Update Booking Status
+        await conn.query(
+            "UPDATE Bookings SET status = 'Completed' WHERE booking_id = ?", 
+            [booking_id]
+        );
 
-        // 3. Update Ambulance (Used lowercase 'available' to match standard DB entries)
+        // 3. Update Ambulance Status back to 'Available'
+        // This makes it reappear on the patient's map immediately
         const [ambResult] = await conn.query(
-            'UPDATE Ambulances SET status = "Available" WHERE ambulance_id = ?', 
+            "UPDATE Ambulances SET status = 'Available' WHERE ambulance_id = ?", 
             [ambulance_id]
         );
 
-        // 4. Update Driver
-        await conn.query('UPDATE Drivers SET status = "Active" WHERE driver_id = ?', [driver_id]);
+        // 4. Update Driver Status back to 'Available' or 'Active'
+        // We use user_id because that is the ID we have from the frontend session
+        await conn.query(
+            "UPDATE Drivers SET status = 'Available' WHERE user_id = ?", 
+            [driver_user_id]
+        );
 
         await conn.commit();
 
-        console.log(`Ambulance ${ambulance_id} update status:`, ambResult.affectedRows > 0 ? "SUCCESS" : "FAILED (ID not found)");
+        console.log(`✅ Ambulance ${ambulance_id} is now Available.`);
 
         res.json({ 
             success: true, 
-            message: "Ride completed", 
+            message: "Ride completed successfully!", 
             ambUpdated: ambResult.affectedRows > 0 
         });
     } catch (err) {
         await conn.rollback();
-        console.error("Completion Error:", err);
-        res.status(500).json({ error: err.message });
+        console.error("❌ Completion Error:", err);
+        res.status(500).json({ success: false, error: err.message });
     } finally {
         conn.release();
     }
@@ -364,41 +371,31 @@ app.get('/api/drivers/stats/:id', async (req, res) => {
 // Add this to your server.js
 // This route now uses your 'pool' and correctly joins tables to find pending trips
 app.get('/api/drivers/incoming/:userId', async (req, res) => {
-    const userId = req.params.userId; // This is the ID from the Login (e.g., 3)
-
+    const userId = req.params.userId; 
     try {
-        // This query "walks" through the links: User -> Driver -> Ambulance -> Booking
         const sql = `
             SELECT 
                 b.booking_id, 
                 b.pickup_location, 
-                b.destination, 
+                b.destination_hospital, -- Specifically selecting the correct column
                 b.fare, 
+                b.ambulance_id,
                 u.full_name AS patient_name,
                 u.phone_number AS patient_phone
             FROM Bookings b
             JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
-            JOIN Drivers d ON a.driver_id = d.driver_id
             JOIN Users u ON b.user_id = u.user_id
-            WHERE d.user_id = ? 
-              AND b.status = 'Pending'
+            WHERE a.driver_id = (
+                SELECT driver_id FROM Drivers WHERE user_id = ?
+            )
+            AND b.status = 'Pending'
             LIMIT 1
         `;
 
         const [rows] = await pool.query(sql, [userId]);
-
-        if (rows.length > 0) {
-            res.json({ 
-                success: true, 
-                hasBooking: true, 
-                booking: rows[0] 
-            });
-        } else {
-            res.json({ success: true, hasBooking: false });
-        }
+        res.json({ success: true, hasBooking: rows.length > 0, booking: rows[0] || null });
     } catch (err) {
-        console.error("Database Error:", err);
-        res.status(500).json({ success: false, error: "Internal Server Error" });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 

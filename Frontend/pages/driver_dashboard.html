@@ -359,41 +359,55 @@
             }
         }
 
-        async function checkIncomingTrips() {
-    // 1. Check ID and Status
-    const driverId = sessionStorage.getItem('userId');
+       async function checkIncomingTrips() {
+    // 1. Identification: This is the User's ID (e.g., 3), which the backend uses to find the driver record
+    const driverUserId = sessionStorage.getItem('userId');
     const statusToggle = document.getElementById('status-toggle');
     
-    console.log("Checking for Driver ID:", driverId); // MUST be 30004
+    // Debugging to help you see what's happening in the console
+    console.log("Checking for Driver User ID:", driverUserId); 
 
-    if (!driverId || !statusToggle.checked) return;
+    // Don't poll if not logged in, if toggle is OFF, or if already on a trip
+    if (!driverUserId || (statusToggle && !statusToggle.checked)) return;
     if (document.getElementById('active-trip-card')) return;
 
     try {
-        const res = await fetch(`${API_BASE}/drivers/incoming/${driverId}`);
+        // Calling the route we just fixed: /api/drivers/incoming/3
+        const res = await fetch(`${API_BASE}/drivers/incoming/${driverUserId}`);
         const data = await res.json();
 
         console.log("Server Response:", data);
 
-        // UPDATE THIS LINE: Use data.hasBooking to match your server's logic
+        // Matches our server logic: { success: true, hasBooking: true, booking: {...} }
         if (data.success && data.hasBooking === true) { 
             currentBooking = data.booking;
             
+            // UI Updates using the correct column names
             document.getElementById('pickup-loc').innerText = currentBooking.pickup_location;
+            
+            // Using destination_hospital (we deleted the 'destination' column)
             document.getElementById('dest-loc').innerText = currentBooking.destination_hospital;
+            
             document.getElementById('fare-amount').innerText = currentBooking.fare || "500.00";
             
-            // Force the card to show
+            // Show the request card
             const container = document.getElementById('request-container');
-            container.style.display = 'block';
+            if (container) container.style.display = 'block';
 
+            // Play alert sound
             new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3').play().catch(() => {});
             
+            // UPDATE: Pass the driverUserId (3) to the acceptTrip function
             document.getElementById('confirm-accept-btn').onclick = () =>
-                acceptTrip(currentBooking.booking_id, currentBooking.ambulance_id, currentBooking.destination_hospital);
+                acceptTrip(
+                    currentBooking.booking_id, 
+                    currentBooking.ambulance_id, 
+                    driverUserId
+                );
         } else {
-            // Hide if no booking found
-            document.getElementById('request-container').style.display = 'none';
+            // Hide if no booking found (keep UI clean)
+            const container = document.getElementById('request-container');
+            if (container) container.style.display = 'none';
         }
     } catch (err) {
         console.error("Polling error:", err);
@@ -408,95 +422,139 @@
             }
         }
 
-        async function acceptTrip(bookingId, ambId, destination) {
-            const currentDriverId = sessionStorage.getItem('userId');
-            const btn = document.getElementById('confirm-accept-btn');
+       async function acceptTrip(bookingId, ambId, destination) {
+    // This is the User ID (e.g., 3) from sessionStorage
+    const currentDriverUserId = sessionStorage.getItem('userId'); 
+    const btn = document.getElementById('confirm-accept-btn');
 
-            try {
-                btn.innerText = "Processing...";
-                btn.disabled = true;
+    if (!currentDriverUserId) {
+        alert("Session expired. Please log in again.");
+        return;
+    }
 
-                const res = await fetch(`${API_BASE}/bookings/accept`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        booking_id: bookingId,
-                        ambulance_id: ambId,
-                        driver_id: currentDriverId
-                    })
-                });
+    try {
+        btn.innerText = "Processing...";
+        btn.disabled = true;
 
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('request-container').style.display = 'none';
-                    showActiveTripUI(bookingId, ambId, destination);
-                    showToast(); // Call your existing toast function
-                } else {
-                    alert("This trip was cancelled or assigned to someone else.");
-                    document.getElementById('request-container').style.display = 'none';
-                }
-            } catch (e) {
-                alert("Connection error.");
-            } finally {
-                btn.innerText = "ACCEPT REQUEST";
-                btn.disabled = false;
-            }
+        const res = await fetch(`${API_BASE}/bookings/accept`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                booking_id: bookingId,
+                ambulance_id: ambId,
+                // UPDATED: Use the new name we defined for the database column
+                driver_user_id: currentDriverUserId 
+            })
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+            // 1. Hide the "Incoming" request card
+            document.getElementById('request-container').style.display = 'none';
+            
+            // 2. Load the "Active" navigation UI
+            // Ensure this function uses destination_hospital
+            showActiveTripUI(bookingId, ambId, destination);
+            
+            // 3. Feedback to driver
+            if (typeof showToast === "function") showToast("Ride Accepted! Navigating...");
+            
+        } else {
+            alert(data.error || "This trip was cancelled or assigned to someone else.");
+            document.getElementById('request-container').style.display = 'none';
         }
+    } catch (e) {
+        console.error("Accept Trip Error:", e);
+        alert("Connection error. Please try again.");
+    } finally {
+        btn.innerText = "ACCEPT REQUEST";
+        btn.disabled = false;
+    }
+}
 
-        function showActiveTripUI(bookingId, ambId, destination) {
-            const existing = document.getElementById('active-trip-card');
-            if (existing) existing.remove();
+        function showActiveTripUI(bookingId, ambId, destinationHospital) {
+    // 1. Remove any old trip cards to prevent duplicates
+    const existing = document.getElementById('active-trip-card');
+    if (existing) existing.remove();
 
-            const activeTripHTML = `
-                <div id="active-trip-card" class="booking-card" style="display:block; border-top: 4px solid var(--success); background: var(--card-bg);">
-                    <h3 style="color: var(--success); margin-top:0;">TRIP IN PROGRESS</h3>
-                    <p><b>Patient Destination:</b> ${destination}</p> 
-                    <button class="btn-complete" onclick="completeTrip(${bookingId}, ${ambId})">
-                        MARK AS COMPLETED (FINISH RIDE)
-                    </button>
-                </div>`;
-            document.getElementById('main-dashboard-area').insertAdjacentHTML('beforeend', activeTripHTML);
-        }
+    // 2. Create the Active Trip Card
+    // We use destinationHospital (the argument name) inside the template literal
+    const activeTripHTML = `
+        <div id="active-trip-card" class="booking-card" 
+             style="display:block; border-top: 4px solid var(--success); background: var(--card-bg); padding: 20px; border-radius: 12px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            
+            <h3 style="color: var(--success); margin-top:0; display: flex; align-items: center; gap: 10px;">
+                <span style="width:12px; height:12px; background:var(--success); border-radius:50%; display:inline-block; animation: pulse 1.5s infinite;"></span>
+                TRIP IN PROGRESS
+            </h3>
+            
+            <p style="margin: 15px 0;">
+                <b style="color: var(--text-muted);">Destination:</b><br>
+                <span style="font-size: 1.1em; color: var(--text-main);">${destinationHospital}</span>
+            </p> 
+
+            <button class="btn-complete" 
+                    style="width: 100%; background: var(--success); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;"
+                    onclick="completeTrip(${bookingId}, ${ambId})">
+                MARK AS COMPLETED (FINISH RIDE)
+            </button>
+        </div>`;
+
+    // 3. Inject into the dashboard
+    const container = document.getElementById('main-dashboard-area');
+    if (container) {
+        container.insertAdjacentHTML('beforeend', activeTripHTML);
+    } else {
+        console.error("Dashboard area not found!");
+    }
+}
 
         async function completeTrip(bookingId, ambId) {
-            const currentDriverId = sessionStorage.getItem('userId');
+    // 1. Get the User ID from session (e.g., 3)
+    const currentDriverUserId = sessionStorage.getItem('userId');
 
-            // DEBUG: Check what IDs are actually being sent
-            console.log("SENDING TO SERVER:", { bookingId, ambId, currentDriverId });
+    // DEBUG: Ensure IDs are correct before sending
+    console.log("FINISHING RIDE:", { bookingId, ambId, currentDriverUserId });
 
-            if (!ambId || ambId === "undefined") {
-                alert("Error: Ambulance ID is missing! Cannot free up vehicle.");
-                return;
+    // Validation: Prevent sending "undefined" to the server
+    if (!ambId || ambId === "undefined" || ambId === null) {
+        alert("Error: Ambulance ID is missing! Cannot free up vehicle.");
+        console.error("Missing ambId in completeTrip call");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/bookings/complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                booking_id: bookingId,
+                ambulance_id: ambId, 
+                driver_user_id: currentDriverUserId // Consistent with our Accept logic
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            // Check if the server actually found and updated the ambulance record
+            if (data.ambUpdated === false) {
+                console.warn("Booking marked Completed, but Ambulance status might not have reset.");
             }
-
-            try {
-                const res = await fetch(`${API_BASE}/bookings/complete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        booking_id: bookingId,
-                        ambulance_id: ambId, // Ensure this is the numeric ID (e.g., 30001)
-                        driver_id: currentDriverId
-                    })
-                });
-
-                const data = await res.json();
-
-                // Check if the server actually updated the ambulance
-                if (data.success) {
-                    if (data.ambUpdated === false) {
-                        console.warn("Booking completed, but Ambulance ID was not found in DB.");
-                    }
-                    alert("Ride Completed! Ambulance is now Available.");
-                    location.reload();
-                } else {
-                    alert("Server error: " + data.error);
-                }
-            } catch (e) {
-                console.error("Complete Error:", e);
-                alert("Failed to connect to server.");
-            }
+            
+            alert("Ride Completed! Your ambulance is now appearing as 'Available' on the map.");
+            
+            // Reload to clear the active trip card and return to the "Available" toggle screen
+            location.reload();
+        } else {
+            alert("Server error: " + (data.error || "Unknown error occurred"));
         }
+    } catch (e) {
+        console.error("Complete Trip Network Error:", e);
+        alert("Failed to connect to the server. Please check your internet.");
+    }
+}
 
         async function loadStats() {
             if (!driverId) return;
