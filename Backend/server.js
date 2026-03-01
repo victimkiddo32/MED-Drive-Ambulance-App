@@ -245,38 +245,61 @@ app.get('/api/bookings/user/:userId', async (req, res) => {
 });
 
 app.post('/api/bookings/accept', async (req, res) => {
-    const { booking_id, ambulance_id, driver_user_id } = req.body;
+    const { booking_id } = req.body; // We only need the booking_id from the frontend
     
-    if (!booking_id || !driver_user_id || !ambulance_id || driver_user_id === 'undefined') {
-        return res.status(400).json({ success: false, error: "Missing required booking data." });
+    if (!booking_id) {
+        return res.status(400).json({ success: false, error: "Missing Booking ID" });
     }
 
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
 
-        // Assign the trip to the driver's User ID
+        // 1. Get the ambulance_id and assigned driver_id from the database
+        const [bookingData] = await conn.query(
+            "SELECT ambulance_id FROM Bookings WHERE booking_id = ?", 
+            [booking_id]
+        );
+
+        if (bookingData.length === 0) {
+            throw new Error("Booking not found");
+        }
+
+        const ambId = bookingData[0].ambulance_id;
+
+        // 2. Look up the Driver's User ID from the Ambulances table
+        const [ambData] = await conn.query(
+            "SELECT driver_id FROM Ambulances WHERE ambulance_id = ?", 
+            [ambId]
+        );
+
+        const driverUserId = ambData[0].driver_id; // This will be 3, 4, or 5
+
+        // 3. Update Booking: Assign the driver and change status
         await conn.query(
             "UPDATE Bookings SET status = 'Accepted', driver_user_id = ? WHERE booking_id = ?", 
-            [driver_user_id, booking_id]
+            [driverUserId, booking_id]
         );
 
-        // Lock the ambulance
+        // 4. Mark Ambulance as Busy
         await conn.query(
             "UPDATE Ambulances SET status = 'Busy' WHERE ambulance_id = ?", 
-            [ambulance_id]
+            [ambId]
         );
 
-        // Lock the driver using their User ID (3, 4, 5...)
+        // 5. Mark Driver as Busy in the Drivers table
         await conn.query(
             "UPDATE Drivers SET status = 'Busy' WHERE user_id = ?", 
-            [driver_user_id]
+            [driverUserId]
         );
 
         await conn.commit();
-        res.json({ success: true, message: "Trip accepted." });
+        console.log(`✅ Success: Booking ${booking_id} accepted by Driver User ${driverUserId}`);
+        res.json({ success: true, message: "Trip accepted successfully." });
+
     } catch (err) {
         await conn.rollback();
+        console.error("❌ Accept Error:", err.message);
         res.status(500).json({ success: false, error: err.message });
     } finally {
         conn.release();
@@ -377,7 +400,7 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
     const userId = req.params.userId; 
     try {
         const sql = `
-            SELECT 
+           SELECT 
     b.booking_id, 
     b.pickup_location, 
     b.destination_hospital, 
@@ -387,10 +410,9 @@ app.get('/api/drivers/incoming/:userId', async (req, res) => {
     u.phone_number AS patient_phone
 FROM Bookings b
 JOIN Ambulances a ON b.ambulance_id = a.ambulance_id
-/* CHANGE: Match Ambulance driver_id (3) to Driver user_id (3) */
-JOIN Drivers d ON a.driver_id = d.user_id 
 JOIN Users u ON b.user_id = u.user_id
-WHERE d.user_id = ? 
+/* DIRECT MATCH: No need to join the Drivers table */
+WHERE a.driver_id = ? 
 AND b.status = 'Pending'
 LIMIT 1
         `;
