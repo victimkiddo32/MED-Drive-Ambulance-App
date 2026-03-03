@@ -570,6 +570,39 @@ app.post('/api/organizations', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+
+// DELETE an organization
+app.delete('/api/organizations/:id', async (req, res) => {
+    const orgId = req.params.id;
+    try {
+        const query = "DELETE FROM organizations WHERE org_id = ?";
+        await pool.query(query, [orgId]);
+        res.json({ success: true, message: "Organization deleted" });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// DELETE user route
+app.delete('/api/admin/users/:userId', async (req, res) => {
+    // Access the variable using the new name
+    const id = req.params.userId; 
+    
+    try {
+        const query = "DELETE FROM users WHERE user_id = ?";
+        const [result] = await pool.query(query, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        res.json({ success: true, message: "User deleted successfully" });
+    } catch (err) {
+        console.error("Delete User Error:", err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // 3. Static Files & Catch-all (Put these LAST)
 app.use(express.static('public'));
 
