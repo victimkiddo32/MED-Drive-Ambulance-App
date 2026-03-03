@@ -171,6 +171,7 @@
     <script>
         const API_BASE = 'https://med-drive-ambulance-app.onrender.com/api';
 
+        // --- THE MISSING WINDOW.ONLOAD ADDED HERE ---
         window.onload = () => {
             const user = sessionStorage.getItem('userName');
             if(user) {
@@ -211,7 +212,7 @@
                         </div>
                         <div style="text-align: right;">
                             <span class="status-badge status-available">${amb.status.toUpperCase()}</span>
-                            <div style="margin-top: 5px; font-weight: bold;">৳ ${amb.base_fare || 1500}</div>
+                            <div style="margin-top: 5px; font-weight: bold;">৳ ${amb.base_fare || 500}</div>
                         </div>
                     </div>
                 `).join('');
