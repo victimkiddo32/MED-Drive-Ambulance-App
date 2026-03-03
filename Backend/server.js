@@ -540,6 +540,23 @@ app.get('/api/admin/ambulances', async (req, res) => {
     }
 });
 
+
+app.post('/api/ambulances', async (req, res) => {
+    // We now capture provider_id from the request
+    const { vehicle_number, ambulance_type, driver_name, base_fare, provider_id, status } = req.body;
+    
+    try {
+        await pool.query(
+            `INSERT INTO Ambulances (vehicle_number, ambulance_type, driver_name, base_fare, provider_id, status) 
+             VALUES (?, ?, ?, ?, ?, ?)`, 
+            [vehicle_number, ambulance_type, driver_name, base_fare, provider_id, status || 'Available']
+        );
+        res.json({ success: true, message: "Vehicle added to fleet." });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // 3. Static Files & Catch-all (Put these LAST)
 app.use(express.static('public'));
 
