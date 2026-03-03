@@ -557,6 +557,25 @@ app.post('/api/ambulances', async (req, res) => {
     }
 });
 
+app.post('/api/organizations', async (req, res) => {
+    // These names come from your frontend fetch request
+    const { org_name, email_domain, discount_rate } = req.body;
+    
+    try {
+        // Table name updated to 'organizations'
+        const query = `
+            INSERT INTO organizations (org_name, email_domain, discount_rate) 
+            VALUES (?, ?, ?)
+        `;
+        
+        await pool.query(query, [org_name, email_domain, discount_rate]);
+        
+        res.status(201).json({ success: true, message: "Organization added!" });
+    } catch (err) {
+        console.error("DB Error:", err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 // 3. Static Files & Catch-all (Put these LAST)
 app.use(express.static('public'));
 

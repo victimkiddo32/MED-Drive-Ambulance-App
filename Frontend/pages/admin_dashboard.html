@@ -581,23 +581,44 @@
         function closeModal() { document.getElementById('org-modal').style.display = 'none'; }
 
         async function submitNewOrg() {
-            const name = document.getElementById('new-org-name').value;
-            const domain = document.getElementById('new-org-domain').value;
-            const discount = document.getElementById('new-org-discount').value;
-            const btn = document.getElementById('save-org-btn');
-            if (!name || !domain || !discount) return alert("Fill all fields");
-            btn.disabled = true;
-            try {
-                const res = await fetch(`${API_BASE}/admin/organizations`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ org_name: name, email_domain: domain, discount_rate: discount })
-                });
-                if (res.ok) { closeModal(); loadOrganizations(); }
-            } catch (err) { alert("Error saving"); }
-            finally { btn.disabled = false; }
-        }
+    const name = document.getElementById('new-org-name').value;
+    const domain = document.getElementById('new-org-domain').value;
+    const discount = document.getElementById('new-org-discount').value;
+    const btn = document.getElementById('save-org-btn');
 
+    if (!name || !domain || !discount) return alert("Fill all fields");
+
+    btn.disabled = true;
+    btn.innerText = "Saving...";
+
+    try {
+        // CHANGED: Fixed the URL path to match your backend route
+        const res = await fetch(`${API_BASE}/organizations`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                org_name: name, 
+                email_domain: domain, 
+                discount_rate: parseFloat(discount) // Ensure it's a number
+            })
+        });
+
+        if (res.ok) {
+            alert("Organization Added!");
+            closeModal(); 
+            loadOrganizations(); // Refresh the table
+        } else {
+            const errorData = await res.json();
+            alert("Server Error: " + errorData.error);
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Network Error: Could not connect to server");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Save";
+    }
+}
         async function deleteOrg(id) {
             if (!confirm("Delete?")) return;
             await fetch(`${API_BASE}/admin/organizations/${id}`, { method: 'DELETE' });
