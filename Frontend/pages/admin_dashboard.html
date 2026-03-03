@@ -536,14 +536,20 @@
         if (data.success && data.users) {
             tableBody.innerHTML = data.users.map(u => `
                 <tr>
-                    <td>${u.user_id}</td>
                     <td><strong>${u.full_name}</strong></td>
+                    
                     <td>${u.email}</td>
-                    <td>${u.phone_number || 'N/A'}</td>
+                    
                     <td>
                         <span class="role-badge ${u.role.toLowerCase()}">
                             ${u.role}
                         </span>
+                    </td>
+                    
+                    <td>${u.phone_number || 'N/A'}</td>
+                    
+                    <td>
+                        <button onclick="viewUser(${u.user_id})" style="background:none; border:none; color:var(--accent-blue); cursor:pointer;">View</button>
                     </td>
                 </tr>
             `).join('');
