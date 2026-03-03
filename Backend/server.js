@@ -557,22 +557,16 @@ app.post('/api/ambulances', async (req, res) => {
     }
 });
 
+// Ensure the path is '/api/organizations' to match your fetch call
 app.post('/api/organizations', async (req, res) => {
-    // These names come from your frontend fetch request
     const { org_name, email_domain, discount_rate } = req.body;
     
     try {
-        // Table name updated to 'organizations'
-        const query = `
-            INSERT INTO organizations (org_name, email_domain, discount_rate) 
-            VALUES (?, ?, ?)
-        `;
-        
+        const query = "INSERT INTO organizations (org_name, email_domain, discount_rate) VALUES (?, ?, ?)";
         await pool.query(query, [org_name, email_domain, discount_rate]);
-        
-        res.status(201).json({ success: true, message: "Organization added!" });
+        res.status(201).json({ success: true, message: "Organization saved!" });
     } catch (err) {
-        console.error("DB Error:", err.message);
+        console.error(err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
